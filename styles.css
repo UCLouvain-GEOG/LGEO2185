@@ -1,0 +1,44 @@
+.assignment {
+    color: #ffffff;
+    background-color: #5db3e6;
+    border-radius: 4px;
+    padding: 12px;
+    font-size: 16px;
+    line-height: 1.3em;
+    font-family: "Garamond";
+}
+
+code {
+    color: #d6336c; /* Default Quarto inline code color */
+    background-color: #f8f9fa; /* Default Quarto inline code background */
+    font-family: "Courier New", Courier, monospace;
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+
+/* Prevent changes to inline code blocks */
+.assignment code {
+     color: #d6336c; /* Default Quarto inline code color */
+    background-color: #f8f9fa; /* Default Quarto inline code background */
+    font-family: "Courier New", Courier, monospace;
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+/* Style the title within the .assignment block */
+.assignment h1, 
+.assignment h2, 
+.assignment h3, 
+.assignment h4, 
+.assignment h5, 
+.assignment h6 {
+    color: #ffffff; /* White text for titles */
+    text-transform: uppercase; /* All caps */
+    font-weight: bold; /* Optional for emphasis */
+    margin: 0 0 10px 0; /* Adjust spacing as needed */
+	border-bottom: 2px solid #ffffff; /* White line below the title */
+    padding-bottom: 5px; /* Adds space between title text and the line */
+	font-family: "Garamond";
+
+}

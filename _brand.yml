@@ -1,0 +1,56 @@
+meta:
+  name:
+    short: UCLouvain
+    full: Université catholique de Louvain
+  link:
+    home: https://www.uclouvain.be  
+
+logo:
+  # Replace these filenames with real logo files placed alongside _brand.yml
+  images:
+    header: logos/logo_UCLouvain_format_jpg_quadri.jpg
+    header-white: logos/logo_UCLouvain_format_jpg_noir.jpg
+    full:
+      path: logos/logo_UCLouvain_format_jpg_quadri.jpg
+      alt: "UCLouvain logo"
+  small: logos/logo_UCLouvain_format_jpg_noir_RVB.jpg
+  medium:
+    light: header
+    dark: header-white
+  large: full
+
+color:
+  palette:
+    # Principal colors from UC Louvain guidelines
+    white: "#ffffff"
+    bleu-nuit: "#00214e"
+    cyan: "#5db3e6"
+    bleu-gris: "#9cb7d4"
+  foreground: "#00214e"  # Main text color
+  background: white
+  primary: bleu-nuit
+  secondary: cyan
+
+typography:
+  fonts:
+    # Montserrat is a free Google Font; this loads all needed weights & styles
+    - family: Montserrat
+      source: google
+      weight: [100,200,300,400,500,600,700,800,900]
+      style: [normal, italic]
+
+  base:
+    family: Montserrat
+    weight: 400
+    size: 16px
+    line-height: 1.5
+
+  headings:
+    family: Montserrat
+    weight: 700
+    line-height: 1.2
+    color: bleu-nuit
+
+  link:
+    color: cyan
+    decoration: underline
