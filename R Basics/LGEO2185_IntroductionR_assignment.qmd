@@ -1,0 +1,316 @@
+---
+title: "LGEO2185: Introduction To R - Assignment"
+author: "Kristof Van Oost, Antoine Stevens & Valentin Charlier"
+Date: 02/04/2026
+toc: false
+standalone: true
+embed-resources: true
+format: 
+  html:
+    theme: 
+      - zephyr
+      - ../_brand.yml
+    css: ../styles.css
+execute:
+  echo: true
+  warning: false
+  error: false
+---
+
+# Assignment
+
+::: assignment
+
+Create an R script, where you plot the mean, drawn from a normal distribution as function of the sample size. You should use the following elements: 
+* `rnorm()` function
+* `matrix()`
+* `plot()`
+* `for {}`
+ Make a function where the user can change the sample size considered, and the variables of the normal distribution.
+
+*Bonus: do not use any `for` loops :-)*
+
+:::
+
+::: {.callout-important icon="false" collapse="true"}
+## Answer
+
+# Example of a bad implementations
+
+## Hard-coding
+
+-   Hard-coding of some parameters
+-   use `...` in function definition but not used within
+-   script within `for` loop is not indented (not needed but lacks clarity)
+-   The argument mean shadows the built-in `mean()` function (same for `c`). While this doesn't immediately cause an error, it is bad practice because it can lead to confusion and bugs in more complex code where `mean()` might be expected.
+-   The function doesn't return any value. While it produces a plot, the underlying data (e.g., the matrix mat) isn't accessible for further analysis. A good practice is to return the data structure used for plotting.
+-   Inside the loop, the line `c <- c(2:1500)` unnecessarily creates the same vector on every iteration.
+
+```{r hard coding}
+myfun <- function(mean, std, ...) {
+    # Generate 1500 random numbers from a normal distribution
+    random <- rnorm(1500, mean = mean, sd = std)
+
+    # Create a matrix to store the sample size and sample means
+    mat <- matrix(0, nrow = 1499, ncol = 2)
+
+    # Loop to calculate running means as sample size increases
+    for (i in 2:1500) {
+        moy <- mean(random[1:i]) # Calculate the mean of the first 'i' samples
+        mat[i - 1, 2] <- moy # Store the mean in the second column
+        c <- c(2:1500) # Vector of sample sizes from 2 to 1500
+        mat[i - 1, 1] <- c[i - 1] # Store the sample size in the first column
+    }
+
+    # Name the columns of the matrix
+    colnames(mat) <- c("Size", "Mean")
+
+    # Plot the sample size vs running mean
+    plot(mat, type = "l") # Line graph of sample size vs running mean
+    abline(mean, 0, col = "red") # Add a red horizontal line at the population mean
+}
+
+# Test the function
+myfun(3, 4)
+```
+
+## Solution(s) ?
+
+-   Well documented
+-   Using a relevant function name
+
+```{r first solution, eval = TRUE}
+# Function to create mean vs. samplesize drawn from a normal distribution
+LawOfLargeNumbers <- function(samplesize, mean, stdev) {
+    # samplesize: integer, number of samples
+    # mean: real, population mean
+    # stdev: real, population standard deviation
+    # Return: vector (size = samplesize) with running means
+
+    # Generate a population distribution with specified mean and standard deviation
+    pop_dist <- rnorm(samplesize, mean = mean, sd = stdev)
+
+    # Initialize a vector to store running means
+    data_result <- c()
+
+    # Calculate running means for increasing sample sizes
+    for (i in 1:samplesize) {
+        data_result[i] <- mean(pop_dist[1:i])
+    }
+
+    # Plot the running means
+    plot(data_result,
+        pch = 3, cex = 0.3,
+        xlab = "Sample Size",
+        ylab = "Sample Mean",
+        xlim = c(0, samplesize),
+        ylim = c(-stdev, stdev),
+        main = "The Law of the Large Numbers"
+    )
+    lines(data_result) # Connect the points with a line
+    abline(0, 0, col = "red") # Add a horizontal red line at y = 0
+
+    # Return the vector of running means
+    return(data_result)
+}
+
+# Generate running means for 100 samples, mean = 0, stdev = 1
+meanvsss <- LawOfLargeNumbers(100, 0, 1)
+head(meanvsss)
+```
+
+## Improved documentation
+
+-   Pro tip: Use `CTRL+SHIFT+R` to \href{https://roxygen2.r-lib.org/reference/roxygenize.html}{_roxygenize_} your function, a way to organize documentation of function parameters and that can be used to create `R` documentation files (`Rd`)
+
+```{r second solution}
+#' The Law of Large Numbers
+#'
+#' The Law of Large Numbers states that as the sample size grows, the sample mean
+#' gets closer to the population mean.
+#'
+#' @param samplesize Integer. The number of samples to draw from the normal distribution.
+#' @param mu Numeric. The population mean of the normal distribution.
+#' @param sigma Numeric. The population standard deviation of the normal distribution.
+#'
+#' @return A numeric vector of size \code{samplesize}, containing the running means.
+#' @details The function generates a population distribution with the specified mean and
+#' standard deviation, calculates the running means for increasing sample sizes,
+#' and plots the running means against the sample size. A red horizontal line is drawn
+#' for the given \code{mean}.
+#'
+#' @examples
+#' # Example usage:
+#' LawOfLargeNumbers(samplesize = 1000, mu = 0, sigma = 1)
+#'
+#' @export
+LawOfLargeNumbers <- function(samplesize, mu, sigma) {
+    # Generate a population distribution with specified mean and standard deviation
+    pop_dist <- rnorm(samplesize, mean = mu, sd = sigma)
+
+    # Initialize a vector to store running means
+    data_result <- c()
+
+    # Calculate running means for increasing sample sizes
+    for (i in 1:samplesize) {
+        data_result[i] <- mean(pop_dist[1:i])
+    }
+
+    # Plot the running means
+    plot(data_result,
+        pch = 3, cex = 0.3,
+        xlab = "Sample Size",
+        ylab = "Sample Mean",
+        xlim = c(1, samplesize),
+        ylim = c(mu - 3 * sigma, mu + 3 * sigma),
+        main = "The Law of the Large Numbers"
+    )
+    lines(data_result) # Connect the points with a line
+    abline(h = mu, col = "red") # Add a horizontal red line at the population mean
+
+
+    # Return the vector of running means
+    return(data_result)
+}
+```
+
+## Instead of loops, use vectorization 
+
+```{r third solution}
+LawOfLargeNumbers <- function(samplesize, mu, sigma) {
+    # Generate a population distribution with specified mean and standard deviation
+    pop_dist <- rnorm(samplesize, mean = mu, sd = sigma)
+
+    # Calculate running means using cumulative sums
+    running_sums <- cumsum(pop_dist)
+    data_result <- running_sums / seq_len(samplesize)
+
+    # Alternative, using dplyr
+    # data_result <- dplyr::cummean(pop_dist)
+
+    # Return the vector of running means
+    return(data_result)
+}
+
+head(LawOfLargeNumbers(samplesize = 1000, mu = 0, sigma = 1))
+```
+
+## Pro: Use Object-Oriented Design
+
+This OOP approach organizes the functionality into reusable methods and encapsulates the data and operations, making it easier to extend and maintain.
+
+```{r fourth solution}
+#' The Law of Large Numbers (OOP with S3 Plot)
+#'
+#' The Law of Large Numbers states that as the sample size grows, the sample mean
+#' gets closer to the population mean.
+#'
+#' @param samplesize Integer. The number of samples to draw from the normal distribution.
+#' @param mu Numeric. The population mean of the normal distribution.
+#' @param sigma Numeric. The population standard deviation of the normal distribution.
+#'
+#' @return An object of class \code{LawOfLargeNumbers}, containing the running means
+#' and the parameters used.
+#' @details The object has a custom \code{plot()} method to visualize the running means against the sample size.
+#'
+#' @examples
+#' # Example usage:
+#' lln <- LawOfLargeNumbers(samplesize = 1000, mu = 0, sigma = 1)
+#' plot(lln)
+#'
+#' @export
+LawOfLargeNumbers <- function(samplesize, mu, sigma) {
+    # Generate population distribution and calculate running means
+    pop_dist <- rnorm(samplesize, mean = mu, sd = sigma)
+    running_sums <- cumsum(pop_dist)
+    running_means <- running_sums / seq_len(samplesize)
+
+    # Return the object with its associated class
+    structure(
+        list(
+            samplesize = samplesize,
+            mu = mu,
+            sigma = sigma,
+            running_means = running_means
+        ),
+        class = "LawOfLargeNumbers"
+    )
+}
+
+# Define a plot method for the LawOfLargeNumbers class
+plot.LawOfLargeNumbers <- function(x, ...) {
+    # Extract information from the object
+    samplesize <- x$samplesize
+    mu <- x$mu
+    sigma <- x$sigma
+    running_means <- x$running_means
+
+    # Create the plot
+    plot(running_means,
+        pch = 3, cex = 0.3,
+        xlab = "Sample Size",
+        ylab = "Sample Mean",
+        xlim = c(1, samplesize),
+        ylim = c(mu - 3 * sigma, mu + 3 * sigma),
+        main = "The Law of the Large Numbers"
+    )
+    lines(running_means) # Connect the points with a line
+    abline(h = mu, col = "red") # Add a horizontal red line at the population mean
+}
+
+# Create an object of class LawOfLargeNumbers
+lln <- LawOfLargeNumbers(samplesize = 1000, mu = 0, sigma = 1)
+
+# Plot the running means
+plot(lln)
+
+
+```
+
+## Don't forget input validation...
+
+```{r sanity checks, error = TRUE}
+
+LawOfLargeNumbers <- function(samplesize, mu, sigma) {
+    # Generate a population distribution with specified mean and standard deviation
+    pop_dist <- rnorm(samplesize, mean = mu, sd = sigma)
+
+    # Calculate running means using cumulative sums
+    running_sums <- cumsum(pop_dist)
+    data_result <- running_sums / seq_len(samplesize)
+
+    # Alternative, using dplyr
+    # data_result <- dplyr::cummean(pop_dist)
+
+    # Return the vector of running means
+    return(data_result)
+}
+
+LawOfLargeNumbers(-100, 0, 1)
+
+# Do some sanity checks
+LawOfLargeNumbers <- function(samplesize, mu, sigma) {
+    # Input validation
+    if (!is.numeric(samplesize) || samplesize <= 0 || samplesize != as.integer(samplesize)) {
+        stop("samplesize must be a positive integer.")
+    }
+    if (!is.numeric(mu)) stop("mu must be numeric.")
+    if (!is.numeric(sigma) || sigma <= 0) stop("sigma must be a positive numeric value.")
+    # Generate a population distribution with specified mean and standard deviation
+    pop_dist <- rnorm(samplesize, mean = mu, sd = sigma)
+
+    # Calculate running means using cumulative sums
+    running_sums <- cumsum(pop_dist)
+    data_result <- running_sums / seq_len(samplesize)
+
+    # Alternative, using dplyr
+    # data_result <- dplyr::cummean(pop_dist)
+
+    # Return the vector of running means
+    return(data_result)
+}
+
+LawOfLargeNumbers(-100, 0, 1)
+```
+
+:::

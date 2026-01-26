@@ -1,0 +1,533 @@
+---
+title: "LGEO2185 -- Introduction To R"
+author: "Kristof Van Oost, Antoine Stevens & Valentin Charlier"
+Date: 02/04/2026
+toc-title: "Introduction To R : "
+toc: true
+toc-depth: 5
+standalone: true
+embed-resources: true
+format: 
+  html:
+    theme: 
+      - zephyr
+      - ../_brand.yml
+    css: ../styles.css
+execute:
+  echo: True
+  warning: false
+  error: false
+---
+
+## Today's program
+
+-   R syntax (self-study)
+-   Basic R controls
+-   Fun with R functions
+-   Assignment
+
+## Today's Learning Objectives
+
+-   Knowing what R is & what you can do with it\
+-   Getting comfortable with functions\
+-   Learn the basics of working with R
+
+This first session is giving you basics of R, if you're comfortable with the software, you can go directly to the assignments.
+
+We will be using [RStudio (IDE)](https://posit.co/download/rstudio-desktop/) or [Positron](https://positron.posit.co/) as interface to R and geospatial libraries, since with R we can easily visualize and analyse data and maps!
+
+::: callout-note
+Another option would it be Python, but here we use R here as it is easy to use across different platforms and there is a very active communities developing spatial libraries. However, all the skills from R are transferable to Python, the main difference is the syntax and available libraries. Note that libraries are called 'Packages' in R.
+:::
+
+The first step is to explore the Rstudio environment - Source window - Console window - Environment window (including history) - Files, Plots, Packages, Viewer etc...
+
+![Source: [https://rstudio.github.io/cheatsheets/html/rstudio-ide.html](https://rstudio.github.io/cheatsheets/html/rstudio-ide.html)](images/rstudio.png){fig-align="center"}
+
+Positron looks very similar but is based on a fork of Visual Studio Code, and adds support to Python as well. It features an integrated Console, Environment/Variables, Plots, Files, and Git tools familiar to RStudio users
+
+![](images/paste-1.png)
+
+# 1. R Syntax
+
+## 1.1 Self-Study
+
+Self-study: follow the online course: [Try R codeschool](https://www.pluralsight.com/search?q=R). This should allow you to understand the syntax used in R-scripts and how to manipulate different types of variables. There are a lot of references about computing with R !
+
+::: callout-note
+You should develop a self-proficiency of R by yourself. We will look into using GenAI tools to augment your abilities later in the course, but a solid baseline is a pre-requisite: focus first on core syntax, data structures (vectors, matrices, data frames), and functions, practicing with small scripts and the provided references; once comfortable, we will introduce GenAI to responsibly accelerate your workflow.
+:::
+
+## 1.2 Setting your working environment
+
+Let's first do some basic setup:\
+- Create a folder which will be your working directory e.g. `C:/Users/YourName/YourFolder`\
+- Create an R script within that folder\
+- Create a `data` folder within your working directory
+
+```{r "setup", include=FALSE}
+require("knitr")
+opts_knit$set(root.dir ="/Users/Antoine_Stevens/Library/CloudStorage/OneDrive-McKinsey&Company/Documents/Projects/LGEO")
+```
+
+```{r, eval=FALSE}
+getwd() 
+setwd("C:/Users/YourName/YourFolder") # This sets the working directory (where R looks for files)
+getwd() # Double check your working directory 
+```
+
+```{r, eval=FALSE}
+wd=getwd()
+datadir <- paste0(wd,"/data")  # here we create a name for a subfolder called 'data'
+dir.create(datadir) # this creates the subdirectory
+```
+
+You will see that the variable *datadir*, i.e. the variable that you created above, is now visible in your workspace (Environment) and you can evaluate its value by clicking on it. Check out what Type the variables are. Create a vector and check again (you can see the type in the Environment, but also by calling the `class()` function)
+
+If you are trying out code, it can be useful to clear all the variables that are stored in the workspace; this can be done by using:
+
+`rm(list=ls())` \# this removes all variables in the current workspace
+
+Alternatively, you can click `Clear Workspace` in the `Session` menu of the RStudio interface.
+
+## 1.3 Function basics
+
+R functions take the form: `functionName(arguments)`
+
+-   arguments are often optional (functions use default values)
+-   if arguments are not named, their position is used to assign values to arguments
+-   laziness in argument naming is allowed, but dangerous
+
+```{r rnorm, eval=TRUE}
+# the following commands are equivalent
+rnorm(n=10)
+rnorm(n=10,mean=0,sd=1)
+rnorm(10,0,1)
+rnorm(10,s=1,m=0)
+```
+
+Accessing the help files can be done like this for a particular function;
+
+```{r, eval=FALSE}
+?mean
+```
+
+If you are looking for help files for a word or a phrase, use:
+
+```{r, eval=FALSE}
+help.search('weighted mean')
+```
+
+## 1.4 Math
+
+R could be used as a simple calculator, so you can easily find basics mathematics's function that could be useful to integrate. Moreover, don't forget your statistics knowledge that you have learned with your wonderful assistant with your best friend `summary()`.
+
+![](images/summary.png){width="650"}
+
+## 1.5 R objects
+
+New objects are created via the assignment operator : `->`
+
+```{r assign, eval=TRUE}
+x <- 1
+# or 1 -> x  : this can go one way or another
+x = 1 # This is an alternative, but not recommended
+```
+
+All R objects have two *intrinsic* attributes: `mode` (numeric, character, complex, logical) and `length`
+
+```{r objects, tidy=F, eval=FALSE}
+y <- "This is a character string"
+z <- TRUE # or alternatively: z <- T
+!z
+mode(x);mode(y);mode(z) # the symbol ; can be used to put 
+                         #several command in the same line
+length(x)
+```
+
+-   Non \_intrinsic attributes of objects (eg row names, dimension, etc) can be accessed via the `attributes` function
+
+-   Testing the type of the object: `is.numeric`, `is.character`, etc...
+
+-   Coerce from one type to another: `as.numeric`, `as.character`, etc...
+
+-   Missing values and `NULL` object
+
+```{r NA, eval=TRUE}
+x <- NA # NA means 'Not Available'
+x + 1 # Any operation on a NA gives a NA
+x <- NULL
+x + 1 # it returns a numeric object of length == 0
+0/0 # NaN means 'Not a Number'
+1/0 # Infinity
+```
+
+There are several types of objects in R:
+
+![Object type in \$R\$](images/Object_type.png)\
+source: <http://cran.r-project.org/doc/contrib/Paradis-rdebuts_en.pdf>
+
+### 1.5.1 Vectors
+
+#### Creating vectors
+
+The easiest way to create a vector is to use the `c` (combine) function
+
+```{r}
+my_vector <- c(2, 4, 6)
+print(my_vector)
+```
+
+These are different ways to create vectors using a sequence:
+
+```{r}
+# an integer sequence
+v <- 2:6
+v
+# a complex sequence
+v <- seq(2, 3, by=0.5)
+v
+# a repeat vector
+v <- rep(1:2, times = 3)
+v
+# repeat elements of a vector
+v <- rep(1:2, each=3)
+v
+```
+
+-   arithmetic operators on numeric vectors are: +, -, \*, /, \^, %% (modulus), %/% (integer division)\
+-   logical operators are: \<, \>, !=, ==, \<=, \>=, & (AND), \| (OR), ! (negation)
+-   Usual functions applied to numeric vectors are: `sqrt`, `sin`, `cos`, `tan`, `log`, `log10`, `exp`, `round`, `floor`, `ceiling`, `abs`\
+-   Usual *summary* functions are: `min`, `max`, `sum`, `mean`, `median`, `sd`, `var`, `cumsum`\
+-   Usual functions to handle character strings are: `paste`, `substr` and `grep`, `sub`
+
+```{r char, eval=TRUE}
+x <- paste("var",1:10,sep="_");x # concatenate strings
+substr(x,start=1,stop=3) # extract and replace substrings in a character vector 
+sub(pattern="[^1-9]+",replacement="",x) # sub uses regular expression 
+                                        # to replace part of a charachter string
+grep(pattern="10",x) # grep returns the position of the matched pattern
+```
+
+### Selecting vectors
+
+Sometimes, it is really useful to make a selection of your data in order to reduce computing time and complexity. In a vector, you can use the \[ \] to select specific columns and rows.
+
+![](images/vectors.png)
+
+### 1.5.2 `factor`
+
+-   A `factor` is a vector that stores categorical data
+
+-   A `factor` takes the following arguments: `factor(x, levels = sort(unique(x), na.last = TRUE),labels = levels, exclude = NA, ordered = is.ordered(x))`
+
+```{r factors, eval=TRUE}
+x <- factor(paste("fac",x[],sep=""));x
+table(x) # Frequency table
+# factors can be ordered
+ordered(c("two","two","one","three"),levels=c("one","two","three"))
+```
+
+### 1.5.3 Matrixes
+
+-   `array` and `matrix` objects are multi--dimensional generalization of vectors
+
+-   a `matrix` has the following arguments: `matrix(data = NA, nrow = 1, ncol = 1, byrow = FALSE,       dimnames = NULL)`
+
+```{r array, eval=TRUE}
+x <- matrix(data=1:10,ncol=2,nrow=5);x # by default matrix cells are filled by column. 
+                                       # Use byrow=T to change the behavior
+dim(x) # gives the dimension of an array
+dimnames(x) <- list(paste("X",1:5,sep=""),c("A","B"));x# dimnames (as well as colnames and rownames) defines
+                                                      #the name of the matrix dimension
+x <- array(data=1:12,dim=c(2,3,2)) ;x
+x <- array(data=1:5,dim=c(2,3,2));x # this works even though the number of data inputs is different
+                                    #than the number of cells! This is known as the *recycling* rule
+```
+
+-   `array` and `matrix` are indexed with the `[` function and `,` is used to select/separate dimensions
+
+```{r mat_index, eval=TRUE}
+x[1,,2] # first row, all the columns, second matrix of the array
+```
+
+![](images/matrix.png)
+
+### 1.5.4 `list`
+
+-   A `list` is a vector for which the elements or components can be of different `mode`
+-   The `list` function have the form: `list(name_1=object_1,name2=object_2,...,name_n=object_n)`
+-   Use `[[` or `$` operators to index a `list`
+
+```{r list, eval=TRUE}
+x <-list(alphabet = LETTERS,numbers=1:length(LETTERS),
+         mat = matrix(ncol=10,nrow=10),ls = list(vec = 1:10));x # you can have a list inside a list ...
+x[["alphabet"]]
+x$alphabet # this is the same
+x[[4]][[1]] # one can also extract components using their position in the list,
+            # useful when the components of the list do not have a name
+x[1:2] # to extract several components, use only one [ 
+x <- c(x,x) # list can be concatenated with the `c` function
+```
+
+### 1.5.5 Dataframes (important!)
+
+Dataframes are your best-friend and they are basically used as data tables providing you informations that could be number, character etc.
+
+![](images/dataframes.png){fig-align="center" width="500"}
+
+#### Access available Dataframes
+
+A lot of ready to use datasets are available in R. You can use this dataset to practice or to test your own functions. Have a look to the datasets available using `data()`.
+
+```{r}
+data("mtcars")
+head(mtcars)
+str(mtcars)
+ls() ## check the objective in the working environment
+```
+
+#### Subsetting example
+
+Let's have a practical example of subsetting. We will see here three main methods.
+
+```{r}
+mtcars[1,]
+mtcars[,1]
+#1 classic
+mtcars[which(mtcars$wt>3),]
+
+#2 with fuctions
+subset(mtcars, wt >3)
+subset(mtcars, wt >3, select = gear)
+```
+
+## 1.6 Write and read data
+
+```{r, eval=TRUE}
+write.csv(mtcars, "my_mtcars.csv")## write to your working directory 
+list.files()
+```
+
+The most common way to read in spread sheet tables is with the `read.csv()` command. Type `?read.table` in your R console to find out more about other formats.
+
+```{r}
+hp.data<-read.csv("my_mtcars.csv") ## read from your working directory
+
+# this is how to delete the data 
+unlink("my_mtcars.csv")
+```
+
+R has a way of storing data in an object called a data frame. Consider this as an internal spreadsheet where all the relevant data items are stored. Run the line of code below, which loads a CSV file from my dropbox into a variable called hp.data
+
+```{r}
+class(hp.data)
+```
+
+It is always good to check if the data came in ok. You can do this by previewing the dataset with the `head()` function:
+
+```{r}
+head(hp.data)
+```
+
+Note that you can also click in the Environment window, which will show the data in a new tab, or use the command
+
+```{r, eval=FALSE}
+View(hp.data)
+```
+
+Use the `summary()` function to explore basic statistics of your dataset.
+
+We can use square brackets to look at specific sections of the data frame, for example `hp.data[1,]` or `hp.data[,1]`. We can also delete columns and create new columns using the code below. Remember to use the `head()` command as we did earlier to look at the data frame.
+
+```{r}
+#create a new column in hp.data dataframe call counciltax, storing the value NA
+hp.data$counciltax <- NA
+#see what has happened
+head(hp.data)
+```
+
+```{r}
+#delete a column
+ hp.data$counciltax <- NULL
+#see what has happened
+head(hp.data)
+```
+
+```{r}
+#rename a column
+colnames (hp.data)[1] <- "mpg2"
+#see what has happened
+head(hp.data)
+```
+
+Now is a good time to remind you to save your data on a regular basis. This is particularly important if you are working on a project, and need to reload your data later on. R has a number of different elements you can save. The workspace is the most important element, as it contains any data frames or other objects you have created; i.e. everything listed in the `Environment` tab, like the `hp.data` object we created earlier. To do this, click the save button in the `Environment` tab. Choose somewhere to save it (your Documents folder is a good place) and give it a name. To load these in a new session, click `File` \> `Open File` and select your file.
+
+## 1.7 Computing on data
+
+-   In R, a lot of computation can be realised in a *vectorized* form. No need for loops!
+
+-   An operation on a vector of values works the same as it would do on a single value.
+
+```{r vect, eval=TRUE}
+# Compute the square of a vector in a traditional way
+X <- 1:10
+sqX <- numeric(length(X))
+for(i in 1:length(sqX)){
+  sqX[i] <- (X[i])^2  
+}
+sqX
+# while it would have been much simpler (and faster) to write
+sqX <- X^2
+matrix(1:10,nrow=5,ncol=2)^2 # a given operation works often
+                             #the same way for different data structure!
+```
+
+-   `colSums`, `rowSums`, `colMeans`, `rowMeans` allow to compute row and column sums and means of numeric arrays
+
+```{r colMeans, eval=TRUE}
+colMeans(matrix(rnorm(100),ncol=10))
+rowSums(matrix(rnorm(100),ncol=10))
+```
+
+# 2 Programming!!
+
+See below in Program flow control
+
+![](images/programming.png)
+
+## 2.1 if..else
+
+The basic syntax for creating an if..else statement in R is
+
+```{r, eval=FALSE}
+if(boolean_expression) {
+   // statement(s) will execute if the boolean expression is true.
+} else {
+   // statement(s) will execute if the boolean expression is false.
+}
+```
+
+```{r}
+#let's generate some random numbers
+rand_data <- rnorm(100, mean=0, sd=10)
+#it is now easy to plot a histogram of this vector:
+hist(rand_data)
+#Now, let us try to usean  if then statement
+if (mean(rand_data)<0) {
+   print("The mean is below 0")
+} else {
+   print("The mean is equal to or higher than 0")
+}
+
+```
+
+Have a look at the different [operators](http://www.statmethods.net/management/operators.html) that are available.
+
+## 2.2 Iteration and looping
+
+You can also do something for all items in a vector or list.
+
+```{r, eval=FALSE}
+a_vector <- c(-10:10)
+for (item in a_vector) {
+  print(item)
+}
+```
+
+::: callout-note
+-   There are other constructions possible (e.g. while, until, repeat ...)
+-   Have a look also to the functions of the [`*apply` family](https://rpubs.com/Mentors_Ubiqum/Apply_family).
+
+Some examples below...
+
+```{r apply,eval=TRUE}
+# lapply function applies a function
+# to each element of X (being a vector or a list). 
+# Remember that a data.frame is a special case of a list
+lapply(X=iris[,1:4],FUN=mean) 
+# sapply works the same way but returns the results nicely (if possible)
+sapply(X=iris[,1:4],FUN=mean) 
+# Compute the median of the first 10 rows of the iris dataset
+apply(X=iris[1:10,1:4],MARGIN=1,FUN=median) 
+# Compute the median of the first variable for each level of
+# the 5th variable. Note that X is a vector
+tapply(X=iris[,1],INDEX=iris[,5],FUN=median)  
+# same as tapply but works on data.frames
+by(data=iris[,1:4],INDICES=iris[,5],FUN=mean) 
+# idem
+aggregate(x=iris[,1:4],by=list(Species=iris[,5]),FUN=mean)
+```
+:::
+
+## 2.3 Functions
+
+One of the great strengths of R is the user's ability to add functions. In fact, many of the functions in R are actually functions of functions. The structure of a function is given below.
+
+```{r}
+myfunction <- function(arg1, arg2, ... ){
+  statements
+  return(object)
+}
+```
+
+An example:
+
+```{r}
+my_multiply_function <- function(base, multiplier){
+z <- base*multiplier
+return(z)
+}
+#now lets use this simple function
+my_multiply_function(5,5)
+```
+
+Nice! Now it's your turn:
+
+-   Write your own function that calculates the sum of squares of two numbers
+-   Check your function to evaluate the SS of 3 and 4, the answer is 25, right? Note that you give a name to the arguments when you define the function and you can use the arguments name in the commands section of the function.
+-   A function can return anything you want, a number, a list, a dataframe, nothing...
+-   Write a function that calculates z=2\*x+y, and returns a vector (z,x,y).
+
+You can define a function in the same script as your code but you can also save your function as a separate R-file. Copy your sum of squares function into a new R-script (File -\> New File -\> R-script) and give it the same name as your function. You can now use the *source()* function to load your function from a file. The function is now available throughout your session!
+
+```{r, eval=FALSE}
+source("sum_of_squares.R")
+```
+
+From the point of view of writing nice code, this approach is useful because it leaves you with an uncluttered analysis script, and a repository of useful functions that can be loaded into any analysis script in your project. It also lets you group related functions together easily.
+
+::: callout-note
+The special argument `...` (pronounced “dot-dot-dot”) is used to capture any number of additional arguments that are passed to a function. It is often used to forward arguments to another function. For example, you can create a wrapper function around a base function and allow users to pass additional parameters:
+
+```{r}
+my_plot <- function(x, y, ...) {
+  plot(x, y, ...)
+}
+```
+
+Here, the `...` will accept any extra parameters (e.g., `col`, `pch`, `main`) and forward them to the `plot()` function.
+:::
+
+::: assignment
+## Assignment
+
+1)  Read this introduction about [R functions](https://nicercode.github.io/guides/functions/)
+2)  Create an R script, where you plot the mean, drawn from a normal distribution as function of the sample size. You should use the following elements: `rnorm()` function, `matrix()`, `plot()`, `for {}`. Make a function where the user can change the sample size considered, and the variables of the normal distribution. **Bonus**: do not use any *`for`* loops
+:::
+
+::: {.callout-important icon="false" collapse="true"}
+## Answer
+```{r , include=TRUE}
+myfunct<-function(Mean,size,SD){
+  data_result <- matrix(nrow = size, ncol = 1)
+  for ( i in 1:size) {
+    pop_dist <- rnorm(i, mean=Mean, sd=SD)
+    data_result[i,1] <- mean(pop_dist)
+  }
+  plot(data_result)
+}
+
+myfunct(Mean=2,size=1000,SD=17)
+```
+:::
