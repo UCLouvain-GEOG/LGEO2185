@@ -1,22 +1,7 @@
 ---
-title: "LGEO2185 -- Introduction To R"
+title: "LGEO2185: Introduction To R"
 author: "Kristof Van Oost, Antoine Stevens & Valentin Charlier"
-Date: 02/04/2026
-toc-title: "Introduction To R : "
-toc: true
-toc-depth: 5
-standalone: true
-embed-resources: true
-format: 
-  html:
-    theme: 
-      - zephyr
-      - ../_brand.yml
-    css: ../styles.css
-execute:
-  echo: True
-  warning: false
-  error: false
+Date: 2026-02-04
 ---
 
 ## Today's program
