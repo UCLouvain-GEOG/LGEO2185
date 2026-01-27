@@ -1,20 +1,7 @@
 ---
 title: "LGEO2185: Introduction To R - Assignment"
 author: "Kristof Van Oost, Antoine Stevens & Valentin Charlier"
-Date: 02/04/2026
-toc: false
-standalone: true
-embed-resources: true
-format: 
-  html:
-    theme: 
-      - zephyr
-      - ../_brand.yml
-    css: ../styles.css
-execute:
-  echo: true
-  warning: false
-  error: false
+Date: 2026-02-04
 ---
 
 # Assignment
@@ -22,11 +9,12 @@ execute:
 ::: assignment
 
 Create an R script, where you plot the mean, drawn from a normal distribution as function of the sample size. You should use the following elements: 
-* `rnorm()` function
+* `rnorm()` 
 * `matrix()`
 * `plot()`
 * `for {}`
- Make a function where the user can change the sample size considered, and the variables of the normal distribution.
+
+Make a function where the user can change the sample size considered, and the variables of the normal distribution.
 
 *Bonus: do not use any `for` loops :-)*
 
