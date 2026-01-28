@@ -2,10 +2,16 @@ project:
   type: website
   output-dir: docs
   render:
-    - "!2025/"
+    - R Basics/**.qmd
 
 website:
   title: "LGEO2185: Advanced Geoprocessing"
+  navbar:
+    left:
+      - text: "Intro"
+        href: "R Basics/LGEO2185_IntroductionR.qmd"
+      - text: "Assignment"
+        href: "R Basics/LGEO2185_IntroductionR_assignment.qmd"
 
 format:
   html:
@@ -21,4 +27,3 @@ execute:
   echo: true
   warning: false
   error: false
-
