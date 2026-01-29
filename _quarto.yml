@@ -2,6 +2,7 @@ project:
   type: website
   output-dir: docs
   render:
+    - index.qmd
     - R Basics/**.qmd
 
 website:
@@ -9,7 +10,7 @@ website:
   navbar:
     left:
       - text: "Home"
-        href: index.qmd
+        href: "index.qmd"
       - text: "Intro"
         href: "R Basics/LGEO2185_IntroductionR.qmd"
       - text: "Assignment"
