@@ -4,6 +4,7 @@ project:
   render:
     - index.qmd
     - R Basics/**.qmd
+    - Intro to Spatial Data/**.qmd
 
 website:
   title: "LGEO2185: Advanced Geoprocessing"
@@ -19,6 +20,9 @@ website:
             file: R Basics/LGEO2185_IntroductionR.qmd
           - text: "Assignment"
             file: R Basics/LGEO2185_IntroductionR_assignment.qmd
+      - text: "Intro to Spatial Data"
+        file: Intro to Spatial Data/LGEO2815_Intro_to_Spatial_Data.qmd
+
 
 format:
   html:

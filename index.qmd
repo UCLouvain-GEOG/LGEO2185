@@ -3,6 +3,6 @@ title: "LGEO2185"
 format: html
 ---
 
-# LGEO2185
+## Welcome
 
-Welcome — this site contains course materials for LGEO2185.  
+This site contains course materials for [LGEO2185](https://uclouvain.be/en-cours-2025-lgeo2185).
