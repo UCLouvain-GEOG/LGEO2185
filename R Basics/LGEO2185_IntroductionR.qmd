@@ -502,7 +502,7 @@ Here, the `...` will accept any extra parameters (e.g., `col`, `pch`, `main`) an
 :::
 
 ::: {.callout-important icon="false" collapse="true"}
-## Answer
+## Solution
 ```{r , include=TRUE}
 myfunct<-function(Mean,size,SD){
   data_result <- matrix(nrow = size, ncol = 1)
