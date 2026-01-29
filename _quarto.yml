@@ -8,6 +8,8 @@ website:
   title: "LGEO2185: Advanced Geoprocessing"
   navbar:
     left:
+      - text: "Home"
+        href: index.qmd
       - text: "Intro"
         href: "R Basics/LGEO2185_IntroductionR.qmd"
       - text: "Assignment"
