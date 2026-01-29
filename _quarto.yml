@@ -7,14 +7,18 @@ project:
 
 website:
   title: "LGEO2185: Advanced Geoprocessing"
-  navbar:
-    left:
+  sidebar:
+    style: "docked"
+    search: true
+    contents:
       - text: "Home"
-        href: "index.qmd"
-      - text: "Intro"
-        href: "R Basics/LGEO2185_IntroductionR.qmd"
-      - text: "Assignment"
-        href: "R Basics/LGEO2185_IntroductionR_assignment.qmd"
+        file: index.qmd
+      - section: "R Basics"
+        contents:
+          - text: "Lecture"
+            file: R Basics/LGEO2185_IntroductionR.qmd
+          - text: "Assignment"
+            file: R Basics/LGEO2185_IntroductionR_assignment.qmd
 
 format:
   html:
