@@ -21,7 +21,7 @@ website:
           - text: "Assignment"
             file: R Basics/LGEO2185_IntroductionR_assignment.qmd
       - text: "Intro to Spatial Data"
-        file: Intro to Spatial Data/LGEO2815_Intro_to_Spatial_Data.qmd
+        file: Intro to Spatial Data/LGEO2185_Intro_to_Spatial_Data.qmd
 
 
 format:
