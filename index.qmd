@@ -6,3 +6,4 @@ format: html
 ## Welcome
 
 This site contains course materials for [LGEO2185](https://uclouvain.be/en-cours-2025-lgeo2185).
+Github repository is available [here](https://github.com/UCLouvain-GEOG/LGEO2185)
