@@ -20,6 +20,8 @@ website:
             file: R Basics/LGEO2185_IntroductionR.qmd
           - text: "Assignment"
             file: R Basics/LGEO2185_IntroductionR_assignment.qmd
+      - text: "Tidyverse"
+        file: R Basics/LGEO2185_Introduction_to_tidyverse.qmd
       - text: "Intro to Spatial Data"
         file: Intro to Spatial Data/LGEO2185_Intro_to_Spatial_Data.qmd
 

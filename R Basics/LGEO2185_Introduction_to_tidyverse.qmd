@@ -1,0 +1,653 @@
+---
+title: "LGEO2185 -- Introduction to dplyr and the tidyverse"
+author: "Kristof Van Oost, Antoine Stevens & Valentin Charlier"
+Date: 2026-02-04
+--- 
+
+## 1. Introduction
+
+In this session, we will explore the **tidyverse** —a suite of R packages designed to make common data science tasks more intuitive and consistent. The tidyverse philosophy emphasizes human-readable code, a consistent syntax, and functions that work together, especially thanks to the **pipe orerator** (we will see later what it means). This approach can often streamline your data analysis workflow.
+
+### 1.1 What is the tidyverse?
+
+-   The **tidyverse** is a collection of R packages that share a common design philosophy.
+-   Core packages include:
+    -   **dplyr** for data manipulation,
+    -   **tidyr** for reshaping or "tidying" data,
+    -   **readr** for efficient data import,
+    -   **purrr** for functional programming,
+    -   **ggplot2** for data visualization,
+    -   **tibble** for modern data frames,
+    -   **stringr** for string manipulation,
+    -   **lubridate** for working with dates.
+-   All these packages are designed to work together, offering consistent function names, arguments, and data structures.
+
+### 1.2 Why use dplyr?
+
+**dplyr** provides a "grammar of data manipulation" that helps you:
+
+1.  Write code that reflects your thinking.\
+2.  Focus on what you want to do (e.g., select columns, filter rows), not on the intricacies of R's base syntax.\
+3.  Create clear workflows with the **pipe operator** `|>`, which makes it easy to chain multiple transformations.
+
+The main verbs of dplyr—`select()`, `filter()`, `mutate()`, `arrange()`, `group_by()`, and `summarise()`—cover the most common data manipulation steps. Because these functions return tibbles (enhanced data frames), you can seamlessly pass their results to other tidyverse packages like **ggplot2** for plotting or **tidyr** for reshaping.
+
+### 1.3 The rationale behind the pipe
+
+The **pipe operator** `|>` (sometimes called the "forward pipe") was popularized by the **magrittr** package and is now a key part of the tidyverse workflow: In short, by using the **pipe operator** `|>`, you can chain multiple transformations without repeatedly referencing your dataset:
+
+1.  It takes the value on the left and passes it as the first argument to the function on the right.\
+2.  This often improves readability by letting you "read" the code from left to right, as if you're telling R a story:\
+    "Take my dataset, then do X, then do Y, then do Z, and so on..."\
+3.  It reduces repetitive references to the same dataset in your code.
+
+Together, the pipe and dplyr's verbs make it easy to write compact, readable code that directly reflects the steps of your analysis.
+
+:::{.callout-note}
+With R starting from version 4.1.0, the built-in pipe operator `|>` serve as a replacement to the former `%>%` from the **magrittr** package. 
+:::
+
+## 2. Working with Tibbles
+
+```{r}
+# If you haven't installed the tidyverse yet, run:
+# install.packages("tidyverse")
+
+library(tidyverse)
+```
+
+**Tibbles** are a modern re-imagining of data frames. They behave like data frames but are optimized for typical data science tasks. Let's load the `starwars` dataset that comes with **dplyr**.
+
+```{r}
+# Load the starwars dataset
+starwars <- dplyr::starwars
+
+# Check its class
+class(starwars)
+
+# starwars is a tibble, so printing it looks a bit different than a regular data frame
+starwars
+print(starwars, n = 15) # You can choose how many rows to display
+```
+
+Notice that tibbles only show a few rows and columns to keep the console tidy. They also don't automatically convert character data to factors, which can be helpful for data manipulation.
+
+## 3. Selecting columns
+
+A common task is to **select** only the columns you need from a dataset. Let's compare **base R** to **dplyr**.
+
+### 3.1 Base R approaches
+
+```{r}
+# Select columns by name in base R
+selection_base1 <- starwars[, c("name", "homeworld")]
+
+# Select columns by index in base R
+selection_base2 <- starwars[, c(1, 9)]
+```
+
+Both approaches work, but we often have to keep track of which index corresponds to which variable name. This can get cumbersome for large datasets.
+
+### 3.2 dplyr approach
+
+```{r}
+# Using dplyr::select()
+selection_dplyr <- starwars |>
+    select(name, homeworld)
+
+# Alternatively, you could write:
+selection_dplyr2 <- select(starwars, name, homeworld)
+```
+
+The `|>` (**pipe**) operator takes the output of the left-hand side and feeds it into the first argument of the function on the right-hand side. It can help make code more readable, especially when you chain multiple operations.
+
+### 3.3 More advanced selection
+
+```{r}
+# Select all columns EXCEPT name
+starwars |> select(-name)
+
+# Select columns containing an underscore
+starwars |> select(contains("_"))
+
+# Select columns starting with the letter "s"
+starwars |> select(starts_with("s"))
+```
+
+These specialized selection helpers (`contains`, `starts_with`) are part of **tidyselect**, which comes bundled with **dplyr**.
+
+## 4. Filtering rows
+
+Another frequent operation is to **filter** rows based on certain conditions (e.g., we only want characters of a certain species or homeworld).
+
+### 4.1 Base R approaches
+
+```{r}
+# We might check which rows match a condition like so:
+starwars$species == "Human"
+
+# Then use it to subset the data frame:
+selection_base <- starwars[starwars$species == "Human", ]
+
+# If you tried this without specifying the dataset columns explicitly, it wouldn't work:
+# starwars[species == "Human", ] # This fails in base R unless you attach the data
+```
+
+### 4.2 dplyr approach
+
+```{r}
+# Using dplyr to filter rows:
+selection_dplyr <- starwars |>
+    filter(species == "Human")
+```
+
+Filtering on **multiple conditions** in base R usually involves `&` or `|` plus `which()`. In **dplyr**, you can just separate conditions with commas.
+
+```{r}
+# Base R multiple conditions:
+selection_base_multiple <- starwars[which(starwars$species == "Human" &
+    starwars$homeworld == "Tatooine"), ]
+
+# dplyr multiple conditions:
+selection_dplyr_multiple <- starwars |>
+    filter(species == "Human", homeworld == "Tatooine")
+```
+
+Notice how the **tidyverse** version is more concise and readable.
+
+## 5. Combining Filter and Select
+
+Often, you need to both select certain rows and only keep certain columns. Let's see how a **traditional** approach compares with a **dplyr** approach.
+
+### 5.1 Base R approach:
+
+```{r}
+selection_traditional <- starwars[
+    starwars$species == "Human",
+    c("name", "height", "birth_year")
+]
+```
+
+### 5.2 dplyr approach
+
+```{r}
+selection_dplyr3 <- starwars |>
+    filter(species == "Human") |>
+    select(name, height, birth_year)
+```
+
+Because of the **pipe**, it's easy to see the logical flow: first filter for humans, then select the columns we need.
+
+## 6. Grouping and summarizing
+
+A key feature of **dplyr** is the ability to work with grouped data. You can summarize variables by categories (e.g., species).
+
+### 6.1 Base R approach:
+
+1.  `aggregate()`: Groups by 'species' and applies the mean function to the height and mass columns
+2.  `na.rm = TRUE` ignores missing values
+
+```{r}
+mean_stats_by_species_base <- aggregate(
+    cbind(height, mass) ~ species,
+    data = starwars,
+    FUN = function(x) mean(x, na.rm = TRUE)
+)
+
+mean_stats_by_species_base
+```
+
+### 6.2 dplyr approach
+
+```{r}
+# Summarise mean height and mass by species, ignoring NA values:
+mean_stats_by_species <- starwars |>
+    group_by(species) |>
+    summarise_at(vars(height, mass), list(~ mean(.x, na.rm = TRUE)))
+
+mean_stats_by_species
+```
+
+Here's what's going on:
+
+1.  **`group_by(species)`**: Tells R to treat each species as a group.\
+2.  **`summarise_at(vars(height, mass), ...)`**: Apply a function (`mean`) to the specified columns.\
+3.  **`na.rm = TRUE`**: Ignores missing values (`NA`).
+
+Alternatively, you could write:
+
+```{r}
+mean_stats_by_species_alternative <- starwars |>
+    group_by(species) |>
+    summarise(across(c(height, mass), ~ mean(.x, na.rm = TRUE)))
+```
+
+Both methods work similarly. `across()` is the newer approach.
+
+## 7. A Quick glimpse at other tidyverse packages
+
+The **tidyverse** is more than just **dplyr**. Here are a few packages you might find useful:
+
+-   **tidyr**: Tools for reshaping data (e.g., `pivot_longer()` and `pivot_wider()` to move between "wide" and "long" formats).\
+-   **readr**: Fast reading/writing of flat files (`read_csv()`, `write_csv()`, etc.).\
+-   **stringr**: String manipulation functions (e.g., `str_detect()`, `str_replace()`).\
+-   **purrr**: Functional programming tools for iteration (`map()`, `map_df()`).\
+-   **lubridate**: Simplifies working with dates and times.
+
+### 7.1 Example with lubridate
+
+```{r}
+# Load lubridate if not already loaded
+library(lubridate)
+
+# Some date strings in various formats
+my_dates <- c("2025-02-05", "2024-12-31", "2023/01/01")
+
+# Parse them into actual Date objects using ymd() (year-month-day)
+parsed_dates <- ymd(my_dates)
+parsed_dates
+
+# Extract the components
+year(parsed_dates)
+month(parsed_dates, label = TRUE)
+day(parsed_dates)
+```
+
+With **lubridate**, you can quickly parse dates from messy data, extract specific components (e.g., year, month, day), and perform date arithmetic.
+
+### 7.2 Example with tidyr
+
+While **dplyr** focuses on row/column operations, **tidyr** focuses on reshaping data between "wide" and "long" formats.
+This is especially useful when preparing data for different types of analyses or visualizations: 
+Some **analyses or plots** require a "long" format, where each observation is a single row. 
+Other tools or methods may require a "wide" format, where repeated measurements or metrics are in separate columns.
+"Tidy" structure plays well with other tidyverse packages (like **ggplot2** or **dplyr**).
+
+Let's take a smaller slice of the `starwars` dataset to demonstrate how you might pivot it between wide and long formats. We'll use only a few columns (name, homeworld, height, and mass) to keep things manageable.
+
+#### 7.2.1 Subset the starwars data
+
+```{r}
+# Create a smaller starwars dataset
+simple_starwars <- starwars |>
+    select(name, homeworld, height, mass)
+
+# Take a look
+head(simple_starwars)
+```
+
+#### 7.2.2 Base R approach (using reshape)
+
+**Base R** has a function called `reshape()` in the `stats` package to move between wide and long formats. It can be somewhat cumbersome compared to tidyverse functions.
+
+1.  You typically need to create an `id` column (or something similar) to uniquely identify rows.\
+2.  You specify which columns are "varying" over time or measurement, and which ones are "fixed."
+
+```{r}
+# Base R reshape requires an ID variable to keep track of rows
+simple_starwars$id <- seq_len(nrow(simple_starwars))
+# 1) Create a smaller starwars dataset
+simple_starwars <- starwars[, c("name", "homeworld", "height", "mass")]
+
+# 3) "Wide" to "Long" using base R reshape()
+base_long <- reshape(
+    data      = as.data.frame(simple_starwars),
+    timevar   = "measure", # The new variable that will indicate 'height' or 'mass'
+    varying   = list(c("height", "mass")), # Columns to reshape
+    v.names   = "value", # New column name for the measured values
+    direction = "long"
+)
+
+head(base_long)
+```
+
+To go back from long to wide in **base R**, you would again call `reshape()` and specify `direction = "wide"`.
+
+```{r}
+# "Long" back to "Wide" using base R
+base_wide <- reshape(
+    data      = base_long,
+    timevar   = "measure",
+    idvar     = c("id", "name", "homeworld"),
+    direction = "wide"
+)
+
+head(base_wide)
+```
+
+#### 7.2.3 tidyr approach
+
+With **tidyr**, you can use `pivot_longer()` and `pivot_wider()` directly. This often reads more intuitively.
+
+```{r}
+# 1) pivot_longer(): wide -> long
+tidy_long <- simple_starwars |>
+    pivot_longer(
+        cols       = c(height, mass), # which columns to stack
+        names_to   = "measure", # new column with measure name
+        values_to  = "value" # new column with measure value
+    )
+
+tidy_long
+```
+
+```{r}
+# 2) pivot_wider(): long -> wide
+tidy_wide <- tidy_long |>
+    pivot_wider(
+        names_from  = measure, # which column to use for new column names
+        values_from = value # which column to use for new values
+    )
+
+tidy_wide
+```
+
+Notice how you don't need to manually create an ID column; **tidyr** handles that internally. The code is shorter and more descriptive of your intent: "pivot these columns, naming them this, putting their values here."
+
+We're back in the "wide" format, but this code is more explicit about what's happening:\
+- **`names_from = measure`**: The column containing old column names ("height" and "mass") is used to create new wide-format column headers.\
+- **`values_from = value`**: The column containing the numeric measurements is used to populate each row.
+
+### 7.3 Additional tidyr functions: `separate()` and `unite()`
+
+Apart from pivoting, **tidyr** also offers functions for splitting or combining columns:
+
+-   **`separate()`** splits one column into multiple columns.\
+-   **`unite()`** does the opposite: it combines multiple columns into one.
+
+For instance, if you had a column like `"Skywalker, Luke"` but you want separate columns for last name and first name:
+
+```{r}
+names_df <- tibble(full_name = c("Skywalker, Luke", "Solo, Han", "Organa, Leia"))
+
+# separate()
+separated_df <- names_df |>
+    separate(full_name, into = c("last_name", "first_name"), sep = ", ")
+
+separated_df
+```
+
+To recombine:
+
+```{r}
+united_df <- separated_df |>
+    unite(col = "full_name_again", last_name, first_name, sep = ", ")
+
+united_df
+```
+
+There are many other cool functions in **tidyr** for reshaping and cleaning data. Have a look at the cheatsheets [here](https://rstudio.github.io/cheatsheets/tidyr.pdf) for more!
+
+### 7.4 Links to `ggplot2`
+
+In `ggplot2`, data must often be in a long format to properly map variables to aesthetic attributes like `x`, `y`, `color`, or `fill`.
+
+```{r}
+starwars_weights <- starwars |>
+    filter(!is.na(mass) & mass < 1000) |>
+    mutate(
+        weight_earth = mass, # Weight on Earth
+        weight_mars = mass * 3.71 / 9.81
+    ) # Weight on Mars
+
+# Reshape data to long format
+long_weights <- starwars_weights |>
+    select(name, weight_earth, weight_mars) |>
+    pivot_longer(
+        cols = c(weight_earth, weight_mars),
+        names_to = "planet",
+        values_to = "weight"
+    ) |>
+    mutate(planet = gsub("weight_", "", planet)) # Clean up planet names
+
+# Plot the weights on Earth and Mars
+ggplot(long_weights, aes(x = name, y = weight, fill = planet)) +
+    geom_bar(stat = "identity", position = "dodge") +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+    labs(
+        title = "Character Weights on Earth vs. Mars",
+        x = "Character",
+        y = "Weight (N)", # Weight in Newtons
+        fill = "Planet"
+    )
+```
+
+## 8. Functional programming with purrr
+
+Another key component of the tidyverse is **purrr**, which provides a cohesive set of **functional programming** tools that make iteration in R more consistent and expressive. In particular, **purrr** excels at replacing repetitive **for loops** or `*apply` functions. In particular, it allows:
+
+-   **Repeated operations** on each element of a list or vector.
+
+-   **Consistent output types** (numeric, character, data frame, etc.) are desired.
+
+-   **Parallel iteration** over multiple objects (`map2()`, `pmap()`).
+
+-   **Robust error handling** or partial success from iterative processes (`safely()`, `possibly()`).
+
+If your data fits neatly in rows/columns, **dplyr** verbs might be enough. But for more complex, **list-based** workflows—especially when columns contain nested lists or when you're doing more elaborate programming—**purrr** is a powerful toolkit.
+
+### 8.1 purrr vs. traditional R loops or \*apply family
+
+-   **Loops**: Flexible but can be verbose. You usually create an empty object, iterate, and assign results.
+
+-   **`lapply()/sapply()`**: Shorter syntax than loops, but return type can vary (`sapply` can sometimes return a vector, sometimes a list if it can't simplify cleanly).
+
+-   **`purrr::map_*()`**: You explicitly choose the **return type** (`map_dbl`, `map_chr`, etc.), making your code more predictable. The syntax often reads more cleanly, especially for anonymous inline functions (`~ expression`
+
+### 8.2 The `map_` family of functions
+
+At the core of **purrr** is the `map()` family of functions. They allow you to apply a function to each element of a list or vector and return the results in various formats:
+
+-   `map()` returns a **list**.
+
+-   `map_lgl()` returns a **logical** vector.
+
+-   `map_int()` returns an **integer** vector.
+
+-   `map_dbl()` returns a **double** (numeric) vector.
+
+-   `map_chr()` returns a **character** vector.
+
+-   `map_df()` (from older **purrr** versions) or `map_dfr()` / `map_dfc()` (preferred now) returns **data frames**.
+
+Using the right function for the type of output you expect can help avoid unexpected data structures and reduce errors.
+
+### 8.3 Example 1: Iterating over a vector
+
+Let's calculate the square of each number in a vector.
+
+#### 8.3.1 Base R approach
+
+```{r, eval = FALSE}
+# Traditional for loop
+numbers <- c(1, 2, 3, 4, 5)
+squared <- c()
+
+for (i in numbers) {
+    squared <- c(squared, i^2)
+}
+
+squared
+
+# Using sapply
+squared_sapply <- sapply(numbers, function(x) x^2)
+squared_sapply
+```
+
+#### 8.3.2 purrr approach
+
+```{r, eval = FALSE}
+# Using purrr::map_dbl to return a numeric vector
+squared_map <- map_dbl(numbers, ~ .x^2)
+squared_map
+```
+
+### 8.4 Example 2: Applying functions to columns of a Data Frame
+
+Suppose we want to calculate the mean of selected numeric columns (`height` and `mass`) in the `starwars` dataset.
+
+#### 8.4.1 Base R approach
+
+```{r, eval = FALSE}
+# Traditional for loop
+numeric_columns <- c("height", "mass")
+means <- c()
+
+for (col in numeric_columns) {
+    means <- c(means, mean(starwars[[col]], na.rm = TRUE))
+}
+
+names(means) <- numeric_columns
+means
+
+# Using sapply
+means_sapply <- sapply(starwars[c("height", "mass")], function(x) mean(x, na.rm = TRUE))
+means_sapply
+```
+
+#### 8.4.2 purrr approach
+
+```{r, eval = FALSE}
+# Using purrr::map_dbl
+means_map <- map_dbl(starwars[c("height", "mass")], ~ mean(.x, na.rm = TRUE))
+means_map
+```
+
+### 8.5 Mapping over multiple inputs with `map2()` and `pmap()`
+
+If your function needs **two** arguments that vary (for example, a data vector and a threshold vector), you can use **`map2()`**. For **three or more** varying arguments, **`pmap()`** is your friend. These functions let you iterate in parallel over multiple inputs. **`map2()`** takes two lists (`.x` and `.y`) in parallel. For each index, it applies the function to the corresponding elements of both lists.
+
+Suppose we want to calculate the Body Mass Index (BMI) for each character in the starwars dataset
+
+```{r}
+# S ince operations on data frames / tibbles are vectorized, this could be achieved with a normal mutate call
+starwars_bmi <- starwars |>
+    mutate(
+        bmi = mass / ((height / 100)^2)
+    )
+
+# But purrr helps in functional programming
+# We define a BMI function
+BMI <- function(mass, height) {
+    mass / ((height / 100)^2)
+}
+# and apply this
+starwars_bmi <- starwars |>
+    mutate(
+        bmi = map2_dbl(mass, height, ~ BMI(.x, .y))
+    )
+```
+
+### 8.6 Error handling
+
+**purrr** provides helper functions like `safely()`, `possibly()`, and `quietly()` that make it easy to handle errors or unexpected outputs within a mapping sequence. Base R typically requires more manual checks or try-catch logic for robust error handling in loops or `*apply`. From each element in `results_safe`, you can inspect `$result` or `$error`. This can be very handy for debugging or skipping problematic elements.
+
+```{r}
+# Define a safe version of the BMI function
+safe_bmi <- safely(function(mass, height) {
+    mass / ((height / 100)^2)
+})
+
+# Filter rows with valid mass and height (still keeping some edge cases for demonstration)
+starwars_filtered <- starwars |>
+    mutate(height = ifelse(name == "Darth Vader", NA, height)) |> # Introduce a NA for testing
+    filter(!is.na(mass))
+
+# Use map2 and the safe BMI function
+starwars_bmi <- starwars_filtered |>
+    mutate(
+        bmi_safe = map2(mass, height, safe_bmi), # Apply the safe BMI function
+        bmi = map_dbl(bmi_safe, ~ .x$result), # Extract the result
+        bmi_error = map_chr(bmi_safe, ~ ifelse(is.null(.x$error), "None", .x$error$message)) # Extract the error
+    )
+
+# View the results with errors and calculated BMI
+starwars_bmi |>
+    select(name, height, mass, bmi, bmi_error)
+```
+
+::: {.callout-tip}
+
+`map` can be used to perform within groups manipulation. Let's say we want compute the **Root Mean Squared Error (RMSE)** for a regression model that predicts a character's **Body Mass Index (BMI)** based on their **evilness**, grouped by their **`homeworld`**.
+
+-   We use `group_by()` and `nest()` (from **tidyr**) to split the dataset into manageable subsets (one per homeworld). Each group’s data is stored in a compact format, making it easy to apply custom operations to each group.
+
+-   The `map()` function is used to apply a **linear regression model** (`lm(bmi ~ evilness)`) to each group.
+
+-   The output for each group includes the model and the RMSE, which measures how well the model fits the data within the group.
+
+-   After applying the regression model to each group, the results (e.g., RMSE) are stored in a tidy format using `unnest()` for easy interpretation and visualization.
+
+```{r}
+# Create a fake column for evilness
+set.seed(42)
+starwars <- starwars |>
+    filter(!is.na(height) & !is.na(mass) & !is.na(homeworld)) |> # Filter valid data
+    mutate(
+        evilness = runif(n(), 1, 10), # Random evilness between 1 and 10
+        bmi = mass / ((height / 100)^2) # Calculate BMI
+    )
+
+# Group by homeworld and nest the data
+# Use group_by(homeworld) to group characters by their homeworld.
+# Use nest() to store each group’s data as a nested data frame within a single column.
+grouped_data <- starwars |>
+    group_by(homeworld) |>
+    nest()
+
+# Define a function to compute regression and calculate RMSE
+compute_rmse <- function(df) {
+    # Perform regression of BMI ~ evilness
+    model <- lm(bmi ~ evilness, data = df)
+
+    # Calculate RMSE
+    predictions <- predict(model, df)
+    rmse <- sqrt(mean((df$bmi - predictions)^2))
+
+    # Return a tidy output with model summary and RMSE
+    tibble(
+        model = list(model),
+        rmse = rmse
+    )
+}
+
+# Apply the function to each group using map
+# Use unnest() to bring the results (e.g., RMSE) back into a tidy data frame.
+results <- grouped_data |>
+    mutate(model_results = map(data, compute_rmse)) |>
+    unnest(model_results)
+
+# View the results
+results |>
+    select(homeworld, rmse)
+```
+
+:::
+
+## 9. Conclusion
+
+This wraps up our **introduction** to **dplyr** and the **tidyverse**!
+
+Feel free to explore more at:\
+- [dplyr.tidyverse.org](https://dplyr.tidyverse.org/)\
+- [tidyverse.org](https://tidyverse.org/)
+
+**Cheat sheets:**
+
+-   [Data Wrangling with dplyr and tidyr](https://www.rstudio.com/wp-content%2Fuploads%2F2015%2F02%2Fdata-wrangling-cheatsheet.pdf%2F)
+
+-   [dplyr](https://rstudio.github.io/cheatsheets/html/data-transformation.html)
+
+-   [lubridate](https://rstudio.github.io/cheatsheets/html/lubridate.html)
+
+-   [stringr](https://rstudio.github.io/cheatsheets/html/strings.html)
+
+-   [tidyr](https://rstudio.github.io/cheatsheets/html/tidyr.html)
+
+-   [purrr](https://rstudio.github.io/cheatsheets/html/purrr.html "https://rstudio.github.io/cheatsheets/html/purrr.html")
+
+**Happy coding!**
+
+```{r}
+sessionInfo()
+```

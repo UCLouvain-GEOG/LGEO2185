@@ -32,12 +32,6 @@ This session introduces you to spatial data manipulation in R using the **terra*
 
 This tutorial is based on the materials provided by the chapter `Spatial data with terra` from @sds and "terra" ([website](https://rspatial.org/spatial/index.html#))\[\^License: https://creativecommons.org/licenses/by-sa/4.0/\]
 
-```{r, echo = FALSE, eval = FALSE}
-# TODO: add other sf refs
-# TODO: add infor on CRS
-https://mapping-in-r-workshop.ryanpeek.org/00_mapmaking_aesthetics#Projections_and_Coordinate_Reference_Systems_(CRS)
-```
-
 ## Understanding spatial data
 
 Spatial phenomena generally fall into two categories:
@@ -220,10 +214,6 @@ The main reason for defining classes is to create a standard representation of a
 
 `terra` introduces a number of classes with names that start with `Spat`. For vector data, the relevant class is `SpatVector`. These classes represent geometries as well as attributes (variables) describing the geometries.
 
-```{r, echo = FALSE}
-#TODO EXPLAIN terra awesomeness (C++ etc)
-```
-
 It is possible to create `SpatVector` objects from scratch with *R* code. This is very useful when creating a small self contained example to illustrate something, for example to ask a question about how to do a particular operation; without needing to give access to the real data you are using (which is always cumbersome). It is also frequently done when using coordinates that were obtained with a GPS. But in most other cases, you will read these from a file or database.
 
 To get started, let’s make some `SpatVector` objects from scratch anyway, using the same data as were used in the previous chapter.
@@ -405,6 +395,11 @@ plot(points_sf, col = "green", pch = 20, cex = 1.5, add = TRUE)
 ## 4.1 Introduction
 
 The `terra` package has functions for creating, reading, manipulating, and writing raster data. The package provides, among other things, general raster data manipulation functions that can easily be used to develop more specific functions. For example, there are functions to read a chunk of raster values from a file or to convert cell numbers to coordinates and back. The package also implements raster algebra and many other functions for raster data manipulation.
+
+The `terra` package is a modern replacement of the `raster`/`sp` packages, with cleaner classes (`SpatRaster`, `SpatVector`). It is designed to be faster and more efficient, especially for large datasets. Key improvements brought by `terra` include:
+* C++ core: Heavy raster/vector operations are implemented in C++ via R interfaces. This results in significant speedups compared to pure R implementations.
+* Chunked I/O: Reads/writes in blocks so you can process rasters much larger than RAM; intermediate results stream to disk automatically.
+* On-disk outputs: Most transforms can write directly to files, avoiding large in-memory objects and keeping memory bounded.
 
 ## 4.2 SpatRaster
 
@@ -598,9 +593,10 @@ crs(pp) <- "+proj=longlat +datum=WGS84"
 crs(pp)
 ```
 
-::: callout-note
+::: callout-warning
 You should **not** use this approach to change the CRS of a data set from what it **is** to what you **want it to be**. Assigning a CRS is like labeling something. You need to provide the label that corresponds to the item. Not to what you would like it to be. For example if you label a bicycle, you can write “bicycle”. Perhaps you would prefer a car, and you can label your bicycle as “car” but that would not do you any good. It is still a bicycle. You can try to transform your bicycle into a car. That would not be easy. Transforming spatial data is easier.
 :::
+
 
 ## 6.4 Transforming vector data
 
@@ -879,7 +875,6 @@ levelplot(tmin1)
 ```
 
 ```{r, eval = TRUE, cache = TRUE}
-#| cache: true
 bwplot(tmin)
 pairs(tmin)
 ```
@@ -1019,9 +1014,9 @@ ggplot(france_sf) +
 
 `sf` allows spatial operations like intersections, unions, and transformations. See below for an exhaustive list of functions
 
-[![Source: (\<https://rstudio.github.io/cheatsheets/sf.pdf\>)\[https://rstudio.github.io/cheatsheets/sf.pdf\]](images/sf_cheat1.png){fig-align="center"}](https://rstudio.github.io/cheatsheets/sf.pdf)
+[![sf cheatsheet](images/sf_cheat1.png){fig-align="center"}](https://rstudio.github.io/cheatsheets/sf.pdf)
 
-[![Source: (://rstudio.github.io/cheatsheets/sf.pdf\>)\[https://rstudio.github.io/cheatsheets/sf.pdf\]](images/sf_cheat2.png){fig-align="center"}](https://rstudio.github.io/cheatsheets/sf.pdf)
+[![sf cheatsheet (page 2)](images/sf_cheat2.png){fig-align="center"}](https://rstudio.github.io/cheatsheets/sf.pdf)
 
 ### 8.2.3 Be Careful with summarizing functions on `sf` objects...
 
