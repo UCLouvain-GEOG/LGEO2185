@@ -5,3 +5,4 @@
 *.pptx
 *.potx
 .DS_Store
+.Rproj.user
