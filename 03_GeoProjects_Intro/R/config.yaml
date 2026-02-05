@@ -1,0 +1,10 @@
+
+paths:
+  raw_data_path: "data/raw/"
+  processed_data_path: "data/processed/"
+  output_data_path: "outputs/"
+
+parameters:
+  sample_size: 3
+  seed: 1234
+

@@ -1,0 +1,742 @@
+---
+title: "LGEO2185: Session 3 -- R Project Structure & Workflow"
+author: "Kristof Van Oost, Antoine Stevens & Valentin Charlier"
+Date: 02/29/2025
+toc: true
+standalone: true
+format: 
+  html:
+    theme: 
+      - zephyr
+      - ../_brand.yml
+    css: ../styles.css
+    embed-resources: true
+execute:
+  echo: true
+  warning: false
+  error: false
+---
+
+```{r setup, include=FALSE, warning=FALSE}
+knitr::opts_chunk$set(
+    echo = TRUE,
+    message = FALSE,
+    warning = FALSE
+)
+pacman::p_load(tidyverse, here)
+
+# Set wd - that will work in qmd or run interactively
+# https://cran.r-project.org/web/packages/here/vignettes/here.htm
+setwd("~/RStudio_KVO/AGP/LGEO2185/03_GeoProjects_Intro")
+here::i_am("LGEO2185_Session3 - Basic_projects.qmd")
+```
+
+# Learning Objectives
+
+-   Structuring your R project
+-   Develop a workflow for spatial analysis
+-   Principle of Functional Programming
+
+# Before you start
+
+You know how to ... 
+
+* deal with raster and vector data-structures, 
+* work with basic R constructs (functions, loops, subsetting), 
+* use pipes `%>%` (or `|>`) 
+
+# Online Resources
+
+Project structure & workflow:
+
+* [Project Management: Let’s Get Organized](https://github.com/r4wrds/r4wrds/blob/main/intro/m_project_management.Rmd)
+* [An Introduction to R: Directory Structure](https://intro2r.com/dir_struct.html)
+* [How to structure your data workflow efficiently using R](https://cosimameyer.medium.com/how-to-structure-your-data-workflow-efficiently-using-r-125a9bbe5df8)
+* [Reproducible project structures](https://cran.r-project.org/web/packages/link2GI/vignettes/link2GI5.html)
+* [Workflow for statistical analysis and report writing (SO)](https://stackoverflow.com/questions/1429907/workflow-for-statistical-analysis-and-report-writing/1434424#1434424)
+
+Maps and raster processing:
+
+*   [Making maps with R](https://www.paulamoraga.com/book-spatial/making-maps-with-r.html)
+*   [tidyterra](https://dieghernan.github.io/tidyterra/index.html) 
+
+# 1. R project basic structure
+
+Creating a well-structured R project is essential for maintaining reproducibility, collaboration, and scalability. 
+
+## 1.1 Directory structure
+
+Pretty much every R project can be imagined as a sort of process: data gets ingested, magic happens, then the results – analyses, processed data, and so on – get spit out. To get things organized, we need an organized directory structure that reflects this approach. A common layout might look like this:
+
+```plaintext
+MyRProject/
+├── R/                    # R scripts and functions
+│   ├── 00_libraries.R  # Load the libraries in one place
+│   ├── 00_parameters.R  # Store global parameters used across scripts
+│   ├── 01_data_import.R  # Script for importing data
+│   ├── 02_data_cleaning.R  # Script for cleaning data
+│   ├── 03_analyses.R     # Script for analyzing the data
+│   └── helpers.R         # Custom helper functions
+├── data/                 # Raw and processed data
+│   ├── raw/              # Raw, unaltered data files
+│   │   ├── dataset1.csv
+│   │   └── dataset2.csv
+│   ├── processed/        # Cleaned and processed data
+│       ├── dataset1_cleaned.csv
+│       └── summary_statistics.csv
+├── output/               # Generated outputs
+│   ├── plots/            # Saved plots and figures
+│   │   ├── plot1.png
+│   │   └── plot2.pdf
+│   ├── tables/           # Exported tables
+│   │   ├── summary_table.xlsx
+│   │   └── regression_results.csv
+│   └── reports/          # Reports or documents
+│       ├── report.html
+│       ├── report.pdf
+│       └── presentation.pptx
+├── documentation/        # Documentation for the project
+├── .Rproj                # RStudio project file
+├── .gitignore            # Ignored files for version control
+└── README.md             # Main project README file
+```
+
+* `data/`: The data folder is, unsurprisingly, where your data goes. When it comes to data, it is crucial to make a distinction between source data and generated data. Keep raw data (`raw/`) and processed data (`processed/`) separate. Never modify raw data directly, it forms your single source of truth! If the project is particularly complex you might consider adding sub-folders reflecting the different processing steps, `e.g. raw > intermediary > model input > model output` etc etc.
+
+* `R/`: Holds individual .R scripts that when executed will carry out an analysis. Name scripts by describing their purpose, e.g., `xx_data_cleaning.R`, `xx_analysis.R`. If files should be run in a particular order, prefix them with numbers. If it seems likely you’ll have more than 10 files, left pad with zero (e.g., `00_download.R`). Potentially add a script that will execute all the scripts in the sequence using `source()`. It is good practice to split your code into small chunks rather than having one big script. It will improve readability and simplify debugging.
+
+* `outputs/`: Store generated results like plots or tables. Avoid manual edits.
+
+* `reports/`: Save reports and documentation generated from your analysis.
+
+:::{.callout-note}
+Have a look at [prodigenr](https://cran.r-project.org/web/packages/prodigenr/vignettes/prodigenr.html) or [usethis](https://usethis.r-lib.org/)^[Mainly used for package development but can be used for projects too, see `usethis::create_project()`], they can help you to create folder structure automatically
+:::
+
+## 1.2 Managing your project path
+
+You might manage file paths by setting the working directory manually, which can lead to complications:
+
+```{r, eval = FALSE}
+# Using setwd (manual method)
+setwd("/Users/yourname/project/data/raw")
+data <- read.csv("dataset.csv")
+```
+
+This approach has several issues:
+
+* Paths are absolute and specific to the user's machine.
+
+* Requires manual adjustments when the project is moved.
+
+* Error-prone in collaborative or cross-platform environments.
+
+The `here` package simplifies working with file paths by using the project root as a reference. By leveraging `here`, you can ensure your scripts are robust and portable, regardless of where they are run or by whom. For example, this approach allows collaborators to download the project and run your scripts without needing to modify file paths manually. To explicitly define the root directory for `here`, create a `.here` file in the root of your project, the library will look for this file and use it to define the root.
+
+```{r, eval = FALSE}
+library(here)
+
+# Load data in data/raw
+data <- read.csv(here("data", "raw", "dataset.csv"))
+
+# do some stuff
+...
+
+# Save output in data/output
+write.csv(results, here("data", "outputs", "results.csv"))
+``` 
+
+## 1.3 Loading libraries
+
+It is good practice to gather at the same place your `library()` calls. One solution is to create a R/load_libraries.R script where you load all required packages.
+You could then run `source("R/load_librarie.R")` at the beginning of all your scripts to load libraries automatically
+
+Tips: 
+
+* Use the `pacman` package or similar to streamline package management:
+
+```{r, eval = FALSE}
+# instead of
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(here)
+
+if (!requireNamespace("pacman", quietly = TRUE)) install.packages("pacman")
+pacman::p_load(dplyr, ggplot2, tidyr, here)
+```
+
+* Avoid namespace clashes. Namespace clashes can occur when functions with the same name exist in different packages. For example, both `terra` and `dplyr` have a `select` function. The order in which you load these libraries can affect which function is masked by the other. By default, the most recently loaded library takes precedence, potentially causing unexpected behavior. To ensure that the correct function is used, explicitly call the desired function using the `::` operator, which is used to specify the namespace^[The term "namespace" in R refers to the environment within a package where its functions and objects exist] of a function:
+
+```{r, eval = FALSE}
+# Using terra::select to select specific raster layers
+selected_layer <- terra::select(my_raster, "ndvi")
+
+# Using dplyr::select to choose specific columns from a data frame
+data_subset <- dplyr::select(data_frame, column1, column2)
+```
+
+Additionally, if you must use functions with similar names from multiple libraries frequently, consider loading the library you use most often last in your script to minimize the need for the `::` operator. This approach ensures that your code remains clear and prevents unexpected behavior caused by namespace conflicts
+
+## 1.4 Storing global parameters
+
+Dynamic configuration helps separate settings, parameters, and other customizable elements from your R scripts. Using a YAML file for configuration allows you to:
+
+* Simplify script maintenance.
+
+* Adjust parameters without editing main code everywhere.
+
+* Improve reproducibility and scalability.
+
+This is how you could proceed:
+
+1. Create a file named config.yaml in the project root or a configuration directory:
+
+```yaml
+# config.yaml
+paths:
+  raw_data_path: "data/raw/"
+  processed_data_path: "data/processed/"
+  output_data_path: "outputs/"
+
+parameters:
+  sample_size: 1000
+  seed: 1234
+```
+You can write this config.yaml file using the following R code:
+```{r, eval = FALSE}
+library(yaml)
+
+config <- list(
+  paths = list(
+    raw_data_path = "data/raw/",
+    processed_data_path = "data/processed/",
+    output_data_path = "outputs/"
+  ),
+  parameters = list(
+    sample_size = 1000,
+    seed = 1234
+  )
+)
+
+write_yaml(config, "config.yaml")
+
+```
+
+
+2. Then use the yaml package to read the configuration file:
+
+```{r, eval = FALSE}
+# Install and load the yaml package
+install.packages("yaml")
+library(yaml)
+library(tidyverse)
+library(here)
+
+# Load the configuration file
+config <- yaml::read_yaml("R/config.yaml")
+
+# Access configuration elements
+raw_data_path <- config$paths$raw_data
+processed_data_path <- config$paths$processed_data
+sample_size <- config$parameters$sample_size
+set.seed(config$parameters$seed)
+
+# Example usage
+raw_data <- read_csv(here(raw_data_path, "data.csv"))
+
+# Sample n row
+raw_data_sampled <- raw_data %>%
+    sample_n(sample_size)
+
+# Save
+saveRDS(raw_data_sampled, file = here(processed_data_path, "sampled_data.Rds"))
+```
+
+## 1.5 Use environment variables
+
+Don't store sensitive information like API keys or database credentials in your scripts! You can use `.Renviron` files instead to keep such information out of the scripts.
+
+1. First create a .Renviron text file in your root directory or in your home directory. You can do this in RStudio :
+
+```{r, eval = FALSE}
+file.edit(".Renviron")
+```
+
+Alternatively, create the file using a text editor
+
+2. Add environment variables: Add key-value pairs, where each line defines a variable then save:
+
+```{r, eval = FALSE}
+COPERNICUS_API_KEY <- mysecretpassword
+```
+
+3. Use `Sys.getenv()` to access the variables from the `.Renviron` file in your scripts:
+
+```{r, eval = FALSE}
+api_key <- Sys.getenv("COPERNICUS_API_KEY")
+```
+
+# 2. Geospatial workflow
+
+Next, we are going to put our learnings into practice and build a simple workflow for spatial analysis using (hopefully) good coding principles. 
+The goal is the following: assuming a given region of interest, extract and map predicted change in precipitation for the year 2050 under various climate scenario.
+We will develop the workflow step by step.
+Let's start by setting our environment and loading the libraries. Note that we are going to use some new libraries to create nice maps!
+
+## 2.1 Create the folder structure
+
+First, open an R console, then setup the base directory where the project will live.
+```{r, eval = FALSE}
+# Define the base directory for the project
+base_dir <- "C:/Users/YourUsername/Documents/MyRProject"
+```
+
+```{r, include = FALSE}
+base_dir <- here()
+```
+
+Now define the folder and file structure. Since we will follow a relatively simple workflow, we can have a simple structure, e.g.
+
+```{r}
+folders <- c(
+    file.path(base_dir, "R"),
+    file.path(base_dir, "data", "raw"),
+    file.path(base_dir, "data", "processed"),
+    file.path(base_dir, "output", "plots")
+)
+
+files <- c(
+    file.path(base_dir, "R", "00_libraries.R"),
+    file.path(base_dir, "R", "00_parameters.R"),
+    file.path(base_dir, "R", "01_analyses.R"),
+    file.path(base_dir, "README.md")
+)
+
+# Create the folders
+for (folder in folders) {
+    if (!dir.exists(folder)) {
+        dir.create(folder, recursive = TRUE)
+    }
+}
+
+# Create the files
+for (file in files) {
+    if (!file.exists(file)) {
+        file.create(file)
+    }
+}
+
+# Add a message to the README file
+writeLines("This is the README file for the MyRProject.", file.path(base_dir, "README.md"))
+```
+
+## 2.2 Load the libraries
+
+Navigate in the `00_libraries.R` function and write the below: 
+
+```{r,  message = FALSE}
+# install pacman if not already done
+if (!requireNamespace("pacman", quietly = TRUE)) install.packages("pacman")
+pacman::p_load(
+    tidyverse, tidyterra, scales, lattice, latticeExtra, sp, terra, geodata, rasterVis,
+    RColorBrewer, mapview, leaflet, leaflet.extras2, leafsync, viridis, plotly
+)
+```
+
+## 2.3 Input data
+
+We want to create a workflow that provides a map displaying the predicted changes in rainfall (based on present rainfall from the worldclim dataset and CMIP6 predictions) for a given country (or even more generally, a polygon). 
+To test our workflow, we download a `SpatVector` using the `gadm` function from the `geodata` package. Let's use for instance Congo (ISOcode = "COD").
+The `geodata` package allows you to specify a path or folder where the data will be stored. Let's point to the raw data folder. 
+Since this can be user-dependent, it can be thought as a parameter of the project.
+So let's navigate to the `R/00_parameters.R` file and write the following lines of code^[Remember that the `geodata` package allows you to specify a default path where the data can be stored (see Session 2).]:
+
+```{r}
+geodata_default_path <- here("data", "raw")
+options(geodata_default_path = geodata_default_path)
+# check
+geodata_path()
+```
+
+Next we want to actually download our input data. Navigate to `R/01_analyses.R` and type: 
+
+```{r, eval = FALSE}
+source("R/00_libraries.R")
+source("R/00_parameters.R")
+DRC <- gadm(country = "COD", level = 0, resolution = 1)
+Prec <- worldclim_global(var = "prec", res = 5)
+```
+
+This will source (i.e. run) the code in `R/00_libraries.R` and `R/00_parameters.R`, download the worldclim tiles for the requested area of interest and put them into memory as the object `Prec`.
+Now, take the time to check out what options are available for the `gadm`and `worldclim` functions!
+
+```{r, include = FALSE}
+# i don't need to actually source since running stuff in the qmd
+# this is hidden
+DRC <- gadm(country = "COD", level = 0, resolution = 1)
+Prec <- worldclim_global(var = "prec", res = 5)
+```
+
+Ok, were are ready for the second step -- downloading future precipitation. 
+Note that we need to specify what CMIP6 projections we want (i.e., ssp, model and year).
+Let us just use an example to test our code (ie the CNRM-CM6-1 model based on scenario 585 for the period 2041-2060)^[See the course LGEO1232 'Le Climat et ses Changements' for more info ;-)].
+
+```{r, warning=FALSE}
+PrecF <- cmip6_world(
+    model = "CNRM-CM6-1", ssp = "585",
+    time = "2041-2060", var = "prec", res = 5
+)
+plot(PrecF)
+```
+
+## 2.4 Data transformation
+
+If you look at the `Prec` raster, you will notice that this is a `SpatRaster` with 12 layers, with global precipitation values for each month. Let's crop and mask this for our region of interest (ROI), i.e. DR Congo. 
+When creating a geoproject, you should consider calculation times and make your code as efficient as possible. Look closer at the code below, we do the same thing twice but in a different order. Why is it different?
+
+We will use `tic()` and `toc()` from the `tictoc` library to measure the time needed to run the code (simply call `tic()` when you want to start logging time and `toc()` at the end.
+
+```{r}
+pacman::p_load(tictoc) # this call to library tictoc should eventually be moved to 00_libraries.R
+tic()
+Prec_DRC <- Prec %>%
+    terra::mask(DRC) %>% # let's explicitly call the function from the terra package
+    terra::crop(DRC) # to avoid namespace clash with e.g. the raster package
+toc()
+
+tic()
+Prec_DRC <- Prec %>%
+    terra::crop(DRC) %>%
+    terra::mask(DRC)
+toc()
+
+# Do the same for future climate
+tic()
+PrecF_DRC <- PrecF %>%
+    terra::crop(DRC) %>%
+    terra::mask(DRC)
+toc()
+```
+
+The raster layer names can be modified if you want, it will make the code and the maps a bit easier to structure.
+
+```{r}
+names(PrecF_DRC) <- names(Prec_DRC) <- c(
+    "Jan", "Feb", "Mar", "Apr", "May",
+    "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+)
+```
+
+Next, we want to calculate the difference between the current and the future rainfall amounts. We want to annual net difference so we first calculate the monthly differences `(Prec_DRC- PrecF_DRC)` and then we sum them over all the 12 monthly rasterlayers using`sum`.
+
+```{r, warning=FALSE}
+delta_annual <- sum(PrecF_DRC - Prec_DRC)
+names(delta_annual) <- "Difference"
+
+# let's save
+writeRaster(delta_annual,
+    filename = here(
+        "data", "processed",
+        "projected_difference_annual_precipitation.tif"
+    ),
+    overwrite = T
+)
+```
+
+Be careful when writing data on disk, this can take lots of space quickly! Here are some strategies to minimize disk usage (allegedly not very impactful for such a small dataset)
+
+```{r}
+# Check file size
+file_size <- file.info(here("data", "processed", "projected_difference_annual_precipitation.tif"))$size / (1024^2) # Convert to MB
+file_size
+
+# Ok, now use another compression method. (writeRaster uses "LZW" by default)
+file_name <- here(
+    "data", "processed",
+    "projected_difference_annual_precipitation_DEFLATE.tif"
+)
+writeRaster(delta_annual,
+    filename = file_name,
+    gdal = c("COMPRESS = DEFLATE"),
+    overwrite = T
+)
+file_size <- file.info(file_name)$size / (1024^2) # Convert to MB
+file_size
+```
+
+We could also use a different data type to save the raster. For instance, converting the raster to an unsigned 8-bit integer (INT1U) if the values range between 0 and 255, or to a 16-bit unsigned integer (INT2U) for larger range.
+You may loose precision so we need to apply this with care:
+
+
+```{r}
+file_name <- here(
+    "data", "processed",
+    "projected_difference_annual_precipitation_SCALED.tif"
+)
+writeRaster(delta_annual,
+    filename = file_name,
+    overwrite = TRUE,
+    datatype = "INT2U", # Use 16-bit unsigned integer
+    gdal = c(
+        "COMPRESS=DEFLATE" # Optionally add compression
+    )
+)
+file_size <- file.info(file_name)$size / (1024^2) # Convert to MB
+file_size
+```
+
+When saved, the raster file will store the scale and offset metadata, allowing GDAL-aware tools to automatically apply the transformation when reading the file.
+
+```{r}
+delta_annual_restored <- rast(file_name)
+delta_annual_restored
+```
+
+You don’t need to manually reverse the transformation unless working with tools that don’t support GDAL metadata.
+
+### Extracting data from RasterLayer
+
+It is straightforward to extract statistics for a given region using the `extract` function of the `terra`package. 
+Assuming we want to summarize the changes in precipitation by 2050 at the provincial level, you could use the following code.
+
+```{r}
+DRC_L2 <- gadm(country = "COD", level = 2)
+
+# Average raster values by polygon
+DRC_L2$Difference <- terra::extract(delta_annual,
+    DRC_L2,
+    mean,
+    na.rm = TRUE
+)$Difference
+```
+
+## 2.5 Maps maps maps
+
+### Lattice
+
+You can use the `lattice` package to create nice overlays for multiple panel figures.
+Have a look at the following code for this. Note that you need to convert the `DRC`variable, which is a `SpatVector` to a type that is compatible with `levelplot`.
+
+```{r}
+cols <- colorRampPalette(brewer.pal(9, "Blues"))
+levelplot(Prec_DRC,
+    layout = c(4, 3), # create a 4x4 layout for the data
+    main = "Monthly Rainfall 1970-2000 (mm)",
+    col.regions = cols
+) +
+    latticeExtra::layer(sp.polygons(as(DRC, "Spatial"), fill = NA, border = "black"))
+```
+
+### tidyterra
+
+You can obtain the same result using `tidyterra`-- here is an example: 
+
+```{r}
+# Plot with tidyterra and facets
+ggplot() +
+    geom_spatraster(data = Prec_DRC) +
+    geom_spatvector(data = DRC, fill = NA) +
+    facet_wrap(~lyr, ncol = 4) +
+    scale_fill_whitebox_c(
+        palette = "deep",
+        n.breaks = 12,
+        guide = guide_legend(reverse = TRUE)
+    ) +
+    labs(
+        fill = "",
+        title = "Monthly Rainfall ",
+        subtitle = "1970-2000 (mm)"
+    ) +
+    theme(plot.title = element_text(hjust = 0.5)) +
+    theme(plot.subtitle = element_text(hjust = 0.5))
+```
+
+For more palettes and gradients, look [here](https://dieghernan.github.io/tidyterra/index.html)
+
+### mapview
+
+Now let us try to use a slightly more advanced way of plotting the data using `mapview`.
+The mapview package [Appelhans et al. 2022](https://www.paulamoraga.com/book-spatial/references.html#ref-R-mapview) allows us to very quickly create similar interactive maps as leaflet. 
+You just need to use the `mapview()` function passing as arguments the spatial object and the variable to plot. 
+This map is interactive and by clicking each of the areas we can see popups with the data information. Nice!
+We want to plot the total annual rainfall for the present and future conditions side by side so you can easily compare.
+
+```{r}
+Annual_prec_DRC <- sum(Prec_DRC)
+Annual_prec_2050_DRC <- sum(PrecF_DRC)
+
+map1 <- mapview(Annual_prec_DRC, col.regions = cols, na.color = "transparent")
+addMiniMap(map1@map) # from leaflet package
+
+at <- seq(800, 2500, length.out = 6)
+m1 <- mapview(Annual_prec_DRC, col.regions = cols, at = at, na.color = "transparent")
+m2 <- mapview(Annual_prec_2050_DRC, col.regions = cols, at = at, na.color = "transparent")
+
+m <- leafsync::sync(m1, m2)
+m
+```
+
+Note that you can save maps created with mapview by using the `mapshot()` function of mapview as an HTML file or as a PNG, PDF, or JPEG image. Try out `htmltools::save_html(m, here("data","output","compare_prec.html")` to save the leafsync map as an html file.
+Now that we have compared present and future conditions, let's see how the difference in annual precipitation looks like:
+
+```{r}
+mapview(delta_annual, col.regions = cols, na.color = "transparent")
+hist(delta_annual)
+```
+
+### ggplot2
+
+The **ggplot2** package ([Wickham, Chang, et al. 2022](https://www.paulamoraga.com/book-spatial/references.html#ref-R-ggplot2)) allows us to create graphics based on the grammar of graphics that defines the rules of structuring mathematic and aesthetic elements to build graphs layer-by-layer.
+
+To create a plot with **ggplot2**, we call [ggplot()](https://ggplot2.tidyverse.org/reference/ggplot.html) specifying arguments `data` which is a data frame with the variables to plot, and `mapping = aes()` which are aesthetic mappings between variables in the data and visual properties of the objects in the graph such as position and color of points or lines.
+
+Then, we use `+` to add layers of graphical components to the graph. Layers consist of geometries, stats, scales, coordinates, facets, and themes. For example, we add objects to the graph with `geom_*()` functions (e.g, [geom_point()](https://ggplot2.tidyverse.org/reference/geom_point.html) for points, [geom_line()](https://ggplot2.tidyverse.org/reference/geom_path.html) for lines). We can also add color scales (e.g., [scale_colour_brewer()](https://ggplot2.tidyverse.org/reference/scale_brewer.html)), faceting specifications (e.g., [facet_wrap()](https://ggplot2.tidyverse.org/reference/facet_wrap.html) splits data into subsets to create multiple plots), and coordinate systems (e.g., [coord_flip()](https://ggplot2.tidyverse.org/reference/coord_flip.html)).
+
+We can create maps by using the [geom_sf()](https://ggplot2.tidyverse.org/reference/ggsf.html) function and providing a simple feature (`sf`) object. The figure belows shows our data plotted with **ggplot2** and with viridis scale from the **viridis** package ([Garnier 2021](https://www.paulamoraga.com/book-spatial/references.html#ref-R-viridis)).
+
+```{r}
+ggplot(DRC_L2) +
+    geom_sf(aes(fill = Difference)) +
+    scale_fill_viridis() +
+    theme_bw()
+```
+
+Plots created with **ggplot2** can be saved with the [ggsave()](https://ggplot2.tidyverse.org/reference/ggsave.html).
+
+### Plotly
+
+The **plotly** package ([Sievert, Parmer, et al. 2022](references.html#ref-R-plotly)) can be used in combination with **ggplot2** to create an interactive plot.You can turn a static `ggplot` object to an interactive `plotly` object by calling the [ggplotly()](https://rdrr.io/pkg/plotly/man/ggplotly.html) function of **plotly** providing the `ggplot` object:
+
+```{r}
+DRC_L2d <- disagg(DRC_L2)
+g <- ggplot(DRC_L2d) +
+    geom_sf(aes(fill = Difference))
+ggplotly(g)
+```
+
+### Leaflet
+
+The leaflet package [Cheng, Karambelkar, and Xie 2022](https://www.paulamoraga.com/book-spatial/references.html#ref-R-leaflet) makes it easy to create maps using `Leaflet` which is a very popular open-source JavaScript library for interactive maps. We can create a leaflet map by calling the `leaflet()` function passing the spatial object, and adding layers such as polygons and legends using a number of functions. You can also use the `addMiniMap()` function to add an inset map
+
+```{r}
+pal <- colorNumeric(palette = "YlOrRd", domain = DRC_L2$Difference)
+l <- leaflet(DRC_L2) %>%
+    addTiles() %>%
+    addPolygons(
+        color = "white",
+        fillColor = ~ pal(Difference),
+        fillOpacity = 0.8
+    ) %>%
+    addLegend(pal = pal, values = ~Difference, opacity = 0.8)
+l
+```
+
+## 3. A general workflow
+
+This was easy, but how can we "generalize" this? For this we need to break the workflow down into its components. Let's start by making a flowchart of the workflow:
+
+```{mermaid}
+%%| echo: false
+flowchart TD
+  A["INPUT
+    1. Get AOI
+    2. Select climatic models, resolution, year
+    3. Get RasterLayer for selected AOI and models"] 
+  B[["PROCESSING
+    1. Crop
+    2. Mask
+    3. Calculate annual difference"]]
+  C[("OUTPUT
+        DATA")]
+  A --> B
+  B --> C
+```
+
+## 3.1 Create a function encapsulating the workflow
+
+The next step is to put this into a single function. Note that all the input variables or the arguments are described in my function, as well as the output (using roxygen2). 
+Note that I use a `list` as a result of the function as I have more than 1 output. This is particullarly useful when dealing with outputs from different classes! [more info on lists here](https://rstudio.github.io/r-manuals/r-intro/Lists-and-data-frames.html)
+
+```{r, warning=FALSE}
+#' Estimate Changes in Precipitation Using CMIP Model Scenarios
+#'
+#' This function calculates changes in precipitation using CMIP model scenarios, comparing future projections with current conditions.
+#'
+#' @param ROI A `SpatVector` representing the region of interest.
+#' @param res Numeric; the resolution of the data. Possible values are `2.5`, `5`, or `10`.
+#' @param ssp Character; the Shared Socio-economic Pathway code. Options are `"126"`, `"245"`, `"370"`, or `"585"`.
+#' @param model Character; the climate model to use. See details at \url{https://www.worldclim.org/data/cmip6/cmip6climate.html}.
+#' @param year Character; the future time period to evaluate. Must be one of `"2021-2040"`, `"2041-2060"`, or `"2061-2080"`.
+#'
+#' @return A list with two elements:
+#' \describe{
+#'   \item{abs_chang}{A raster representing the absolute change in precipitation (mm).}
+#'   \item{rel_change}{A raster representing the relative change in precipitation, expressed as a fraction of the current precipitation.}
+#' }
+#'
+#' @details
+#' This function downloads current and future precipitation data from the WorldClim database and CMIP6 projections.
+#' The data is clipped to the provided region of interest (`ROI`), and annual changes in precipitation are calculated.
+#'
+#' @examples
+#' \dontrun{
+#' library(terra)
+#' ROI <- vect("path_to_shapefile.shp")
+#' result <- myfunction_Prec_Change(ROI, res = 5, ssp = "245", model = "BCC-CSM2-MR", year = "2041-2060")
+#' plot(result$abs_chang)
+#' plot(result$rel_change)
+#' }
+myfunction_Prec_Change <- function(ROI, res, ssp, model, year) {
+    require(geodata)
+    require(terra)
+    #### download data
+    current <- worldclim_global(var = "prec", res = res)
+    future <- cmip6_world(model, ssp, year, var = "prec", res = res)
+
+    #### clip to ROI
+    current <- current %>%
+        terra::crop(ROI) %>%
+        terra::mask(ROI)
+    future <- future %>%
+        terra::crop(ROI) %>%
+        terra::mask(ROI)
+
+    #### Calculate annual change
+    delta_annual <- sum(future - current)
+    delta_prec <- sum(future - current) / sum(current)
+
+    return(list(abs_chang = delta_annual, rel_change = delta_prec))
+}
+```
+
+## 3.2 Testing your function
+
+You can now use this function to estimate changes for other regions, lets try it for Belgium:
+
+```{r, warning=FALSE}
+BEL <- gadm(country = "BEL", level = 0)
+test <- myfunction_Prec_Change(ROI = BEL, res = 2.5, ssp = "585", model = "CNRM-CM6-1", year = "2041-2060")
+m_abs <- mapview(test$abs_chang, col.regions = cols, na.color = "transparent")
+m_rel <- mapview(test$rel_chang, col.regions = cols, na.color = "transparent")
+leafsync::sync(m_abs, m_rel)
+```
+
+This is a very simple function; In the assignment (below), we are going to increase the complexity.
+
+:::assignment
+
+## Assignment
+
+ Write an R-function that gives you the predicted change in precipitation and temperature for a region, but future rainfall should represent the mean of different models. 
+ The function should be able to accept an argument for with specific model should be used. The possible CMIP6 models are one of: `"ACCESS-CM2", "ACCESS-ESM1-5", "AWI-CM-1-1-MR", "BCC-CSM2-MR", "CanESM5", "CanESM5-CanOE", "CMCC-ESM2", "CNRM-CM6-1", "CNRM-CM6-1-HR", "CNRM-ESM2-1", "EC-Earth3-Veg", "EC-Earth3-Veg-LR", "FIO-ESM-2-0", "GFDL-ESM4", "GISS-E2-1-G", "GISS-E2-1-H", "HadGEM3-GC31-LL", "INM-CM4-8", "INM-CM5-0", "IPSL-CM6A-LR", "MIROC-ES2L", "MIROC6", "MPI-ESM1-2-HR", "MPI-ESM1-2-LR", "MRI-ESM2-0", "UKESM1-0-LL"`.
+
+You can create this function by combining the functions described above. Also create a clear graphical representation of your workflow, similar to the example given above. The following indications can help you:
+
+-   Define a variable with specific `models`, `models <- c("ACCESS-CM2", "ACCESS-ESM1-5")`
+-   Loop over these models to download the precipitation predictions. Make use of pipes `%>%` (or `|>`) where you can. Make sure you adhere to the best coding practices and create a clear project structure.
+-   create a clear graphical representation of your workflow. You could use the [quarto](https://quarto.org/) and [mermaid](https://quarto.org/docs/authoring/diagrams.html) to do this programmaticaly!
+
+Have fun!
+
+:::
