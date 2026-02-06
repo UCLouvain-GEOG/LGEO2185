@@ -1,6 +1,7 @@
 /.quarto/
 **/*.quarto_ipynb
 2025/*
+03_GeoProjects_Intro/data/raw/
 .Rhistory
 *.pptx
 *.potx
