@@ -26,7 +26,7 @@ website:
       - text: "Intro to Spatial Data"
         file: Intro to Spatial Data/LGEO2185_Intro_to_Spatial_Data.qmd
       - text: "03_GeoProject_01"
-        file: 03_GeoProject_01/spatial_model_validation.qmd
+        file: 03_GeoProjects_Intro/LGEO2185_Session3 - Basic_projects.qmd
 
 
 format:
