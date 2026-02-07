@@ -1,7 +1,7 @@
 ---
-title: "LGEO2185: Session 5 -- Designing a Geoproject, part 2"
-author: "Antoine Stevens & Valentin Charlier"
-Date: 03/14/2025
+title: "LGEO2185: Designing a Geoproject -- part 2"
+author: "Kristof Van Oost Antoine Stevens & Valentin Charlier"
+Date: 02/06/2026
 toc: true
 standalone: true
 format: 
@@ -29,26 +29,25 @@ knitr::opts_chunk$set(
 # Set wd - that will work in qmd or run interactively
 # https://cran.r-project.org/web/packages/here/vignettes/here.htm
 pacman::p_load(geodata, terra, leaflet, mapview)
-setwd("C:/Users/Antoine Stevens/OneDrive - McKinsey & Company/LGEO/Session 5/")
-here::i_am("LGEO2185_Session 5 - Geoproject.qmd")
+setwd("~/RStudio_KVO/AGP/LGEO2185/03_GeoProjects_Intro")
+here::i_am("LGEO2185_Geoprojects.qmd")
 ```
 
 # Today’s program
 
--   Last week’s assignment: discussion
+-   Basic Project Assignment: discussion
 -   Advanced geoprocessing: Geoprojects, structure, implementation
 -   Open Science
 
 # Today’s Learning Objectives
 
 -   Developing a geo-spatial model
--   Reproducible workflows, sharing your code, Open Science
 
 # Additional resources
 
 -   [Axolotl](https://en.wikipedia.org/wiki/Axolotl)
 -   [Biodiversity data](https://www.gbif.org/)
--   Daniele's [GitLab repo](https://gitlab.com/danidr/geoprocessing) 
+-   Daniele's [GitLab repo](https://gitlab.com/danidr/geoprocessing)
 -   https://geco-bern.github.io/agds/introduction.html#what-is-applied-geodata-science
 
 # 1. Introduction
@@ -66,15 +65,19 @@ $$
 \text{Species Presence/Absence} \sim \text{Pred}_1 + \text{Pred}_2 + \dots + \text{Pred}_n
 $$
 
-Such model can be easily constructed based a database with observations and predictor variables. Let's see how we could do this by exploring the following `data.frame`
+Such model can be easily constructed based a database with observations and predictor variables. Let's see how we could do this by exploring the following `data.frame` You can download the data manually from here [Download the dataset (RDS)](https://raw.githubusercontent.com/ORG/REPO/main/data/my_dataset.rds) and copy it into your `data/raw` folder (or load it directly from R as done here):
 
 ```{r}
 pacman::p_load(tidyverse, here, corrplot, modEvA)
-occurrence_df <- readRDS(here("data", "raw", "occurrence_data.Rds"))
-glimpse(occurrence_df)
+url <- "https://raw.githubusercontent.com/UCLouvain-GEOG/LGEO2185/main/data/03_Geoprojects/occurrence_data.Rds"
+tmp <- tempfile(fileext = ".rds")
+download.file(url, tmp, mode = "wb")
+occurrence_df <- readRDS(tmp)
+#occurrence_df <- readRDS(here("data", "raw", "occurrence_data.Rds"))
+#glimpse(occurrence_df)
 ```
 
-You could explore this dataset as follows:
+Now explore `occurence_df` in the explorer. The variables `wc2.1_10m_bio_?`\` are derived from the worldclim Bioclimatic variables, more info [here](https://www.worldclim.org/data/bioclim.html). You could further explore this dataset as follows:
 
 ```{r 1}
 # Exploratory analysis
@@ -85,10 +88,33 @@ corrplot::corrplot(correlation)
 # Model
 myMod <- glm(pres ~ ., data = occurrence_df, family = "binomial")
 summary(myMod)
-# #check the imporance of the variables: dropterm function removes one-by-one one of the variable and test its importance in the model selection procedure.
-# library(MASS)
-# dropterm(myMod, test = "Chisq")
 modEvA::Dsquared(myMod, adjust = TRUE) # proportion of deviance explained by a GLM
+
+```
+
+```{r}
+# #check the imporance of the variables: dropterm function removes one-by-one one of the variable and test its importance in the model selection procedure.
+ library(MASS)
+# dropterm(myMod, test = "Chisq")
+ #now modify your model, or remove highly correlated predictors and then a stepwise AIC-based selection
+library(caret)
+# remove highly correlated numeric predictors (cutoff = 0.8)
+num <- sapply(occurrence_df, is.numeric)
+num["pres"] <- FALSE
+drop <- findCorrelation(cor(occurrence_df[, num], use = "pairwise.complete.obs"),
+                        cutoff = 0.8, names = TRUE)
+
+df_red <- occurrence_df[, !(names(occurrence_df) %in% drop)]
+# GLM + AIC stepwise
+myMod_selection <- step(
+  glm(pres ~ ., data = df_red, family = binomial()),
+  direction = "both",
+  trace = 0
+)
+
+summary(myMod_selection)
+modEvA::Dsquared(myMod_selection, adjust = TRUE) # proportion of deviance explained by a GLM
+
 ```
 
 If you have spatial data describing the predictors, you could apply the model and create spatial maps. That is what we will do below!
@@ -137,7 +163,7 @@ So what kind of data do we need?
 +   An Area of Interest
 ```
 
-Create a model which is able to produce as output a species suitability map (in-class, this will be developed here below). Modify your code in order to get predictions for multiple species and/or future scenarios (assignment).
+Before jumping into the workflow, take your time to understand your data, here we will work with Worldclim (see session 1 to 3) and GBIF. Note that we can extract occurrences (sightings) of tspecies using the `sp_occurrence` function of the `geodata` package. This links to the Global Biodiversity data [see here](https://www.gbif.org/) for more info. Make sure you understand the different options of the `sp_occurrence` function. Create a model which is able to produce as output a species suitability map (in-class, this will be developed here below). Modify your code in order to get predictions for multiple species and/or future scenarios (assignment).
 
 ## 3.3 Visualize the workflow
 
@@ -185,7 +211,7 @@ In species distribution modeling (SDM), we typically need both presence and abse
 
 # 4. Coding first steps
 
-At first, let's try to create a code for a specific example, i.e. without any loops and/or function calls. We try to model for a specific species, the axolotl which can be found in Mexico. Note that we can extract occurrences (sightings) of the axolotl using the `sp_occurrence` function of the `geodata` package. This links to the Global Biodiversity data [see here](https://www.gbif.org/) for more info. Make sure you understand the different options of the `sp_occurrence` function.
+At first, let's try to create a code for a specific example, i.e. without any loops and/or function calls. We try to model for a specific species, the axolotl which can be found in Mexico.
 
 ```{r, echo = FALSE, results = 'asis'}
 image <- "https://www.axolotl.org/images/animals/axolotl.jpg"
@@ -208,7 +234,7 @@ From the start, think about the parameters of the function (e.g., country name),
 ```{r 41}
 # Create AOI
 region <- "MEX"
-region <- gadm(country = region, level = 0, path = here("data", "raw", "GADM"))
+region <- gadm(country = region, level = 0)
 
 ## STEP 1 - create RasterStack with predictors
 res <- 10
@@ -248,7 +274,7 @@ absence$pres <- 0
 presence <- terra::extract(predictors, sightings, df = TRUE)
 presence$pres <- 1
 occurrence_df <- dplyr::bind_rows(absence, presence) %>% dplyr::select(-ID)
-glimpse(occurrence_df)
+#glimpse(occurrence_df)
 ```
 
 ## 4.4 Logistic Model
@@ -283,15 +309,15 @@ Note that the pattern reflected by the suitability map is not matching perfectly
 
 # 5. Generalizing the code
 
-Now that it works for one example, we can now create a function which basically is a copy paste of the above, but where we add variables for the parameters. Note the use of a `list` as the output contains the output in `spatRaster` format, the model performance as well as maps. A list a very useful when combining different types of data. Note that naming the list items helps to reference the items more easily afterwards (see below).
+Now that it works for one example, we can now create a function which basically is a copy paste of the above, but where we add variables for the parameters. Note the use of a `list` as the output contains the output in `spatRaster` format, the model performance as well as maps. A list is very useful when combining different types of data. Note that naming the list items helps to reference the items more easily afterwards (see below).
 
 ```{r 5}
 #### Wrap this in a function
-my_suitability_fct <- function(region, genus, species, res, ssp) {
+my_suitability_fct <- function(region, genus, species, res) {
     ### Description: Function to model the suitability (present and future) of an area for a species.
     ### Inputs:
-    ## region of interest (spatVector) could be a country with ISO code ,
-    ## genus and species of interset (see https://www.gbif.org/)
+    ## region of interest (spatVector),
+    ## genus and species of interest (see https://www.gbif.org/)
     ## res (numeric): resolution 2.5 5 or 10,
     ### Output: 1 suitability map as a map, a spatRaster suitability map, metric for model performance (Dsquared)
     require(terra)
@@ -300,14 +326,10 @@ my_suitability_fct <- function(region, genus, species, res, ssp) {
     require(geodata)
     require(modEvA)
 
-    # Create AOI
-    region <- gadm(country = region, level = 0, path = here("data", "raw", "GADM"))
-
     ## STEP 1 - create RasterStack with predictors
     predictors <- worldclim_global(
         var = "bio",
         res = res,
-        ssp = ssp,
         path = here("data", "raw", "climate")
     ) # https://worldclim.org/data/bioclim.html
     predictors <- predictors %>%
@@ -368,13 +390,14 @@ We can now test this function:
 
 ```{r}
 # test function
+ ROI <- gadm(country = "MEX", level = 0, path = here("data", "raw", "GADM"))
 output <- my_suitability_fct(
-    region = "MEX",
+    region = ROI,
     genus = "ambystoma", species = "mexicanum", res = 10
 )
 ```
 
-Explore what is contained in the variable, note that you can `a$` to extract from the `list`
+Explore what is contained in the variable, note that you can a `$` to extract from the `list`
 
 ```{r}
 str(output, 1)
@@ -382,7 +405,7 @@ output$suitability_leaflet
 ```
 
 ::: callout-note
-The above function is far from perfect. Further developments could be to:
+The above function is far from perfect. Further developments could be to (see also next session):
 
 1.  Improve modelling by:
     -   **Adding more predictors**: Consider using other predictors linked to habitat suitability, like altitude, human activity, etc.
@@ -410,7 +433,7 @@ if (length(occ) < 40) {
 }
 ```
 
-We could also check the quality of the occurrences retrieved. See e.g. [here](https://cran.r-project.org/web/packages/BeeBDC/readme/README.html]) or [here](https://github.com/ropensci/spocc)
+We could also check the quality of the occurrences retrieved. See e.g. [here](https://cran.r-project.org/web/packages/BeeBDC/readme/README.html%5D) or [here](https://github.com/ropensci/spocc)
 
 2.  Improve code robustness and maintenance by:
     -   **Improving function modularity**: The function currently performs multiple tasks at different levels of abstraction. Breaking the function into smaller helper functions for AOI creation, predictor extraction, occurrence processing, model fitting, and visualization would make it easier to debug and maintain.
@@ -449,6 +472,214 @@ assertthat::assert_that(res %in% c(2.5, 5, 10), msg = "Resolution must be one of
 [^1]: E.g., if pseudo-absences are placed in highly unsuitable environments (e.g., deserts for a rainforest species), the model may overestimate how distinct presence locations are
 
 [^2]: Look alternatively at `purrr::possibly()`
+
+::: callout-note
+You can create such an improved code using GenAI: The following code has been created using this simple prompt: `i) remove the leaflet output map from the function. ii) Improve code robustness and maintenance by: - Breaking the function into smaller helper functions for AOI creation, predictor extraction, occurrence processing, model fitting. - Add error handling using tryCatch() Check predictors’ coordinate reference system (CRS) align with the species data and extraction of the raster information at occurrence location return something (failed GBIF queries, missing climate data). The variable res can only be 10, 5, 2.5, and 0.5 (minutes of a degree). remove ssp. Thanks!`
+:::
+
+```{r}
+#' Species climatic suitability modelling (GLM)
+#'
+#' Fits a binomial GLM using WorldClim bioclim predictors and GBIF occurrences,
+#' then predicts climatic suitability across a region of interest.
+#'
+#' The function downloads climate predictors, retrieves species occurrences,
+#' builds a presence–pseudoabsence dataset, fits a GLM, and returns a suitability raster.
+#'
+#' @param region SpatVector. Area of interest polygon (terra::SpatVector).
+#' Must have a valid CRS.
+#'
+#' @param genus Character. Genus name (GBIF taxonomy).
+#'
+#' @param species Character. Species name.
+#'
+#' @param res Numeric. Resolution of WorldClim predictors in minutes of degree.
+#' Must be one of: `10`, `5`, `2.5`, `0.5`.
+#'
+#' @param climate_path Character. Local directory where WorldClim data will be stored.
+#' Default: `"data/raw/climate"`.
+#'
+#' @param seed Numeric. Random seed for pseudo-absence generation.
+#' Default: `1975`.
+#'
+#' @param pa_ratio Numeric. Ratio of pseudo-absences to presences.
+#' Default: `1`.
+#'
+#' @param suitability_min Numeric. Minimum probability threshold below which
+#' values are set to NA in output raster.
+#' Default: `0.01`.
+#'
+#' @return A list with:
+#' \describe{
+#'   \item{suitability_raster}{SpatRaster. Predicted suitability map.}
+#'   \item{Dsq}{Numeric. Adjusted deviance explained (Dsquared).}
+#'   \item{model}{glm object. Fitted GLM model.}
+#'   \item{occurrence_df}{Data frame used to fit the model.}
+#' }
+#'
+#' @details
+#' Workflow:
+#' 1. Download WorldClim bioclim predictors.
+#' 2. Crop/mask to region of interest.
+#' 3. Download GBIF occurrences.
+#' 4. Generate pseudo-absences.
+#' 5. Fit binomial GLM.
+#' 6. Predict suitability.
+#'
+#' Error handling ensures:
+#' - CRS consistency
+#' - valid extraction at occurrence locations
+#' - successful data downloads
+#'
+#' @examples
+#' \dontrun{
+#' library(terra)
+#'
+#' region <- vect(system.file("ex/lux.shp", package="terra"))
+#'
+#' out <- my_suitability_fct(
+#'   region = region,
+#'   genus = "Quercus",
+#'   species = "robur",
+#'   res = 10
+#' )
+#'
+#' plot(out$suitability_raster)
+#' out$Dsq
+#' }
+#'
+#' @export
+my_suitability_fct <- function(region,
+                               genus,
+                               species,
+                               res,
+                               climate_path = "data/raw/climate",
+                               seed = 1975,
+                               pa_ratio = 1,
+                               suitability_min = 0.01) {
+
+  # ---- checks ----
+  if (!inherits(region, "SpatVector"))
+    stop("`region` must be a terra::SpatVector")
+
+  if (is.na(terra::crs(region)))
+    stop("`region` must have a CRS")
+
+  allowed_res <- c(10, 5, 2.5, 0.5)
+  if (!res %in% allowed_res)
+    stop("`res` must be one of: 10, 5, 2.5, 0.5")
+
+  # ---- packages ----
+  req <- c("terra", "geodata", "modEvA", "dplyr")
+  miss <- req[!vapply(req, requireNamespace, logical(1), quietly = TRUE)]
+  if (length(miss))
+    stop("Missing packages: ", paste(miss, collapse = ", "))
+
+  # ---- helpers ----
+  load_predictors <- function() {
+    tryCatch({
+      geodata::worldclim_global(
+        var = "bio",
+        res = res,
+        path = climate_path
+      )
+    }, error = function(e) {
+      stop("Climate download failed: ", e$message)
+    })
+  }
+
+  prep_predictors <- function(pred) {
+    if (!terra::same.crs(pred, region))
+      region_proj <- terra::project(region, terra::crs(pred))
+    else
+      region_proj <- region
+
+    pred |>
+      terra::crop(region_proj) |>
+      terra::mask(region_proj)
+  }
+
+  load_occurrences <- function() {
+    tryCatch({
+      s <- geodata::sp_occurrence(
+        genus = genus,
+        species = species,
+        ext = region,
+        sp = TRUE,
+        download = TRUE,
+        geo = TRUE
+      )
+      s <- terra::vect(s)
+
+      if (nrow(s) == 0)
+        stop("No occurrences found in region.")
+
+      s
+    }, error = function(e) {
+      stop("GBIF query failed: ", e$message)
+    })
+  }
+
+  build_pa <- function(pred, sightings) {
+
+    if (!terra::same.crs(pred, sightings))
+      sightings <- terra::project(sightings, terra::crs(pred))
+
+    pres <- terra::extract(pred, sightings, df = TRUE)
+    pres$pres <- 1
+
+    pres <- pres[stats::complete.cases(pres), ]
+    if (nrow(pres) == 0)
+      stop("Extraction returned only NA values.")
+
+    n_abs <- max(1, round(nrow(pres) * pa_ratio))
+
+    set.seed(seed)
+    abs <- terra::spatSample(pred,
+                             size = n_abs,
+                             method = "random",
+                             na.rm = TRUE)
+
+    abs <- as.data.frame(abs)
+    abs$pres <- 0
+
+    dplyr::bind_rows(abs, pres) |>
+      dplyr::select(-dplyr::any_of("ID"))
+  }
+
+  # ---- pipeline ----
+  predictors <- load_predictors()
+  predictors <- prep_predictors(predictors)
+
+  sightings <- load_occurrences()
+
+  occurrence_df <- build_pa(predictors, sightings)
+
+  model <- stats::glm(pres ~ ., data = occurrence_df, family = stats::binomial())
+
+  Dsq <- modEvA::Dsquared(model, adjust = TRUE)
+
+  suitability <- terra::predict(predictors, model, type = "response")
+  suitability <- terra::ifel(suitability < suitability_min, NA, suitability)
+
+  list(
+    suitability_raster = suitability,
+    Dsq = Dsq,
+    model = model,
+    occurrence_df = occurrence_df
+  )
+}
+
+```
+
+```{r}
+# test function
+ ROI <- gadm(country = "MEX", level = 0, path = here("data", "raw", "GADM"))
+output <- my_suitability_fct(
+    region = ROI,
+    genus = "ambystoma", species = "mexicanum", res = 10
+)
+```
 
 ::: assignment
 # Assignment

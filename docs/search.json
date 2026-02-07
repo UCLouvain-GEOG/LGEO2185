@@ -922,5 +922,144 @@
     "crumbs": [
       "03_GeoProject_01"
     ]
+  },
+  {
+    "objectID": "03_GeoProjects_Intro/LGEO2185_Geoprojects_Assignment.html",
+    "href": "03_GeoProjects_Intro/LGEO2185_Geoprojects_Assignment.html",
+    "title": "LGEO2185: Session 5 – Designing a Geoproject – Assignment",
+    "section": "",
+    "text": "Assignment\nBuilding on what we have done there together, the challenge is now to further develop this model and to make it broader by also predicting future suitability maps using the cmip climate predictions. Make sure that your model can predict current suitability and suitability for 2030, 2050 and 2070. For example using a loop over the years: years&lt;-c(\"1970-2000\", \"2021-2040\", \"2041-2060\", \"2061-2080\")\nAlso make sure your model can handle different type of climate models and scenario’s.\nThe output should be a list containing leaflet maps for the current situation, leaflet maps showing the change for each interval relative to the current condition, and the suitability maps for each time interval in spatRaster format.\n\n\nSolution\n\n## ---- Suitability --------\n#' Suitability Map Modeling\n#'\n#' This set of functions models species habitat suitability using environmental and occurrence data.\n#' It predicts suitability for present and future climatic conditions.\n#'\n#' @param region A spatial object defining the region of interest.\n#' @param genus The genus of the species.\n#' @param species The species name.\n#' @param res Resolution of environmental data. Must be one of 2.5, 5, 10\n#' @param ssp Shared Socioeconomic Pathway scenario. Must be one of '126', '245', '370', '585'\n#' @param model Climatic model for future prediction. See \\code{geodata::cmip6_world()}\n#' @param time A character vector of time periods. Must be one or several of '1970-2000', '2021-2040', '2041-2060', or '2061-2080'\n#' @return A list containing suitability maps and input_data.\n#' @import geodata terra leaflet leafsync\n#' @examples\n#' library(\"terra\")\n#' library(\"geodata\")\n#' library(\"here\")\n#' options(geodata_default_path = here())\n#' region &lt;- gadm(country = \"MEX\", level = 0, path = here())\n#' output &lt;- suitability_map(\n#'     region = region, genus = \"ambystoma\",\n#'     species = \"mexicanum\", res = 10,\n#'     model = \"ACCESS-CM2\", ssp = \"126\"\n#' )\n#' r &lt;- output$suitability_map\n#' r\n#' @importFrom assertthat assert_that\n#' @export\nsuitability_map &lt;- function(region, genus, species, res, ssp, model, time = c(\"1970-2000\", \"2021-2040\", \"2041-2060\", \"2061-2080\")) {\n    ### Validate inputs ###\n    assertthat::assert_that(!is.null(getOption(\"geodata_default_path\")), msg = \"Setup your geodata folder using: options(geodata_default_path = 'mypath')\")\n\n    # STEP 1\n    predictors &lt;- get_predictors(region, res, ssp, model, time)\n    # STEP 2\n    occ &lt;- get_occurrence(region, genus, species)\n    # STEP 3\n    occurrence_df &lt;- create_presence_absence_df(occ, predictors[1])\n    # STEP 4\n    model_fit &lt;- fit_suitability_model(occurrence_df)\n    # STEP 5\n    maps &lt;- predict_suitability(model_fit, predictors)\n    return(list(\n        \"suitability_map\" = maps,\n        \"input_data\" = list(\n            \"occurrence\" = occ, \"predictors\" = predictors,\n            \"model_fit\" = model_fit, \"sampled_df\" = occurrence_df\n        )\n    ))\n}\n\n#' Download and prepare occurrence data\n#'\n#' @param region The region of interest, a \\code{SpatVector}\n#' @param genus The genus of the species, a \\code{character}\n#' @param species The species name, \\code{character}\n#' @param path output path\n#' @return A spatial object with occurrence data.\n#' @import geodata terra\n#' @importFrom assertthat assert_that\n#' @export\nget_occurrence &lt;- function(region, genus, species, path = getOption(\"geodata_default_path\")) {\n    assertthat::assert_that(!is.null(path), msg = \"Setup your geodata folder using: options(geodata_default_path = 'mypath')\")\n    assertthat::assert_that(is.character(genus), msg = \"Genus must be a character string\")\n    assertthat::assert_that(is.character(species), msg = \"Species must be a character string\")\n    assertthat::assert_that(inherits(region, \"SpatVector\"), msg = \"Region must be a 'SpatVector' object.\")\n\n    occ &lt;- geodata::sp_occurrence(genus = genus, species = species, ext = region, sp = TRUE, download = TRUE, geo = TRUE, path = path)\n    occ &lt;- terra::vect(occ)\n    crs(occ) &lt;- terra::crs(region)\n\n    if (length(occ) &lt; 40) {\n        stop(\"Not enough occurrences (ie &lt; 40) in the selected region to model the suitability map.\")\n    }\n\n    occ$pres &lt;- 1\n    return(occ)\n}\n\n#' Create environmental raster stack\n#'\n#' @param region The region of interest, a \\code{SpatVector}\n#' @param res Resolution of environmental data.\n#' @param ssp Shared Socioeconomic Pathway scenario. Must be one of '126', '245', '370', '585'\n#' @param model Climatic model for future prediction.\n#' @param time A vector of time period. One or several of \"1970-2000\", \"2021-2040\", \"2041-2060\", or \"2061-2080\"\n#' @param path output path\n#' @return A list of environmental raster layers for different time periods.\n#' @import terra\n#' @importFrom geodata worldclim_global cmip6_world\n#' @importFrom assertthat assert_that\n#' @export\nget_predictors &lt;- function(region, res, ssp, model, time = c(\"1970-2000\", \"2021-2040\", \"2041-2060\", \"2061-2080\"), path = getOption(\"geodata_default_path\")) {\n    assertthat::assert_that(!is.null(path), msg = \"Setup your geodata folder using: options(geodata_default_path = 'mypath')\")\n    assertthat::assert_that(res %in% c(2.5, 5, 10), msg = \"Resolution must be 2.5, 5, or 10\")\n    assertthat::assert_that(ssp %in% c(\"126\", \"245\", \"370\", \"585\"), msg = \"ssp must be '126', '245', '370', '585'\")\n    assertthat::assert_that(all(time %in% c(\"1970-2000\", \"2021-2040\", \"2041-2060\", \"2061-2080\")), msg = \"time should be one of '1970-2000', '2021-2040', '2041-2060', or '2061-2080'\")\n    assertthat::assert_that(inherits(region, \"SpatVector\"), msg = \"Region must be a 'SpatVector' object.\")\n\n    # Retrieve all climate data\n    climate_data &lt;- purrr::map(time, function(year) {\n        if (year == \"1970-2000\") {\n            x &lt;- geodata::worldclim_global(var = \"bio\", res = res, ssp = ssp, path = path)\n            names(x) &lt;- paste0(\"bio_\", 1:nlyr(x))\n            x\n        } else {\n            x &lt;- geodata::cmip6_world(model = model, ssp = ssp, time = year, var = \"bioc\", res = res, path = path)\n            names(x) &lt;- paste0(\"bio_\", 1:nlyr(x))\n            x\n        }\n    })\n\n    # mask & crop\n    climate_data &lt;- purrr::map(climate_data, ~ .x %&gt;%\n        terra::crop(region) %&gt;%\n        terra::mask(region))\n\n    names(climate_data) &lt;- time\n\n    # Create a SpatDataSet (ie holding a fourth dimension)\n    if (length(climate_data) &gt; 1) {\n        climate_data &lt;- terra::sds(climate_data)\n    } else {\n        climate_data &lt;- terra::rast(climate_data)\n    }\n\n    return(climate_data)\n}\n\n#' Generate presence-absence data and extract environmental variables\n#'\n#' @param df \\code{SpatVect} with occurrence data.\n#' @param r \\code{SpatRaster} with environmental covariates\n#' @param seed seed for sampling\n#' @return A \\code{data.frame} with presence-absence data and extracted environmental variables.\n#' @import terra\n#' @export\n#' @examples\n#' library(\"terra\")\n#' library(\"geodata\")\n#' library(\"here\")\n#' options(geodata_default_path = here())\n#' data(occurrences)\n#' region &lt;- gadm(country = \"MEX\", level = 0, path = here())\n#' predictors &lt;- get_predictors(\n#'     region = region, res = 10,\n#'     ssp = \"126\", model = \"ACCESS-CM2\",\n#'     time = \"1970-2000\"\n#' )\n#' occurrence_df &lt;- create_presence_absence_df(df = vect(occurrences), r = predictors)\ncreate_presence_absence_df &lt;- function(df, r, seed = 1975) {\n    set.seed(seed)\n\n    absence &lt;- terra::spatSample(r, size = length(df), method = \"random\", na.rm = T)\n    absence$pres &lt;- 0\n    presence &lt;- terra::extract(r, df, df = TRUE)\n    presence$pres &lt;- 1\n    occurrence_df &lt;- dplyr::bind_rows(absence, presence) %&gt;% dplyr::select(-ID)\n    return(occurrence_df)\n}\n\n#' Fit a suitability model\n#'\n#' @param df \\code{data.frame} containing presence-absence and environmental variables.\n#' @return A fitted logistic regression model.\n#' @importFrom stats glm\n#' @export\nfit_suitability_model &lt;- function(df) {\n    model_fit &lt;- glm(pres ~ ., data = df, family = \"binomial\")\n    return(model_fit)\n}\n\n#' Predict habitat suitability\n#'\n#' @param model_fit A fitted model.\n#' @param r List of environmental data for different time periods.\n#' @return Suitability rasters.\n#' @import terra\n#' @export\npredict_suitability &lt;- function(model_fit, r) {\n    if (inherits(r, \"SpatRasterDataset\")) {\n        r &lt;- purrr::map(r, ~ predict(.x, model_fit, type = \"response\"))\n        r &lt;- terra::rast(r) # collapse\n    } else {\n        r &lt;- predict(r, model_fit, type = \"response\")\n    }\n    names(r) &lt;- paste(\"Suitability\", names(r))\n    return(r)\n}\n\n#' Plot suitability rasters using leaflet\n#'\n#' @param r Suitability rasters.\n#' @return leaflet plots\n#' @import terra leaflet leafsync\n#' @export\nplot_leaflet &lt;- function(r) {\n    p &lt;- purrr::map2(as.list(r), names(r), ~ .plot_leaflet(.x, .y))\n    return(leafsync::sync(p))\n}\n\n# helper\n.plot_leaflet &lt;- function(r, title, cols = c(\"#c45741\", \"#FFFFCC\", \"#0C2C84\")) {\n    pal &lt;- leaflet::colorNumeric(cols,\n        domain = c(-1, 1),\n        na.color = \"transparent\"\n    )\n    leaflet::leaflet() %&gt;%\n        leaflet::addTiles() %&gt;%\n        leaflet::addRasterImage(r, colors = pal, opacity = 0.8) %&gt;%\n        leaflet::addLegend(\n            pal = pal, values = terra::values(r),\n            title = title\n        )\n}\n\n\n\nExample\n\npacman::p_load(tidyverse, terra, leaflet, leafsync, geodata)\n# Example using the fct\noptions(geodata_default_path = here(\"data\", \"raw\"))\nregion &lt;- gadm(country = \"MEX\", level = 0, path = here(\"data\", \"raw\", \"GADM\"))\noutput &lt;- suitability_map(\n    region = region, genus = \"ambystoma\",\n    species = \"mexicanum\", res = 10,\n    model = \"ACCESS-CM2\", ssp = \"126\"\n)\nr &lt;- output$suitability_map\nplot_leaflet(r)\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n# Plot change\nchange &lt;- list(\n    \"Suitability change by 2030\" = r[[2]] - r[[1]],\n    \"Suitability change by 2050\" = r[[3]] - r[[1]],\n    \"Suitability change by 2070\" = r[[4]] - r[[1]]\n)\nplot_leaflet(change)"
+  },
+  {
+    "objectID": "03_GeoProjects_Intro/LGEO2185_Geoprojects.html",
+    "href": "03_GeoProjects_Intro/LGEO2185_Geoprojects.html",
+    "title": "LGEO2185: Designing a Geoproject – part 2",
+    "section": "",
+    "text": "Basic Project Assignment: discussion\nAdvanced geoprocessing: Geoprojects, structure, implementation\nOpen Science\nHave fun!!",
+    "crumbs": [
+      "03_GeoProject_Intro",
+      "LGEO2185: Designing a Geoproject -- part 2"
+    ]
+  },
+  {
+    "objectID": "03_GeoProjects_Intro/LGEO2185_Geoprojects.html#summary",
+    "href": "03_GeoProjects_Intro/LGEO2185_Geoprojects.html#summary",
+    "title": "LGEO2185: Designing a Geoproject – part 2",
+    "section": "3.1 Summary",
+    "text": "3.1 Summary\nA geoproject’s workflow can be summarized as follows:\n\nIdentify a clear goal\nDecompose the framework into small steps:\n\nthe conceptual aspect\nthe practical aspect : the data I need and the methodology\nthe coding aspect.\n\n\nAs always, consider reproducibility and clear coding ;-) We can conceptualize the project as follows:",
+    "crumbs": [
+      "03_GeoProject_Intro",
+      "LGEO2185: Designing a Geoproject -- part 2"
+    ]
+  },
+  {
+    "objectID": "03_GeoProjects_Intro/LGEO2185_Geoprojects.html#define-data-needs",
+    "href": "03_GeoProjects_Intro/LGEO2185_Geoprojects.html#define-data-needs",
+    "title": "LGEO2185: Designing a Geoproject – part 2",
+    "section": "3.2 Define data needs",
+    "text": "3.2 Define data needs\nSo what kind of data do we need?\n+   Species occurrences (GBIF)\n+   Species absences: randomly generated\n+   Climatic variables (Worldclim) + Vegetation\n+   A given species\n+   An Area of Interest\nBefore jumping into the workflow, take your time to understand your data, here we will work with Worldclim (see session 1 to 3) and GBIF. Note that we can extract occurrences (sightings) of tspecies using the sp_occurrence function of the geodata package. This links to the Global Biodiversity data see here for more info. Make sure you understand the different options of the sp_occurrence function. Create a model which is able to produce as output a species suitability map (in-class, this will be developed here below). Modify your code in order to get predictions for multiple species and/or future scenarios (assignment).",
+    "crumbs": [
+      "03_GeoProject_Intro",
+      "LGEO2185: Designing a Geoproject -- part 2"
+    ]
+  },
+  {
+    "objectID": "03_GeoProjects_Intro/LGEO2185_Geoprojects.html#visualize-the-workflow",
+    "href": "03_GeoProjects_Intro/LGEO2185_Geoprojects.html#visualize-the-workflow",
+    "title": "LGEO2185: Designing a Geoproject – part 2",
+    "section": "3.3 Visualize the workflow",
+    "text": "3.3 Visualize the workflow\n\n\n\n\n\nflowchart TD\n  A[[\"&lt;b&gt;INPUT&lt;/b&gt;\n    1. Set ROI (SpatVector)\n    2. Set Species: name, genus (string)\n    \"]]\n    \n  B[[\"&lt;b&gt;MAIN STEPS&lt;/b&gt;\n    1. Get predictors (SpatRaster)\n    2. Get occurrences data (Data.Frame)\n    3. Extract predictor values at occurrence and absence locations (Data.Frame)\n    4. Fit a model (glm object)\n    5. Spatial predictions using fitted model (SpatRaster)\n    \"]]\n\n  B1[[\"&lt;b&gt;Get Predictors&lt;/b&gt;&lt;br&gt;1. Download worldclim & cmip6 (SpatRaster) &lt;br&gt;2. Stack &lt;br&gt;3. Crop & mask &lt;br&gt;\"]]\n  B2[[\"&lt;b&gt;Get occurrence&lt;/b&gt;&lt;br&gt;1. Download GBIF (Data.Frame) &lt;br&gt;2. Add random absences &lt;br&gt;3. Create a dependent variable (0/1) &lt;br&gt;\"]]\n\n  C[[\"&lt;b&gt;OUTPUT&lt;/b&gt;\n        1. Suitability maps\n        2. Plots\"]]\n\n  A --&gt; PROCESSING\n  PROCESSING --&gt; C\n  subgraph PROCESSING\n   B --&gt; |STEP 1 Details| B1 \n   B --&gt; |STEP 2 Details| B2 \n    end\n \n  style A text-align:left\n  style B text-align:left\n  style C text-align:left  \n  style B1 text-align:left\n  style B2 text-align:left\n\n\n\n\n\n\n\n\n\n\n\n\nNote\n\n\n\nIn species distribution modeling (SDM), we typically need both presence and absence data to train a predictive model. However, for many species, true absence data is not available (since most datasets only record where a species has been found, not where it does not occur). This is where pseudo-absence selection comes in: we generate artificial “absence” points in places where the species might not exist.",
+    "crumbs": [
+      "03_GeoProject_Intro",
+      "LGEO2185: Designing a Geoproject -- part 2"
+    ]
+  },
+  {
+    "objectID": "03_GeoProjects_Intro/LGEO2185_Geoprojects.html#environment",
+    "href": "03_GeoProjects_Intro/LGEO2185_Geoprojects.html#environment",
+    "title": "LGEO2185: Designing a Geoproject – part 2",
+    "section": "4.0 Environment",
+    "text": "4.0 Environment\n\n# Load libraries and set parameters\npacman::p_load(geodata, terra, leaflet, mapview)\nsetwd(\"path/to/my/folder\")\noptions(geodata_default_path = here(\"data\", \"raw\"))",
+    "crumbs": [
+      "03_GeoProject_Intro",
+      "LGEO2185: Designing a Geoproject -- part 2"
+    ]
+  },
+  {
+    "objectID": "03_GeoProjects_Intro/LGEO2185_Geoprojects.html#load-predictors",
+    "href": "03_GeoProjects_Intro/LGEO2185_Geoprojects.html#load-predictors",
+    "title": "LGEO2185: Designing a Geoproject – part 2",
+    "section": "4.1 Load Predictors",
+    "text": "4.1 Load Predictors\nFrom the start, think about the parameters of the function (e.g., country name), this will allow to functionalize rapidly your code later… Let’s start with downloading predictor variables for a given AOI Note that we define just a resolution, model and scenario for now. We download a long list of potential climatic predictors using the worldclim database, and we use the bio variables. See see here for more info\n\n# Create AOI\nregion &lt;- \"MEX\"\nregion &lt;- gadm(country = region, level = 0)\n\n## STEP 1 - create RasterStack with predictors\nres &lt;- 10\nmodel &lt;- \"ACCESS-CM2\"\nssp &lt;- \"126\"\n\npredictors &lt;- worldclim_global(var = \"bio\", res = res, ssp = ssp, path = here(\"data\", \"raw\", \"climate\")) # https://worldclim.org/data/bioclim.html\npredictors &lt;- predictors %&gt;%\n    crop(region) %&gt;%\n    mask(region)\nplot(predictors)",
+    "crumbs": [
+      "03_GeoProject_Intro",
+      "LGEO2185: Designing a Geoproject -- part 2"
+    ]
+  },
+  {
+    "objectID": "03_GeoProjects_Intro/LGEO2185_Geoprojects.html#load-occurrences",
+    "href": "03_GeoProjects_Intro/LGEO2185_Geoprojects.html#load-occurrences",
+    "title": "LGEO2185: Designing a Geoproject – part 2",
+    "section": "4.2 Load occurrences",
+    "text": "4.2 Load occurrences\nNow, let’s download occurrence for a given species\n\n## STEP 2 - Load sightings data and verification\ngenus &lt;- \"ambystoma\"\nspecies &lt;- \"mexicanum\"\n# Download observations\nsightings &lt;- sp_occurrence(genus = genus, species = species, ext = region, sp = TRUE, download = TRUE, geo = TRUE)\nsightings &lt;- vect(sightings)\ncrs(sightings) &lt;- crs(region)\nplot(sightings)\nplot(region, add = T)",
+    "crumbs": [
+      "03_GeoProject_Intro",
+      "LGEO2185: Designing a Geoproject -- part 2"
+    ]
+  },
+  {
+    "objectID": "03_GeoProjects_Intro/LGEO2185_Geoprojects.html#prepare-occurrences-for-modelling",
+    "href": "03_GeoProjects_Intro/LGEO2185_Geoprojects.html#prepare-occurrences-for-modelling",
+    "title": "LGEO2185: Designing a Geoproject – part 2",
+    "section": "4.3 Prepare occurrences for modelling",
+    "text": "4.3 Prepare occurrences for modelling\n\n## STEP 3 - Create presence/absence database\nset.seed(1975)\nabsence &lt;- terra::spatSample(predictors, size = length(sightings), method = \"random\", na.rm = T)\nabsence$pres &lt;- 0\npresence &lt;- terra::extract(predictors, sightings, df = TRUE)\npresence$pres &lt;- 1\noccurrence_df &lt;- dplyr::bind_rows(absence, presence) %&gt;% dplyr::select(-ID)\n#glimpse(occurrence_df)",
+    "crumbs": [
+      "03_GeoProject_Intro",
+      "LGEO2185: Designing a Geoproject -- part 2"
+    ]
+  },
+  {
+    "objectID": "03_GeoProjects_Intro/LGEO2185_Geoprojects.html#logistic-model",
+    "href": "03_GeoProjects_Intro/LGEO2185_Geoprojects.html#logistic-model",
+    "title": "LGEO2185: Designing a Geoproject – part 2",
+    "section": "4.4 Logistic Model",
+    "text": "4.4 Logistic Model\n\n## STEP 4 - Fit a model\nmyMod &lt;- glm(pres ~ ., data = occurrence_df, family = \"binomial\")\nsummary(myMod)\n\n\nCall:\nglm(formula = pres ~ ., family = \"binomial\", data = occurrence_df)\n\nCoefficients:\n                   Estimate Std. Error z value Pr(&gt;|z|)    \n(Intercept)      -9.256e+01  8.684e+01  -1.066 0.286461    \nwc2.1_10m_bio_1  -4.216e+00  1.085e+01  -0.389 0.697572    \nwc2.1_10m_bio_2  -1.754e+01  5.898e+00  -2.974 0.002937 ** \nwc2.1_10m_bio_3   4.525e+00  1.509e+00   2.998 0.002716 ** \nwc2.1_10m_bio_4  -2.021e+00  5.997e-01  -3.370 0.000751 ***\nwc2.1_10m_bio_5   1.166e+06  1.184e+06   0.984 0.325040    \nwc2.1_10m_bio_6  -1.166e+06  1.184e+06  -0.984 0.325044    \nwc2.1_10m_bio_7  -1.166e+06  1.184e+06  -0.984 0.325047    \nwc2.1_10m_bio_8   9.407e+00  5.542e+00   1.697 0.089636 .  \nwc2.1_10m_bio_9  -3.642e+00  1.251e+00  -2.911 0.003602 ** \nwc2.1_10m_bio_10  5.883e+01  1.937e+01   3.037 0.002387 ** \nwc2.1_10m_bio_11 -7.744e+01  2.550e+01  -3.037 0.002389 ** \nwc2.1_10m_bio_12 -4.327e-01  1.138e-01  -3.802 0.000144 ***\nwc2.1_10m_bio_13 -1.301e+00  3.965e-01  -3.282 0.001032 ** \nwc2.1_10m_bio_14  1.887e+00  1.011e+00   1.866 0.062006 .  \nwc2.1_10m_bio_15 -1.344e+00  3.827e-01  -3.511 0.000447 ***\nwc2.1_10m_bio_16  1.185e+00  3.299e-01   3.591 0.000329 ***\nwc2.1_10m_bio_17 -8.877e-01  4.135e-01  -2.147 0.031832 *  \nwc2.1_10m_bio_18 -1.400e-01  6.959e-02  -2.012 0.044180 *  \nwc2.1_10m_bio_19  3.395e-01  1.371e-01   2.476 0.013279 *  \n---\nSignif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1\n\n(Dispersion parameter for binomial family taken to be 1)\n\n    Null deviance: 668.194  on 481  degrees of freedom\nResidual deviance:  54.917  on 462  degrees of freedom\nAIC: 94.917\n\nNumber of Fisher Scoring iterations: 15",
+    "crumbs": [
+      "03_GeoProject_Intro",
+      "LGEO2185: Designing a Geoproject -- part 2"
+    ]
+  },
+  {
+    "objectID": "03_GeoProjects_Intro/LGEO2185_Geoprojects.html#predict-spatially",
+    "href": "03_GeoProjects_Intro/LGEO2185_Geoprojects.html#predict-spatially",
+    "title": "LGEO2185: Designing a Geoproject – part 2",
+    "section": "4.5 Predict spatially",
+    "text": "4.5 Predict spatially\n\n# STEP 5 - Creating suitability layers\nsuitability &lt;- predict(predictors, myMod, type = \"response\") ### Rastermap",
+    "crumbs": [
+      "03_GeoProject_Intro",
+      "LGEO2185: Designing a Geoproject -- part 2"
+    ]
+  },
+  {
+    "objectID": "03_GeoProjects_Intro/LGEO2185_Geoprojects.html#create-a-map",
+    "href": "03_GeoProjects_Intro/LGEO2185_Geoprojects.html#create-a-map",
+    "title": "LGEO2185: Designing a Geoproject – part 2",
+    "section": "4.6 Create a map",
+    "text": "4.6 Create a map\nAnd finally, visualize the map\n\n# STEP 6 - Visualize\n# you can blank the regions below a threshold\nsuitability &lt;- ifel(suitability &lt; 0.01, NA, suitability)\np &lt;- mapview(suitability, col.regions = \"red\", na.color = \"transparent\", layer.name = \"Suitability\", legend = FALSE) +\n    mapview(sightings, cex = 2, popup = FALSE, layer.name = \"Observations\")\np\n\n\n\n\n\nNote that the pattern reflected by the suitability map is not matching perfectly observations. There are certainly many ways to improve this! Look e.g. here for a good reference on Species Distribution Modelling.",
+    "crumbs": [
+      "03_GeoProject_Intro",
+      "LGEO2185: Designing a Geoproject -- part 2"
+    ]
+  },
+  {
+    "objectID": "03_GeoProjects_Intro/LGEO2185_Geoprojects.html#footnotes",
+    "href": "03_GeoProjects_Intro/LGEO2185_Geoprojects.html#footnotes",
+    "title": "LGEO2185: Designing a Geoproject – part 2",
+    "section": "Footnotes",
+    "text": "Footnotes\n\n\nE.g., if pseudo-absences are placed in highly unsuitable environments (e.g., deserts for a rainforest species), the model may overestimate how distinct presence locations are↩︎\nLook alternatively at purrr::possibly()↩︎",
+    "crumbs": [
+      "03_GeoProject_Intro",
+      "LGEO2185: Designing a Geoproject -- part 2"
+    ]
   }
 ]

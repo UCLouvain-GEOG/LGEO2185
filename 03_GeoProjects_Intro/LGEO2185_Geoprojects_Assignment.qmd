@@ -1,7 +1,7 @@
 ---
 title: "LGEO2185: Session 5 -- Designing a Geoproject -- Assignment"
-author: "Antoine Stevens & Valentin Charlier"
-Date: 03/14/2025
+author: "Kristof Van Oost, Antoine Stevens & Valentin Charlier"
+Date: 07/02/2026
 toc: true
 standalone: true
 format: 
@@ -24,8 +24,8 @@ knitr::opts_chunk$set(
     warning = FALSE
 )
 pacman::p_load(tidyverse, here)
-setwd("C:/Users/Antoine Stevens/OneDrive - McKinsey & Company/LGEO/Session 5/")
-here::i_am("LGEO2185_Session 5 - Geoproject_Assignment.qmd")
+setwd("~/RStudio_KVO/AGP/LGEO2185/03_GeoProjects_Intro")
+here::i_am("LGEO2185_Geoprojects.qmd")
 source("R/suitability_fn.R")
 ```
 

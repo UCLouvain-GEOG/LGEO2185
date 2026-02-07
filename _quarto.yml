@@ -25,8 +25,14 @@ website:
         file: R Basics/LGEO2185_Introduction_to_tidyverse.qmd
       - text: "Intro to Spatial Data"
         file: Intro to Spatial Data/LGEO2185_Intro_to_Spatial_Data.qmd
-      - text: "03_GeoProject_01"
-        file: 03_GeoProjects_Intro/LGEO2185_Basic_projects.qmd
+      - section: "03_GeoProject_Intro"
+        contents:
+          - text: "Coding Principles"
+          - file: 03_GeoProjects_Intro/LGEO2185_Clean_coding_principles.qmd
+          - text: "Geoprojects_1"
+          - file: 03_GeoProjects_Intro/LGEO2185_Basic_projects.qmd
+          - text: "Geoprojects_2"
+          - file: 03_GeoProjects_Intro/LGEO2185_Geoprojects.qmd
 
 
 format:
