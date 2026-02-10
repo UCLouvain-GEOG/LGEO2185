@@ -1,0 +1,39 @@
+---
+title: "LGEO2185: Introduction to Git & Github"
+author: "Kristof Van Oost, Antoine Stevens & Valentin Charlier"
+Date: 2026-03-04
+---
+
+# Learning Objectives
+
+-   **Understand** the basics of Git
+
+-   **Setup** your machine
+
+-   **Apply** simple version control workflows
+
+# Resources
+
+-   [Happy Git and GitHub for the useR](https://happygitwithr.com/)
+-   [Reproducible workflow and version control with Git and Github](https://jules32.github.io/2016-07-12-Oxford/git/)
+-   [git/github guide a minimal tutorial](https://kbroman.org/github_tutorial/)
+-   [Version Control with Git](https://swcarpentry.github.io/git-novice/)
+-   [RWorkflow Intro to Git](https://rverse-tutorials.github.io/RWorkflow/intro-git.html#Git_(GitHubGitLab))
+
+# 1. Introduction
+
+## 1.1 Git
+
+Git is a version control system that tracks changes in your files and allows you to revert back, collaborate with others, and maintain a clean history of development. It's especially helpful for coding and data science projects. In short, it solves the following issues: \* what if an older version was better? \* how can I share code ? \* how can I collaborate
+
+# 2. Setup
+
+![](images/image-733982776.png)
+
+# 3. Vers
+
+Start by reading a few online resources:
+
+::: assignment
+## Assignment
+:::
