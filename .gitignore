@@ -1,7 +1,9 @@
 /.quarto/
 **/*.quarto_ipynb
 2025/*
+**/data/raw/
 .Rhistory
 *.pptx
 *.potx
 .DS_Store
+.Rproj.user
