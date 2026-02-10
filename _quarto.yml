@@ -6,8 +6,8 @@ project:
     - index.qmd
     - R Basics/**.qmd
     - Intro to Spatial Data/**.qmd
-    - Collaboration/LGEO2185 - Drafting your project with Quarto.qmd
-    - 03_GeoProjects_Intro/**.qmd
+    - Collaboration/LGEO2185_Drafting_your_project_with_Quarto.qmd
+    - GeoProjects/**.qmd
 
 website:
   title: "LGEO2185: Advanced Geoprocessing"
@@ -30,15 +30,15 @@ website:
       - section: "GeoProjects Intro"
         contents:
           - text: "Coding Principles"
-            file: 03_GeoProjects_Intro/LGEO2185_Clean_coding_principles.qmd
+            file: GeoProjects/LGEO2185_Clean_coding_principles.qmd
           - text: "Geoprojects_1"
-            file: 03_GeoProjects_Intro/LGEO2185_Basic_projects.qmd
+            file: GeoProjects/LGEO2185_Basic_projects.qmd
           - text: "Geoprojects_2"
-            file: 03_GeoProjects_Intro/LGEO2185_Geoprojects.qmd
+            file: GeoProjects/LGEO2185_Geoprojects.qmd
       - section: "Collaboration"
         contents:
           - text: "Drafting your project with Quarto"
-            file: Collaboration/LGEO2185 - Drafting your project with Quarto.qmd
+            file: Collaboration/LGEO2185_Drafting_your_project_with_Quarto.qmd
 
 
 bibliography: biblio.bib

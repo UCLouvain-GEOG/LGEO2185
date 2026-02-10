@@ -4,6 +4,13 @@ author: "Kristof Van Oost, Antoine Stevens & Valentin Charlier"
 Date: 2026-02-04
 --- 
 
+
+```{r "setup", include=FALSE}
+require("knitr")
+pacman::p_load(tidyverse, here)
+```
+
+
 ## 1. Introduction
 
 In this session, we will explore the **tidyverse** —a suite of R packages designed to make common data science tasks more intuitive and consistent. The tidyverse philosophy emphasizes human-readable code, a consistent syntax, and functions that work together, especially thanks to the **pipe orerator** (we will see later what it means). This approach can often streamline your data analysis workflow.
