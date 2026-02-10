@@ -1,0 +1,181 @@
+---
+title: "LGEO2185: R Project Structure & Workflow -- Assignment"
+author: "Kristof Van Oost, Antoine Stevens & Valentin Charlier"
+Date: 05/02/2026
+---
+:::assignment
+
+# Assignment 
+
+Write an R function that gives you the predicted change in precipitation and temperature for a region, but the future rainfall should represent the mean of different models. the function should be able to accept an argument for with specific model should be used. The possible CMIP6 models are one of: `"ACCESS-CM2", "ACCESS-ESM1-5", "AWI-CM-1-1-MR", "BCC-CSM2-MR", "CanESM5", "CanESM5-CanOE", "CMCC-ESM2", "CNRM-CM6-1", "CNRM-CM6-1-HR", "CNRM-ESM2-1", "EC-Earth3-Veg", "EC-Earth3-Veg-LR", "FIO-ESM-2-0", "GFDL-ESM4", "GISS-E2-1-G", "GISS-E2-1-H", "HadGEM3-GC31-LL", "INM-CM4-8", "INM-CM5-0", "IPSL-CM6A-LR", "MIROC-ES2L", "MIROC6", "MPI-ESM1-2-HR", "MPI-ESM1-2-LR", "MRI-ESM2-0", "UKESM1-0-LL"`.
+
+You can create this function by combining the functions described above. Also create a clear graphical representation of your workflow
+:::
+
+::: {.callout-important icon="false" collapse="true"}
+## Answer
+
+```{r setup}
+# Load required libraries
+library(ggplot2)
+library(terra)
+library(geodata)
+library(RColorBrewer)
+library(dplyr)
+library(mapview)
+library(leafsync)
+library(here)
+
+# Set default paths using the 'here' package
+# 'here()' ensures paths are relative to the project root, making the code more portable
+#options(geodata_default_path = here::here())
+#geodata_path() # Verify the geodata path
+
+# Set geodata cache folder
+options(geodata_default_path = file.path("data", "raw"))
+
+# create folder if missing
+dir.create(file.path("data", "raw"), recursive = TRUE, showWarnings = FALSE)
+
+# check
+geodata_path()
+```
+
+```{r}
+# Load administrative boundary data for the Democratic Republic of Congo (DRC)
+# gadm() retrieves administrative boundary data at specified resolution and level
+DRC <- gadm(country = "COD", level = 0, resolution = 1)
+
+#' Estimate Changes in Precipitation Using CMIP Model Scenarios
+#'
+#' @description Function to estimate changes in precipitation based on CMIP model scenarios.
+#' @param ROI Region of Interest as a SpatVector.
+#' @param res Resolution of the data (2.5, 5, or 10).
+#' @param ssp Shared Socio-economic Pathway code ("126", "245", "370", or "585").
+#' @param models Vector of CMIP6 models to use (e.g., "ACCESS-CM2", "HadGEM3-GC31-LL").
+#' @param year Future year/period ("2021-2040", "2041-2060", "2061-2080").
+#' @return A list containing two rasters: absolute change and relative change (in mm).
+#' @examples
+#' DRC <- gadm(country = "COD", level = 0, resolution = 1)
+#' models <- c("ACCESS-CM2", "HadGEM3-GC31-LL")
+#' precip_change <- Get_Future_ensemble_Precipitation(DRC, 5, "585", models, "2041-2060")
+Get_Future_ensemble_Precipitation <- function(ROI, res, ssp, models, year) {
+    # Makse sure we have the required packages within the function
+    require(terra)
+    require(geodata)
+    require(dplyr)
+
+    # Validate ROI
+    if (!inherits(ROI, "SpatVector")) {
+        stop("The 'ROI' parameter must be a SpatVector object.")
+    }
+
+    # Download current precipitation data and clip to ROI
+    # worldclim_global() retrieves current climate data for the specified variable and resolution
+    current <- worldclim_global(var = "prec", res = res) |>
+        crop(ROI) |> # Crop to the specified region of interest
+        mask(ROI) |> # Mask areas outside the ROI
+        sum() # Sum across all layers (annual total precipitation)
+
+    # Initialize a list for future precipitation data
+    future <- vector("list", length(models))
+
+    # Loop through each model to calculate future precipitation
+    for (i in 1:length(models)) {
+        model <- models[i]
+        print(model) # Display the current model being processed
+        # Retrieve future climate data for the specified model, SSP, and year, then clip and mask to ROI
+        future[[i]] <- cmip6_world(model, ssp, year, var = "prec", res = res) |>
+            crop(ROI) |>
+            mask(ROI) |>
+            sum() # Sum across all layers (annual total precipitation)
+    }
+
+    # ALTERNATIVE: This is even more simple (but adds a dependency)
+    # require(purrr)
+    # future <- map(models,~ cmip6_world(.x,ssp, year, var = "prec", res = res) %>%
+    #                           crop(ROI) %>%
+    #                           mask(ROI) %>%
+    #                           sum())
+
+    # Cast the list to a raster
+    future <- rast(future)
+    # Compute the mean precipitation across all models
+    future <- mean(future)
+
+    # Calculate absolute change (total precipitation difference) and relative change (percentage difference)
+    delta_annual <- sum(future - current)
+    delta_prec <- sum(future - current) / sum(current)
+
+    return(list(abs_change = delta_annual, rel_change = delta_prec))
+}
+
+Get_Future_ensemble_Precipitation_FAST <- function(ROI, res, ssp, models, year) {
+
+  require(terra)
+  require(geodata)
+
+  # Validate ROI
+  if (!inherits(ROI, "SpatVector")) {
+    stop("The 'ROI' parameter must be a SpatVector object.")
+  }
+
+  # Current precipitation (annual total)
+  current <- worldclim_global(var = "prec", res = res) |>
+    crop(ROI) |>
+    mask(ROI) |>
+    sum()
+
+  # Start with an EMPTY SpatRaster (this is what makes it slow)
+  future <- rast(nlyrs = length(models))
+
+  # Loop through models and GROW the raster by adding layers
+  for (model in models) {
+    message(model)
+
+    r <- cmip6_world(model, ssp, year, var = "prec", res = res) |>
+      crop(ROI) |>
+      mask(ROI) |>
+      sum()
+
+    # GROW the object: each add() expands and copies internally (slow)
+    add(future) <- r
+  }
+
+  # Now compute ensemble mean
+  future_mean <- mean(future)
+
+  # Changes
+  delta_annual <- sum(future_mean - current)
+  delta_prec   <- delta_annual / sum(current)
+
+  list(abs_change = delta_annual, rel_change = delta_prec)
+}
+```
+
+```{r}
+# Define models and test the functions
+# Example models to be used for analysis
+models <- c("ACCESS-CM2", "HadGEM3-GC31-LL","INM-CM4-8", "INM-CM5-0", "IPSL-CM6A-LR")
+
+# Measure execution time for the standard function
+tictoc::tic()
+precip_change <- Get_Future_ensemble_Precipitation(res = 5, ssp = "585", models = models, year = "2041-2060", ROI = DRC)
+tictoc::toc()
+
+# Visualize the results using mapview
+# Generate color palette for visualization
+cols <- colorRampPalette(brewer.pal(9, "Blues"))
+# Map absolute changes
+m_abs <- mapview(precip_change$abs_change, col.regions = cols, na.color = "transparent")
+# Map relative changes
+m_rel <- mapview(precip_change$rel_change, col.regions = cols, na.color = "transparent")
+# Synchronize the two maps for side-by-side comparison
+leafsync::sync(m_abs, m_rel)
+
+# now same with growing a raster by adding layers
+tictoc::tic()
+precip_change <- Get_Future_ensemble_Precipitation_FAST(res = 5, ssp = "585", models = models, year = "2041-2060", ROI = DRC)
+tictoc::toc()
+```
+:::
