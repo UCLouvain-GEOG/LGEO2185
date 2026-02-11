@@ -2,6 +2,7 @@
 **/*.quarto_ipynb
 2025/*
 **/data/raw/
+Previous student projects/*
 .Rhistory
 *.pptx
 *.potx
