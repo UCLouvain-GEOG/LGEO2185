@@ -1,7 +1,7 @@
 ---
 title: "LGEO2185: Coding principles"
-author: "Antoine Stevens, Kristof Van Oost & Valentin Charlier"
-Date: 02/29/2025
+authors: "Antoine Stevens, Kristof Van Oost & Valentin Charlier"
+Date: 02/17/2026
 ---
 
 ```{r setup, include=FALSE, warning=FALSE}
