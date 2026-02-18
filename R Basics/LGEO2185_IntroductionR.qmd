@@ -52,7 +52,7 @@ Let's first do some basic setup:\
 
 ```{r "setup", include=FALSE}
 require("knitr")
-opts_knit$set(root.dir ="/Users/Antoine_Stevens/Library/CloudStorage/OneDrive-McKinsey&Company/Documents/Projects/LGEO")
+#opts_knit$set(root.dir ="/Users/Antoine_Stevens/Library/CloudStorage/OneDrive-McKinsey&Company/Documents/Projects/LGEO")
 ```
 
 ```{r, eval=FALSE}
