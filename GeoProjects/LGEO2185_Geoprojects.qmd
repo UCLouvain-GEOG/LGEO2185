@@ -52,16 +52,16 @@ $$
 \text{Species Presence/Absence} \sim \text{Pred}_1 + \text{Pred}_2 + \dots + \text{Pred}_n
 $$
 
-Such model can be easily constructed based a database with observations and predictor variables. Let's see how we could do this by exploring the following `data.frame` You can download the data manually from here [Download the dataset (RDS)](https://raw.githubusercontent.com/ORG/REPO/main/data/my_dataset.rds) and copy it into your `data/raw` folder (or load it directly from R as done here):
+Such model can be easily constructed based a database with observations and predictor variables. Let's see how we could do this by exploring the following `data.frame` You can download the data manually from here [Download the dataset (RDS)](https://uclouvain-geog.github.io/LGEO2185/Data/occurrence_data.Rds) and copy it into your `data/raw` folder (or load it directly from R as done here):
 
 ```{r}
 pacman::p_load(tidyverse, here, corrplot, modEvA)
-# url <- "https://raw.githubusercontent.com/UCLouvain-GEOG/LGEO2185/main/Geoprojects/data/raw/occurrence_data.Rds"
+# url <- "https://uclouvain-geog.github.io/LGEO2185/Data/occurrence_data.Rds"
 # tmp <- tempfile(fileext = ".rds")
 # download.file(url, tmp, mode = "wb")
 # occurrence_df <- readRDS(tmp)
 occurrence_df <- readRDS("data/raw/occurrence_data.Rds")
-glimpse(occurrence_df)
+#glimpse(occurrence_df)
 ```
 
 Now explore `occurence_df` in the explorer. The variables `wc2.1_10m_bio_?`\` are derived from the worldclim Bioclimatic variables, more info [here](https://www.worldclim.org/data/bioclim.html). You could further explore this dataset as follows:
