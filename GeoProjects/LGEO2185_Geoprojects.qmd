@@ -33,15 +33,17 @@ pacman::p_load(geodata, terra, leaflet, mapview, leafsync, here)
 
 # 1. Introduction
 
-Today, we are interested in the factors that control the spatial distribution of a given species (habitat and suitability maps a.k.a. species distribution models), and predict how these will evolve under predicted climate change. Look at the example below from @kraemer2015. Dots represent the observed occurrence of mosquito's in Europe and the color scale represents the suitability (ranging from 1 highly suited to 0 not suitable) of the climatic conditions for the given species: 
+Today, we are interested in the factors that control the spatial distribution of a given species (habitat and suitability maps a.k.a. species distribution models), and predict how these will evolve under predicted climate change. Look at the example below from @kraemer2015. Dots represent the observed occurrence of mosquito's in Europe and the color scale represents the suitability (ranging from 1 highly suited to 0 not suitable) of the climatic conditions for the given species:
 
-```{r echo = TRUE, results = 'asis'}
+\#![Illustration](images/Session_4_Picture0.png){width="50%"}
+
+```{r echo = FALSE, results = 'asis'}
 image <- "https://iiif.elifesciences.org/lax/08347%2Felife-08347-fig3-v3.tif/full/,1500/0/default.jpg"
 #cat(paste0('<center><img src="', image, '" style="width:70%;"></center>'))
 htmltools::HTML(
   sprintf('<div style="text-align:center;"><img src="%s" style="width:70%%;"></div>', image)
 )
-#![Illustration](images/Session_4_Picture0.png){width="50%"}
+
 ```
 
 The above maps are the result of a statistical model where the species presence/absence is modelled as:
