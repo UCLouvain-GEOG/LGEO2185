@@ -1,0 +1,427 @@
+---
+title: "LGEO2185: R Project Structure & Workflow -- In class Assignment"
+author: "Kristof Van Oost, Antoine Stevens"
+Date: 05/02/2026
+---
+
+::: assignment
+# Assignment
+
+Write an R function that gives you the predicted change in precipitation and temperature for a region, but the future rainfall should represent the mean of different models. the function should be able to accept an argument for with specific model should be used. The possible CMIP6 models are one of: `"ACCESS-CM2", "ACCESS-ESM1-5", "AWI-CM-1-1-MR", "BCC-CSM2-MR", "CanESM5", "CanESM5-CanOE", "CMCC-ESM2", "CNRM-CM6-1", "CNRM-CM6-1-HR", "CNRM-ESM2-1", "EC-Earth3-Veg", "EC-Earth3-Veg-LR", "FIO-ESM-2-0", "GFDL-ESM4", "GISS-E2-1-G", "GISS-E2-1-H", "HadGEM3-GC31-LL", "INM-CM4-8", "INM-CM5-0", "IPSL-CM6A-LR", "MIROC-ES2L", "MIROC6", "MPI-ESM1-2-HR", "MPI-ESM1-2-LR", "MRI-ESM2-0", "UKESM1-0-LL"`.
+
+You can create this function by combining the functions described above. Also create a clear graphical representation of your workflow
+:::
+
+::: Hints
+# Hints
+
+How to store one raster per model (container + loop)?\
+
+When you compute future precipitation for multiple CMIP6 models, you will produce **one raster per model** (after `crop()`, `mask()`, and `sum()`). Before you can compute the **ensemble mean**, you need a strategy to **store these rasters** during the loop.
+
+#### Approach A: Grow a multi-layer raster progressively
+
+You can start with an empty object (e.g., `future <- NULL`) and append each new raster layer inside the loop using `c(future, r)`.
+
+This is intuitive (“build the stack step by step”) but can become slower with many models because appending may rebuild the object repeatedly
+
+#### Approach B: Store rasters in a list, then stack once
+
+Create a list container (one slot per model), fill it inside the loop, and only at the end convert to a multi-layer raster with `rast()`
+
+This is usually faster and cleaner and avoids repeated rebuilding of the raster stack
+
+#### Approach C: Functional approach with `lapply()`
+
+Instead of manually creating and filling a container, use `lapply()` to apply the same processing steps to each model. This returns a list of rasters that you can stack once.
+
+This is compact and readable, less error-prone and typically efficient!
+
+[***Final step: compute the ensemble mean***]{.underline}
+
+Whichever approach you choose, once you have a **multi-layer raster** with one layer per model, compute the ensemble mean with:
+
+```{r eval = FALSE}
+future_mean <- mean(future_stack)
+```
+:::
+
+::: {.callout-important icon="false" collapse="true"}
+# Answer
+
+## Setup
+
+```{r setup, message=FALSE, warning=FALSE}
+# Core packages
+library(terra)
+library(geodata)
+library(mapview)
+library(leafsync)
+library(RColorBrewer)
+
+# Timing
+library(tictoc)
+
+# Cache folder for geodata (project-friendly)
+options(geodata_default_path = file.path("data", "raw"))
+dir.create(file.path("data", "raw"), recursive = TRUE, showWarnings = FALSE)
+
+geodata_path()
+```
+
+```{r}
+# Region of interest: Democratic Republic of Congo (example)
+DRC <- gadm(country = "COD", level = 0, resolution = 1)
+```
+
+------------------------------------------------------------------------
+
+### A) Solution 1 — grow a multi-layer raster (start with `future <- NULL` and add layers)
+
+This approach is conceptually simple: start empty, and append each model layer to a raster stack.\
+It often becomes slower as you add many layers because `c(future, r)` may repeatedly rebuild internal structures.
+
+```{r}
+Get_Future_ensemble_Precipitation_grow <- function(ROI, res, ssp, models, year) {
+
+  stopifnot(inherits(ROI, "SpatVector"))
+
+  # Current annual precipitation (WorldClim)
+  current <- worldclim_global(var = "prec", res = res) |>
+    crop(ROI) |>
+    mask(ROI) |>
+    sum()
+
+  # Start empty and append layers one-by-one
+  future <- NULL
+
+  for (m in models) {
+    message(m)
+
+    r <- cmip6_world(m, ssp, year, var = "prec", res = res) |>
+      crop(ROI) |>
+      mask(ROI) |>
+      sum()
+
+    future <- if (is.null(future)) r else c(future, r)
+  }
+
+  future_mean <- mean(future)
+
+  abs_change <- sum(future_mean - current)
+  rel_change <- abs_change / sum(current) * 100
+
+  list(abs_change = abs_change, rel_change = rel_change, future_mean = future_mean)
+}
+```
+
+**Timing example**
+
+```{r}
+# Example model subset (keep small for class / speed)
+models_demo <- c("ACCESS-CM2", "MPI-ESM1-2-LR", "UKESM1-0-LL")
+
+tic("A) grow multi-layer raster (NULL + c())")
+out_A <- Get_Future_ensemble_Precipitation_grow(
+  ROI    = DRC,
+  res    = 10,
+  ssp    = "585",
+  models = models_demo,
+  year   = "2041-2060"
+)
+toc()
+```
+
+------------------------------------------------------------------------
+
+### B) Solution 2 — store rasters in a list, then stack once
+
+Here you **collect** each model result in a list, then do one `rast(future_list)` at the end.\
+This avoids repeated rebuilding of the raster stack.
+
+```{r}
+Get_Future_ensemble_Precipitation_list <- function(ROI, res, ssp, models, year) {
+
+  stopifnot(inherits(ROI, "SpatVector"))
+
+  current <- worldclim_global(var = "prec", res = res) |>
+    crop(ROI) |>
+    mask(ROI) |>
+    sum()
+
+  # Pre-allocate list
+  future_list <- vector("list", length(models))
+
+  for (i in seq_along(models)) {
+    m <- models[i]
+    message(m)
+
+    future_list[[i]] <- cmip6_world(m, ssp, year, var = "prec", res = res) |>
+      crop(ROI) |>
+      mask(ROI) |>
+      sum()
+  }
+
+  future_mean <- mean(rast(future_list))
+
+  abs_change <- sum(future_mean - current)
+  rel_change <- abs_change / sum(current) * 100
+
+  list(abs_change = abs_change, rel_change = rel_change, future_mean = future_mean)
+}
+```
+
+**Timing example**
+
+```{r}
+tic("B) list + rast() + mean()")
+out_B <- Get_Future_ensemble_Precipitation_list(
+  ROI    = DRC,
+  res    = 10,
+  ssp    = "585",
+  models = models_demo,
+  year   = "2041-2060"
+)
+toc()
+```
+
+------------------------------------------------------------------------
+
+### C) Solution 3 — optimal and most compact: `lapply()` + stack once
+
+This is typically the cleanest: no indices, no manual list allocation, no risk from `1:length(models)` edge cases.\
+It also makes the “map over models” idea obvious.
+
+```{r}
+Get_Future_ensemble_Precipitation_lapply <- function(ROI, res, ssp, models, year) {
+
+  stopifnot(inherits(ROI, "SpatVector"))
+
+  current <- worldclim_global(var = "prec", res = res) |>
+    crop(ROI) |>
+    mask(ROI) |>
+    sum()
+
+  future_mean <- rast(lapply(models, function(m) {
+    message(m)
+    cmip6_world(m, ssp, year, var = "prec", res = res) |>
+      crop(ROI) |>
+      mask(ROI) |>
+      sum()
+  })) |>
+    mean()
+
+  abs_change <- sum(future_mean - current)
+  rel_change <- abs_change / sum(current) * 100
+
+  list(abs_change = abs_change, rel_change = rel_change, future_mean = future_mean)
+}
+```
+
+**Timing example**
+
+```{r}
+tic("C) lapply() + rast() + mean()  [recommended]")
+out_C <- Get_Future_ensemble_Precipitation_lapply(
+  ROI    = DRC,
+  res    = 10,
+  ssp    = "585",
+  models = models_demo,
+  year   = "2041-2060"
+)
+toc()
+```
+
+------------------------------------------------------------------------
+
+## Quick visual check (optional)
+
+```{r}
+# Color palette
+cols <- colorRampPalette(brewer.pal(9, "Blues"))
+
+# Absolute change map
+m_abs <- mapview(
+  out_C$abs_change,
+  col.regions = cols,
+  layer.name = "Absolute change (mm)",
+  na.color = "transparent"
+)
+
+# Relative change map
+m_rel <- mapview(
+  out_C$rel_change,
+  col.regions = cols,
+  layer.name = "Relative change (%)",
+  na.color = "transparent"
+)
+
+# Side-by-side synchronized view
+leafsync::sync(m_abs, m_rel)
+
+```
+
+\
+And here is the final version of the function with proper commenting and error handling (using `roxygen2`)\
+\
+
+```{r}
+#' Get CMIP6 Ensemble Precipitation Change
+#'
+#' @description
+#' Computes the ensemble mean change in annual precipitation for a given
+#' region of interest (ROI) using selected CMIP6 models and SSP scenario.
+#'
+#' @details
+#' The function:
+#' 1. Downloads current precipitation from WorldClim.
+#' 2. Downloads future precipitation for each selected CMIP6 model.
+#' 3. Computes annual totals (sum of monthly layers).
+#' 4. Calculates the ensemble mean across models.
+#' 5. Returns both absolute and relative precipitation change.
+#'
+#' Error handling ensures:
+#' - ROI is a SpatVector
+#' - Resolution is valid (2.5, 5, or 10)
+#' - SSP is valid ("126", "245", "370", "585")
+#' - Models belong to the allowed CMIP6 set
+#' - Year period is valid
+#'
+#' @param ROI A `SpatVector` defining the region of interest.
+#' @param res Numeric resolution (2.5, 5, or 10 arc-minutes).
+#' @param ssp Character SSP code: "126", "245", "370", or "585".
+#' @param models Character vector of CMIP6 model names.
+#' @param year Character future period:
+#'   "2021-2040", "2041-2060", or "2061-2080".
+#'
+#' @return A list containing:
+#' \itemize{
+#'   \item `future_mean` — SpatRaster of ensemble mean annual precipitation
+#'   \item `abs_change` — SpatRaster of absolute change (mm)
+#'   \item `rel_change` — SpatRaster of relative change (fraction)
+#' }
+#'
+#' @examples
+#' \dontrun{
+#' DRC <- gadm(country = "COD", level = 0, resolution = 1)
+#' models <- c("ACCESS-CM2", "MPI-ESM1-2-LR")
+#' out <- Get_Future_ensemble_Precipitation(
+#'   ROI = DRC,
+#'   res = 5,
+#'   ssp = "585",
+#'   models = models,
+#'   year = "2041-2060"
+#' )
+#' }
+#'
+#' @export
+Get_Future_ensemble_Precipitation <- function(ROI, res, ssp, models, year) {
+
+  # ----------------------------
+  # Allowed values
+  # ----------------------------
+
+  allowed_models <- c(
+    "ACCESS-CM2", "ACCESS-ESM1-5", "AWI-CM-1-1-MR", "BCC-CSM2-MR",
+    "CanESM5", "CanESM5-CanOE", "CMCC-ESM2",
+    "CNRM-CM6-1", "CNRM-CM6-1-HR", "CNRM-ESM2-1",
+    "EC-Earth3-Veg", "EC-Earth3-Veg-LR",
+    "FIO-ESM-2-0", "GFDL-ESM4",
+    "GISS-E2-1-G", "GISS-E2-1-H",
+    "HadGEM3-GC31-LL",
+    "INM-CM4-8", "INM-CM5-0",
+    "IPSL-CM6A-LR",
+    "MIROC-ES2L", "MIROC6",
+    "MPI-ESM1-2-HR", "MPI-ESM1-2-LR",
+    "MRI-ESM2-0",
+    "UKESM1-0-LL"
+  )
+
+  allowed_ssp  <- c("126", "245", "370", "585")
+  allowed_res  <- c(2.5, 5, 10)
+  allowed_year <- c("2021-2040", "2041-2060", "2061-2080")
+
+  # ----------------------------
+  # Error handling
+  # ----------------------------
+
+  if (!inherits(ROI, "SpatVector")) {
+    stop("ROI must be a SpatVector object.")
+  }
+
+  if (!res %in% allowed_res) {
+    stop("Resolution must be one of: 2.5, 5, 10.")
+  }
+
+  if (!ssp %in% allowed_ssp) {
+    stop("SSP must be one of: '126', '245', '370', '585'.")
+  }
+
+  if (!year %in% allowed_year) {
+    stop("Year must be one of: '2021-2040', '2041-2060', '2061-2080'.")
+  }
+
+  if (!all(models %in% allowed_models)) {
+    invalid <- models[!models %in% allowed_models]
+    stop(
+      paste(
+        "Invalid model(s):",
+        paste(invalid, collapse = ", "),
+        "\nAllowed models are:\n",
+        paste(allowed_models, collapse = ", ")
+      )
+    )
+  }
+
+  if (length(models) == 0) {
+    stop("At least one model must be provided.")
+  }
+
+  # ----------------------------
+  # Load required packages
+  # ----------------------------
+
+  require(terra)
+  require(geodata)
+
+  # ----------------------------
+  # Current climate (annual)
+  # ----------------------------
+
+  current <- worldclim_global(var = "prec", res = res) |>
+    crop(ROI) |>
+    mask(ROI) |>
+    sum()
+
+  # ----------------------------
+  # Future climate (ensemble)
+  # ----------------------------
+
+  future_mean <- rast(lapply(models, function(m) {
+
+    message("Processing model: ", m)
+
+    cmip6_world(m, ssp, year, var = "prec", res = res) |>
+      crop(ROI) |>
+      mask(ROI) |>
+      sum()
+
+  })) |>
+    mean()
+
+  # ----------------------------
+  # Changes
+  # ----------------------------
+
+  abs_change <- future_mean - current
+  rel_change <- (future_mean - current) / current
+
+  return(list(
+    future_mean = future_mean,
+    abs_change  = abs_change,
+    rel_change  = rel_change
+  ))
+}
+
+```
+:::

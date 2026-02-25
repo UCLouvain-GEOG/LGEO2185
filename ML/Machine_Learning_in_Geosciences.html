@@ -1,0 +1,1891 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.8.27">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Kristof Van Oost &amp; Antoine Stevens">
+
+<title>LGEO2185: Session 4 – Machine Learning in Geosciences</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="Machine_Learning_in_Geosciences_files/libs/clipboard/clipboard.min.js"></script>
+<script src="Machine_Learning_in_Geosciences_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="Machine_Learning_in_Geosciences_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="Machine_Learning_in_Geosciences_files/libs/quarto-html/axe/axe-check.js" type="module"></script>
+<script src="Machine_Learning_in_Geosciences_files/libs/quarto-html/popper.min.js"></script>
+<script src="Machine_Learning_in_Geosciences_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="Machine_Learning_in_Geosciences_files/libs/quarto-html/anchor.min.js"></script>
+<link href="Machine_Learning_in_Geosciences_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="Machine_Learning_in_Geosciences_files/libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="Machine_Learning_in_Geosciences_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="Machine_Learning_in_Geosciences_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="Machine_Learning_in_Geosciences_files/libs/bootstrap/bootstrap-d6a003b94517c951b2d65075d42fb01b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body class="fullcontent quarto-light">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">LGEO2185: Session 4 – Machine Learning in Geosciences</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Kristof Van Oost &amp; Antoine Stevens </p>
+          </div>
+  </div>
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>This session assumes proficiency with geographic data analysis, basic R, for example gained by studying the contents and working through the previous session. A familiarity with geospatial approaches ad spatial modelling is recommended.</p>
+</div>
+</div>
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<section id="what-do-we-mean-by-spatial-models" class="level2">
+<h2 class="anchored" data-anchor-id="what-do-we-mean-by-spatial-models">What Do We Mean by “Spatial Models”?</h2>
+<p>Spatial modelling spans a continuum: from models that use spatial data to models that explicitly represent spatial dependence, interaction, or physical processes.</p>
+<ul>
+<li><strong>Statistical models that use geographical data (space as data)</strong>
+<ul>
+<li>Each grid cell treated as independent</li>
+<li>Examples: GLM, GAM, Random Forest, logistic regression on rasters, ML on spatial data (see further)</li>
+<li>Use spatial predictors, but ignore spatial autocorrelation</li>
+</ul></li>
+<li><strong>GIS-based models (space as operations)</strong>
+<ul>
+<li>Chain spatial tools and map algebra operations</li>
+<li>Examples: weighted overlay, buffering, rule-based suitability models</li>
+<li>No explicit modelling of dependence or uncertainty</li>
+</ul></li>
+<li><strong>Spatial statistics (space as dependence)</strong>
+<ul>
+<li>Explicitly model spatial autocorrelation</li>
+<li>Examples: spatial lag/error models, CAR/SAR, spatial GLMM</li>
+</ul></li>
+<li><strong>Geostatistics (space as continuous field)</strong>
+<ul>
+<li>Assume a spatial covariance structure</li>
+<li>Examples: variogram, kriging, Gaussian processes</li>
+</ul></li>
+<li><strong>Spatial AI (space as learned pattern)</strong>
+<ul>
+<li>Learn spatial structure implicitly from pixel neighborhoods</li>
+<li>Examples: CNNs, U-Net, vision transformers</li>
+</ul></li>
+<li><strong>Agent-based models (space as interaction environment)</strong>
+<ul>
+<li>Agents interact locally in space</li>
+<li>Emergent spatial patterns arise from micro-level decisions</li>
+<li>Examples: land-use change, socio-ecological systems</li>
+</ul></li>
+<li><strong>Process-based models (space as physical system)</strong>
+<ul>
+<li>Mechanistic simulation of spatial processes</li>
+<li>Examples: erosion, hydrology, landscape evolution models</li>
+</ul></li>
+</ul>
+<hr>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>A model becomes truly spatial when it: Models spatial dependence explicitly; Simulates spatial interactions; Represents spatial processes mechanistically</p>
+</div>
+</div>
+</section>
+<section id="what-is-machine-learning-and-how-does-it-relate-to-ai" class="level2">
+<h2 class="anchored" data-anchor-id="what-is-machine-learning-and-how-does-it-relate-to-ai">What is Machine Learning (and how does it relate to AI)?</h2>
+<p>Artificial Intelligence (AI) refers to technology that simulates (or in some cases exceeds) human behaviour, including:</p>
+<ul>
+<li>Learning</li>
+<li>Comprehension</li>
+<li>Problem solving</li>
+<li>Decision making</li>
+<li>Autonomy</li>
+<li>Creativity</li>
+</ul>
+<p>A classical concept in AI is the <strong>Turing Test</strong>, which states that:</p>
+<blockquote class="blockquote">
+<p>A machine is intelligent if a human cannot reliably distinguish its behaviour from that of a human.</p>
+</blockquote>
+<p>A more modern, data-driven definition (and the one adopted in this course) is:</p>
+<blockquote class="blockquote">
+<p><strong>Artificial Intelligence is the design of algorithms that enable machines to learn patterns from data and use them to perform cognitive tasks such as classification, prediction, and reasoning.</strong></p>
+</blockquote>
+<hr>
+<p>Machine learning (ML) is a subset of AI focused on creating models by training algorithms to make predictions or decisions based on data. In essence, it can be seen as <strong>advanced statistical learning from past observations</strong>. ::: callout-note Machine learning enables a machine to automatically learn from data, improve performance from experiences, and predict things without being explicitly programmed :::</p>
+<p>Machine learning encompasses a broad range of techniques that allow computers to learn from data <strong>without being explicitly programmed</strong>. Common examples include:</p>
+<ul>
+<li>Linear regression</li>
+<li>Logistic regression</li>
+<li>Decision trees</li>
+<li>Random forest</li>
+<li>Support vector machines</li>
+<li>k-nearest neighbours</li>
+<li>Clustering methods</li>
+</ul>
+<p>Machine learning is commonly divided into:</p>
+<ul>
+<li><strong>Supervised learning</strong>, where training data are labelled by humans<br>
+</li>
+<li><strong>Unsupervised learning</strong>, where patterns or labels are inferred automatically</li>
+</ul>
+<p>The core objective of machine learning is simple: to learn the mapping between inputs and outputs using training data, so that labels or values can be predicted for new, unseen data.</p>
+<p>A useful overview of the relationship between AI, machine learning, deep learning, and generative AI is available <a href="https://assets.ibm.com/is/image/ibm/diagram-comparing-ai-ml-deep-learning-gen-ai:16x9?fmt=png-alpha&amp;dpr=on%2C2&amp;wid=1536&amp;hei=864">here</a>:</p>
+<hr>
+</section>
+<section id="and-deep-learning" class="level2">
+<h2 class="anchored" data-anchor-id="and-deep-learning">And Deep Learning?</h2>
+<p>Deep learning is a subset of machine learning that uses <strong>multi-layered neural networks</strong> to automatically learn hierarchical representations of data.</p>
+<p>By stacking many processing layers, deep learning models can capture complex, non-linear relationships and are particularly effective for images, time series, and text.</p>
+<hr>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>If you want to know more about machine learning and deep learning approaches in geosciences (including hybrid approaches and integration with physically based models), here is a good review paper: Reichstein, M., Camps-Valls, G., Stevens, B. et al.&nbsp;Deep learning and process understanding for data-driven Earth system science. Nature 566, 195–204 (2019). <a href="https://doi.org/10.1038/s41586-019-0912-1" class="uri">https://doi.org/10.1038/s41586-019-0912-1</a></p>
+</div>
+</div>
+</section>
+<section id="how-does-machine-learning-work" class="level2">
+<h2 class="anchored" data-anchor-id="how-does-machine-learning-work">How does Machine Learning work?</h2>
+<p>Machine learning model development is an iterative process and is rarely a linear process. Instead, it follows an iterative cycle of exploration, refinement, comparison, and reassessment. The figure below illustrates a typical pathway toward identifying an appropriate model. The main phases are.</p>
+<ul>
+<li><strong>Exploratory Data Analysis (EDA)</strong> Model development begins with exploration. Numerical summaries and visualization interact in a back-and-forth process where early discoveries generate new questions and additional analyses.
+<ul>
+<li>Identify patterns and relationships</li>
+<li>Detect anomalies or outliers</li>
+<li>Assess distributions and transformations</li>
+<li>Reveal potential modeling challenges.</li>
+</ul></li>
+<li><strong>Feature Engineering</strong> Insights from EDA guide the construction of meaningful predictors that improve model representation.
+<ul>
+<li>Transform variables</li>
+<li>Combine predictors (e.g., ratios or indices)</li>
+<li>Apply dimensionality reduction (e.g., PCA)</li>
+<li>Derive spatial or temporal aggregates Effective feature engineering often matters more than algorithm choice.</li>
+</ul></li>
+<li><strong>Model Tuning and Selection</strong> Multiple candidate models are built and compared. Some require tuning of structural hyperparameters. Performance is assessed through resampling strategies such as cross-validation, ensuring robust comparison.
+<ul>
+<li>Fit model</li>
+<li>Tune parameters</li>
+<li>Re-evaluate</li>
+<li>Compare alternatives This stage is inherently iterative.</li>
+</ul></li>
+<li><strong>Model Evaluation</strong> Promising models are critically assessed using quantitative and diagnostic tools.
+<ul>
+<li>Examine performance metrics (RMSE, AUC, R²)</li>
+<li>Inspect residual diagnostics</li>
+<li>Conduct additional exploratory analyses</li>
+<li>Perform formal between-model comparisons Differences between models must be interpreted relative to experimental uncertainty.</li>
+</ul></li>
+</ul>
+<p>Model development is cyclical. Exploration, feature construction, tuning, and evaluation continuously inform one another until a defensible and well-understood model is obtained.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="images/ML_pipeline.png" class="img-fluid figure-img" style="width:80.0%"></p>
+<figcaption>Model development and selection workflow. Concept adapted from: Kuhn &amp; Silge (2022), <em>Tidy Modeling with R</em>. https://www.tmwr.org/software-modeling</figcaption>
+</figure>
+</div>
+</section>
+<section id="why-do-we-evaluatevalidate-models" class="level2">
+<h2 class="anchored" data-anchor-id="why-do-we-evaluatevalidate-models">1. Why do we evaluate/validate models?</h2>
+<p>Different metrics measure different aspects of a model fit, e.g., RMSE measures accuracy while the R<sup>2</sup> measures correlation. Other metrics like the F1 statistic, ROC (see further) or just confusion matrices can reflect the quality of a model fit (we will use different metrics in this and the next sessions). This session focuses on supervised ML techniques in which there is a training dataset, as opposed to unsupervised techniques such as clustering. Response variables can be binary (such as landslide or species occurrence), categorical (land use), integer (species richness count) or numeric (soil acidity measured in pH). Supervised techniques model the relationship between such responses and one or more predictors. When we fit a model, a key question is:</p>
+<blockquote class="blockquote">
+<p>How well will it predict <em>new, unseen data</em>?</p>
+</blockquote>
+<p>A model can look excellent on the same data used for training (in-sample), yet perform poorly on new data (overfitting, leakage, or mismatch between training and prediction conditions). <strong>Validation</strong> is therefore about <em>generalization</em>, not goodness-of-fit.</p>
+<section id="common-validation-strategies" class="level3">
+<h3 class="anchored" data-anchor-id="common-validation-strategies">Common validation strategies</h3>
+<ul>
+<li><strong>Apparent performance</strong> (“train = test”): this might give an optimistic baseline.</li>
+<li><strong>Hold-out split</strong> (e.g., 70/30): a simple approach but potentially noisy (depends on the split).</li>
+<li><strong>k-fold cross-validation (CV)</strong>: more stable average performance.</li>
+<li><strong>LOOCV</strong> (Leave-One-Out CV): extreme form of CV; computationally heavier.</li>
+<li><strong>Spatial CV</strong>: required when there is spatial dependence; random CV can overestimate performance for geographic data.</li>
+</ul>
+<p>In this session, we will demonstrate these concepts using a case-study.</p>
+<p>Primary inputs (for concepts and best practices):</p>
+<ul>
+<li>Geocomputation with R — spatial CV chapter: https://r.geocompx.org/spatial-cv</li>
+<li>Sun et al.&nbsp;(2023) Spatial cross-validation for GeoAI (PDF): https://www.acsu.buffalo.edu/~yhu42/papers/2023_GeoAIHandbook_SpatialCV.pdf</li>
+<li>Rebecca Barter (tuning logic / leakage): https://rebeccabarter.com/blog/2020-03-25_machine_learning#tune-the-parameters</li>
+</ul>
+<hr>
+</section>
+</section>
+<section id="setup-tutorial-data" class="level2">
+<h2 class="anchored" data-anchor-id="setup-tutorial-data">2. Setup tutorial data</h2>
+<p>The data used in this tutorial is derived from Lovelace et al.: Conceptual explanations in this document are inspired by Geocomputation with R (Lovelace et al.), (https://r.geocompx.org/). Install the following packages:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>pkgs <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">"sf"</span>,<span class="st">"terra"</span>,<span class="st">"dplyr"</span>,<span class="st">"pROC"</span>,<span class="st">"spDataLarge"</span>,</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  <span class="st">"effects"</span>,<span class="st">"ggplot2"</span>,</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  <span class="st">"blockCV"</span>,<span class="st">"spdep"</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co">#to_install &lt;- pkgs[!pkgs %in% rownames(installed.packages())]</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="co">#if (length(to_install) &gt; 0) install.packages(to_install)</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="co">#install.packages("spDataLarge", repos = "https://geocompr.r-universe.dev")</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="fu">invisible</span>(<span class="fu">lapply</span>(pkgs, <span class="cf">function</span>(p) {</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">require</span>(p, <span class="at">character.only =</span> <span class="cn">TRUE</span>)) <span class="fu">install.packages</span>(p)</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">library</span>(p, <span class="at">character.only =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>}))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: sf</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: package 'sf' was built under R version 4.4.3</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Linking to GEOS 3.13.0, GDAL 3.8.5, PROJ 9.5.1; sf_use_s2() is TRUE</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: terra</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: package 'terra' was built under R version 4.4.3</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>terra 1.8.93</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: dplyr</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Attaching package: 'dplyr'</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following objects are masked from 'package:terra':
+
+    intersect, union</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following objects are masked from 'package:stats':
+
+    filter, lag</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following objects are masked from 'package:base':
+
+    intersect, setdiff, setequal, union</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: pROC</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Type 'citation("pROC")' for a citation.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Attaching package: 'pROC'</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following objects are masked from 'package:stats':
+
+    cov, smooth, var</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: spDataLarge</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: effects</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: carData</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>lattice theme set by effectsTheme()
+See ?effectsTheme for details.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: ggplot2</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: package 'ggplot2' was built under R version 4.4.3</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: blockCV</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>blockCV 3.2.0</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: spdep</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: spData</code></pre>
+</div>
+</div>
+<hr>
+</section>
+<section id="data-and-first-visual-exploration" class="level2">
+<h2 class="anchored" data-anchor-id="data-and-first-visual-exploration">3. Data and first visual exploration</h2>
+<p>We use the <code>spDataLarge</code> landslide case study (points + raster covariates), frequently used in spatial CV teaching materials. The data is described in detail in <span class="citation" data-cites="muenchow2012">@muenchow2012</span>.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(<span class="st">"lsl"</span>, <span class="st">"study_mask"</span>, <span class="at">package =</span> <span class="st">"spDataLarge"</span>)</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>ta <span class="ot">&lt;-</span> terra<span class="sc">::</span><span class="fu">rast</span>(<span class="fu">system.file</span>(<span class="st">"raster/ta.tif"</span>, <span class="at">package =</span> <span class="st">"spDataLarge"</span>))</span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(lsl)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>         x       y lslpts    slope        cplan        cprof     elev
+1 713887.7 9558537  FALSE 33.75185  0.023180449  0.003193061 2422.810
+2 712787.7 9558917  FALSE 39.40821 -0.038638908 -0.017187813 2051.771
+3 713407.7 9560307  FALSE 37.45409 -0.013329108  0.009671087 1957.832
+4 714887.7 9560237  FALSE 31.49607  0.040931452  0.005888638 1968.621
+5 715247.7 9557117  FALSE 44.07456  0.009686948  0.005149810 3007.774
+6 714927.7 9560777  FALSE 29.85981 -0.009047707 -0.005738329 1736.887
+  log10_carea
+1    2.784319
+2    4.146013
+3    3.643556
+4    2.268703
+5    3.003426
+6    3.174073</code></pre>
+</div>
+</div>
+<p>The above code loads a dataframe with the observation point data, a <code>sf</code> object named <code>study_mask</code> and a <code>SpatRaster</code> called <code>ta</code> that contains terrain attribute rasters. Explore this data, you will see that <code>lsl</code> contains the coordinates of observed landslides (ie <code>TRUE</code> in the <code>lslpts</code> columns represents a landslide initiation point). The <code>FALSE</code> observations represent non-landslide points that were sampled randomly from the study area. Use <code>summary(lsl\$lslpts)</code> to explore the dataset. Note that <code>lslpts</code> is a factor (ie <code>0</code> or <code>1</code>).</p>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Machine_Learning_in_Geosciences_files/figure-html/unnamed-chunk-4-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<hr>
+</section>
+<section id="baseline-model-logistic-regression-glm" class="level2">
+<h2 class="anchored" data-anchor-id="baseline-model-logistic-regression-glm">4. Baseline model: logistic regression (GLM)</h2>
+<p>We model a binary outcome <code>lslpts</code> with a binomial GLM. A Generalized Linear Model (GLM) extends ordinary linear regression to situations where the response variable is not continuous and normally distributed (see session 3). In our case:</p>
+<ul>
+<li>lslpts is binary
+<ul>
+<li>1 = landslide occurred</li>
+<li>0 = no landslide</li>
+</ul></li>
+<li>We therefore assume a binomial distribution for the response.</li>
+</ul>
+<p>We use a logit link function, leading to logistic regression. Binomial GLMs are widely used in geomorphology and hazard mapping because they:</p>
+<ul>
+<li>naturally handle presence/absence data</li>
+<li>produce probabilistic outputs (susceptibility)</li>
+<li>are interpretable (unlike many black-box ML models)</li>
+<li>integrate cleanly with spatial prediction on rasters</li>
+</ul>
+<p>You can find more information on logistic regression in landslide susceptibility here <span class="citation" data-cites="AyalewYamagishi2005">@AyalewYamagishi2005</span>. Here, they also serve as a baseline for comparison with ML methods (see further). To model the landslide susceptibility, we need predictors. Usually terrain attributes are good predictors of landsliding. The ‘lsl’ dataframe already has the key terrain attributes for all the observations ready for you. These are:</p>
+<ul>
+<li><code>slope</code>: slope angle (°)</li>
+<li><code>cplan</code>: plan curvature (rad m<sup>-1</sup>)</li>
+<li><code>cprof</code>: profile curvature (rad m<sup>-1</sup>)</li>
+<li><code>elev</code>: elevation above sea level (m.a.s.l.)</li>
+<li><code>log10_carea</code>: log10 of the catchment area (log10m<sup>2</sup>).</li>
+</ul>
+<p>Note that you could extract these topographic attributes with the help of R-GIS bridges to SAGA, QGIS etc.</p>
+<p>In ‘R’, model functions can be specified, we use <code>lslpts ~ slope + cplan + cprof + elev + log10_carea</code> and then fit the logistic regression. It is worth understanding each of the three input arguments:</p>
+<ul>
+<li>A formula, which specifies landslide occurrence (<code>lslpts</code>) as a function of the predictors</li>
+<li>A family, which specifies the type of model, in this case binomial because the response is binary (see <code>?family</code>)</li>
+<li>The data frame which contains the response and the predictors (as columns)</li>
+</ul>
+<p>The results of this model can be printed as follows (summary(fit) provides a more detailed account of the results):</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>form <span class="ot">&lt;-</span> lslpts <span class="sc">~</span> slope <span class="sc">+</span> cplan <span class="sc">+</span> cprof <span class="sc">+</span> elev <span class="sc">+</span> log10_carea</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">glm</span>(form, <span class="at">family =</span> <span class="fu">binomial</span>(), <span class="at">data =</span> lsl)</span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(fit)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+glm(formula = form, family = binomial(), data = lsl)
+
+Coefficients:
+              Estimate Std. Error z value Pr(&gt;|z|)    
+(Intercept)  2.511e+00  2.035e+00   1.234    0.217    
+slope        7.901e-02  1.506e-02   5.248 1.54e-07 ***
+cplan       -2.894e+01  4.746e+00  -6.098 1.07e-09 ***
+cprof       -1.756e+01  1.083e+01  -1.622    0.105    
+elev         1.789e-04  5.492e-04   0.326    0.745    
+log10_carea -2.275e+00  4.848e-01  -4.692 2.70e-06 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+(Dispersion parameter for binomial family taken to be 1)
+
+    Null deviance: 485.20  on 349  degrees of freedom
+Residual deviance: 372.83  on 344  degrees of freedom
+AIC: 384.83
+
+Number of Fisher Scoring iterations: 4</code></pre>
+</div>
+</div>
+<p>The binomial GLM indicates that landslide probability increases significantly with <strong>slope</strong>, confirming the dominant role of terrain steepness. <strong>Plan curvature (cplan)</strong> and <strong>contributing area (log10_carea)</strong> show strong negative effects, suggesting lower susceptibility on divergent surfaces and in areas with larger upslope drainage. <strong>Profile curvature (cprof)</strong> and <strong>elevation</strong> are not statistically significant once other variables are accounted for. Overall, the reduction in deviance relative to the null model shows that topographic predictors explain a substantial part of landslide occurrence, with slope and curvature being the key controls. The estimated coefficients are expressed in <strong>log-odds</strong>: a positive estimate means an increase in landslide probability, while a negative estimate indicates a decrease, all else equal. Exponentiating a coefficient gives an <strong>odds ratio</strong>, quantifying how the odds of a landslide change for a one-unit increase in the predictor. For <strong>slope</strong>, an estimate of <strong>0.079</strong> means that a one-unit increase in slope increases the <strong>log-odds</strong> of a landslide by 0.079, all else equal. In terms of odds, this corresponds to an <strong>odds ratio of exp(0.079) ≈ 1.08</strong>, i.e.&nbsp;about an <strong>8% increase in the odds</strong> of a landslide per unit increase in slope. The effect is highly significant, indicating that steeper terrain is consistently associated with higher landslide susceptibility. Because predictors are on different scales, coefficient magnitudes should be interpreted relative to their units or visualized using effect plots rather than compared directly.</p>
+<section id="interpret-effects-optional" class="level3">
+<h3 class="anchored" data-anchor-id="interpret-effects-optional">Interpret effects (optional)</h3>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">allEffects</span>(fit))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Machine_Learning_in_Geosciences_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The effect plots show a strong, monotonic increase in landslide probability with slope, confirming it as the dominant control. Plan curvature (cplan) and contributing area (log10_carea) exhibit clear negative effects, indicating lower susceptibility on divergent terrain and in areas with larger drainage accumulation. Elevation and profile curvature (cprof) show weak or uncertain effects, consistent with their non-significant coefficients in the model.</p>
+<hr>
+</section>
+</section>
+<section id="spatial-prediction-susceptibility-mapping" class="level2">
+<h2 class="anchored" data-anchor-id="spatial-prediction-susceptibility-mapping">5. Spatial prediction (susceptibility mapping)</h2>
+<p>The model object <code>fit</code> (of class <code>glm</code>) contains the coefficients describing the fitted relationship between response and the predictors. It can also be use for prediction. For example, we can predict the landslide probabilities for each of the observed points in the <code>lsl</code>dataframe using the generic <code>predict</code>method. Setting the type to <code>response</code>returns the predicted probabilities (of landslide occurence):</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>pred_glm <span class="ot">=</span> <span class="fu">predict</span>(<span class="at">object =</span> fit, <span class="at">type =</span> <span class="st">"response"</span>)</span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(pred_glm)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>         1          2          3          4          5          6 
+0.19010373 0.11718500 0.09519487 0.25030946 0.33819463 0.15754547 </code></pre>
+</div>
+</div>
+<p>This table shows for each of the observed landslides the predicted probability of landslide occurence. Spatial distribution maps can then be made by applying the same approach where we use predictor maps rather than the point observations using the <code>terra:predict()</code>method. We predict probabilities over the raster covariates and display a 5-class susceptibility map.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>pred <span class="ot">&lt;-</span> terra<span class="sc">::</span><span class="fu">predict</span>(ta, <span class="at">model =</span> fit, <span class="at">type =</span> <span class="st">"response"</span>)</span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>pred_masked <span class="ot">&lt;-</span> <span class="fu">mask</span>(pred, study_mask)</span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>breaks <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="at">by =</span> <span class="fl">0.2</span>)</span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a>labels <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Very Low"</span>, <span class="st">"Low"</span>, <span class="st">"Moderate"</span>, <span class="st">"High"</span>, <span class="st">"Very High"</span>)</span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a>pred_class <span class="ot">&lt;-</span> <span class="fu">classify</span>(pred_masked,</span>
+<span id="cb34-8"><a href="#cb34-8" aria-hidden="true" tabindex="-1"></a>                       <span class="at">rcl =</span> <span class="fu">cbind</span>(breaks[<span class="sc">-</span><span class="fu">length</span>(breaks)], breaks[<span class="sc">-</span><span class="dv">1</span>], <span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>))</span>
+<span id="cb34-9"><a href="#cb34-9" aria-hidden="true" tabindex="-1"></a><span class="fu">levels</span>(pred_class) <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">id =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>, <span class="at">class =</span> labels)</span>
+<span id="cb34-10"><a href="#cb34-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-11"><a href="#cb34-11" aria-hidden="true" tabindex="-1"></a>pred_df <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(pred_class, <span class="at">xy =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb34-12"><a href="#cb34-12" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(pred_df) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"x"</span>, <span class="st">"y"</span>, <span class="st">"class"</span>)</span>
+<span id="cb34-13"><a href="#cb34-13" aria-hidden="true" tabindex="-1"></a><span class="co">#pred_df$class &lt;- factor(pred_df$class, levels = 1:5, labels = labels)</span></span>
+<span id="cb34-14"><a href="#cb34-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-15"><a href="#cb34-15" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb34-16"><a href="#cb34-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_raster</span>(<span class="at">data =</span> pred_df, <span class="fu">aes</span>(<span class="at">x =</span> x, <span class="at">y =</span> y, <span class="at">fill =</span> class)) <span class="sc">+</span></span>
+<span id="cb34-17"><a href="#cb34-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_manual</span>(</span>
+<span id="cb34-18"><a href="#cb34-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">values =</span> <span class="fu">c</span>(<span class="st">"Very Low"</span> <span class="ot">=</span> <span class="st">"#ffffcc"</span>,</span>
+<span id="cb34-19"><a href="#cb34-19" aria-hidden="true" tabindex="-1"></a>               <span class="st">"Low"</span>      <span class="ot">=</span> <span class="st">"#a1dab4"</span>,</span>
+<span id="cb34-20"><a href="#cb34-20" aria-hidden="true" tabindex="-1"></a>               <span class="st">"Moderate"</span> <span class="ot">=</span> <span class="st">"#41b6c4"</span>,</span>
+<span id="cb34-21"><a href="#cb34-21" aria-hidden="true" tabindex="-1"></a>               <span class="st">"High"</span>     <span class="ot">=</span> <span class="st">"#2c7fb8"</span>,</span>
+<span id="cb34-22"><a href="#cb34-22" aria-hidden="true" tabindex="-1"></a>               <span class="st">"Very High"</span><span class="ot">=</span> <span class="st">"#253494"</span>),</span>
+<span id="cb34-23"><a href="#cb34-23" aria-hidden="true" tabindex="-1"></a>    <span class="at">name =</span> <span class="st">"Susceptibility"</span></span>
+<span id="cb34-24"><a href="#cb34-24" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb34-25"><a href="#cb34-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> study_mask, <span class="at">fill =</span> <span class="cn">NA</span>, <span class="at">color =</span> <span class="st">"black"</span>, <span class="at">linewidth =</span> <span class="fl">0.4</span>) <span class="sc">+</span></span>
+<span id="cb34-26"><a href="#cb34-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">coord_sf</span>() <span class="sc">+</span></span>
+<span id="cb34-27"><a href="#cb34-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>() <span class="sc">+</span></span>
+<span id="cb34-28"><a href="#cb34-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Landslide susceptibility map (5 classes)"</span>, <span class="at">x =</span> <span class="st">"Easting (m)"</span>, <span class="at">y =</span> <span class="st">"Northing (m)"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Machine_Learning_in_Geosciences_files/figure-html/unnamed-chunk-8-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Note that here we neglect spatial autocorrelation. It is possible to include spatial autocorrelation structures into models as well as into predictions, but this is beyond the scope of this course (explore regression kriging or mixed-effect modelling approaches).</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Spatial distribution mapping is one very important outcome of a model. Even more important is how good the underlying model is at making them since a prediction map is useless if the model’s predictive performance is bad.</p>
+</div>
+</div>
+</section>
+<section id="model-evaluation-apparent-auc-optimistic-baseline" class="level2">
+<h2 class="anchored" data-anchor-id="model-evaluation-apparent-auc-optimistic-baseline">6. Model evaluation: apparent AUC (optimistic baseline)</h2>
+<p>One of the most popular measures to assess the predictive performance of a binomial model is the <em>Area Under the Receiver Operator Characteristic Curve (AUROC)</em>. This is a value between 0.5 and 1.0, with 0.5 indicating a model that is no better than random and 1.0 indicating perfect prediction of the two classes. Thus, the higher the AUROC, the better the model’s predictive power. The following code chunk computes the AUROC value of the model with <code>roc()</code>, which takes the response and the predicted values as inputs. <code>auc()</code> returns the area under the curve.</p>
+<p>This evaluates on the same data used for training (optimistic but a useful baseline).</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="co">#auc_full &lt;- pROC::auc(pROC::roc(lsl$lslpts, fitted(fit), quiet = TRUE))</span></span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a><span class="co">#auc_full</span></span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(pROC)</span>
+<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute ROC object</span></span>
+<span id="cb35-7"><a href="#cb35-7" aria-hidden="true" tabindex="-1"></a>roc_obj <span class="ot">&lt;-</span> pROC<span class="sc">::</span><span class="fu">roc</span>(lsl<span class="sc">$</span>lslpts, <span class="fu">fitted</span>(fit), <span class="at">quiet =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb35-8"><a href="#cb35-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-9"><a href="#cb35-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute AUC</span></span>
+<span id="cb35-10"><a href="#cb35-10" aria-hidden="true" tabindex="-1"></a>auc_full <span class="ot">&lt;-</span> <span class="fu">auc</span>(roc_obj)</span>
+<span id="cb35-11"><a href="#cb35-11" aria-hidden="true" tabindex="-1"></a>auc_full</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Area under the curve: 0.8216</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot ROC curve</span></span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(roc_obj,</span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>     <span class="at">legacy.axes =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlim =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">0</span>),</span>
+<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a>     <span class="at">ylim =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>),</span>
+<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a>     <span class="at">xaxs =</span> <span class="st">"i"</span>,   <span class="co"># important</span></span>
+<span id="cb37-7"><a href="#cb37-7" aria-hidden="true" tabindex="-1"></a>     <span class="at">yaxs =</span> <span class="st">"i"</span>,   <span class="co"># important</span></span>
+<span id="cb37-8"><a href="#cb37-8" aria-hidden="true" tabindex="-1"></a>     <span class="at">col =</span> <span class="st">"blue"</span>,</span>
+<span id="cb37-9"><a href="#cb37-9" aria-hidden="true" tabindex="-1"></a>     <span class="at">lwd =</span> <span class="dv">3</span>,</span>
+<span id="cb37-10"><a href="#cb37-10" aria-hidden="true" tabindex="-1"></a>     <span class="at">asp =</span> <span class="dv">1</span>)</span>
+<span id="cb37-11"><a href="#cb37-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-12"><a href="#cb37-12" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="at">lty =</span> <span class="dv">2</span>, <span class="at">col =</span> <span class="st">"gray"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Machine_Learning_in_Geosciences_files/figure-html/unnamed-chunk-9-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Now, that isnt a bad fit! Note however that this is a very optimistic estimation of the model predictions since we have computed it on the complete dataset. In the sections below we address this issue.</p>
+</section>
+<section id="simple-hold-out-split" class="level2">
+<h2 class="anchored" data-anchor-id="simple-hold-out-split">7. simple Hold-out split</h2>
+<p>As a first step beyond apparent performance, we evaluate the model using a single train–test split to mimic prediction on unseen data. Train on 80% and test on 20% is done here below. While easy to implement, a single hold-out split offers only a coarse estimate of model performance and serves mainly as a baseline because it depends on the particular split.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="images/Train_test.png" class="img-fluid figure-img" style="width:40.0%"></p>
+<figcaption>Figure: Train/Test Split illustration. Concept adapted from: DataCamp (n.d.), “K-Fold Cross Validation”. https://www.datacamp.com/tutorial/k-fold-cross-validation</figcaption>
+</figure>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="fu">nrow</span>(lsl)</span>
+<span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a>id_train <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="fu">seq_len</span>(n), <span class="at">size =</span> <span class="fl">0.8</span> <span class="sc">*</span> n)</span>
+<span id="cb38-5"><a href="#cb38-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-6"><a href="#cb38-6" aria-hidden="true" tabindex="-1"></a>train <span class="ot">&lt;-</span> lsl[id_train, ]</span>
+<span id="cb38-7"><a href="#cb38-7" aria-hidden="true" tabindex="-1"></a>test  <span class="ot">&lt;-</span> lsl[<span class="sc">-</span>id_train, ]</span>
+<span id="cb38-8"><a href="#cb38-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-9"><a href="#cb38-9" aria-hidden="true" tabindex="-1"></a>fit_split <span class="ot">&lt;-</span> <span class="fu">glm</span>(form, <span class="at">family =</span> <span class="fu">binomial</span>(), <span class="at">data =</span> train)</span>
+<span id="cb38-10"><a href="#cb38-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-11"><a href="#cb38-11" aria-hidden="true" tabindex="-1"></a>p_test  <span class="ot">&lt;-</span> <span class="fu">predict</span>(fit_split, <span class="at">newdata =</span> test, <span class="at">type =</span> <span class="st">"response"</span>)</span>
+<span id="cb38-12"><a href="#cb38-12" aria-hidden="true" tabindex="-1"></a>p_train <span class="ot">&lt;-</span> <span class="fu">fitted</span>(fit_split)</span>
+<span id="cb38-13"><a href="#cb38-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-14"><a href="#cb38-14" aria-hidden="true" tabindex="-1"></a>auc_test  <span class="ot">&lt;-</span> pROC<span class="sc">::</span><span class="fu">auc</span>(pROC<span class="sc">::</span><span class="fu">roc</span>(test<span class="sc">$</span>lslpts,  p_test,  <span class="at">quiet =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb38-15"><a href="#cb38-15" aria-hidden="true" tabindex="-1"></a>auc_train <span class="ot">&lt;-</span> pROC<span class="sc">::</span><span class="fu">auc</span>(pROC<span class="sc">::</span><span class="fu">roc</span>(train<span class="sc">$</span>lslpts, p_train, <span class="at">quiet =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb38-16"><a href="#cb38-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-17"><a href="#cb38-17" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"AUC (training dataset):"</span>, <span class="fu">round</span>(auc_train, <span class="dv">3</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>AUC (training dataset): 0.824 </code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"AUC (testing dataset): "</span>, <span class="fu">round</span>(auc_test,  <span class="dv">3</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>AUC (testing dataset):  0.771 </code></pre>
+</div>
+</div>
+<p>The higher AUC on the training set reflects optimistic in-sample performance, while the test AUC provides a more realistic estimate of predictive skill on unseen data.</p>
+<hr>
+</section>
+<section id="k-fold-cross-validation-random-cv" class="level2">
+<h2 class="anchored" data-anchor-id="k-fold-cross-validation-random-cv">8. k-fold cross-validation (random CV)</h2>
+<p>Building on the simple hold-out split, k-fold cross-validation provides a more robust estimate of predictive performance by repeating the train–test procedure multiple times. The data are partitioned into <em>k</em> subsets, each of which is used once for testing while the remaining folds are used for training. By averaging performance across folds, k-fold cross-validation reduces the dependence on a single random split and yields a more stable assessment of model skill.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>In standard k-fold CV:</p>
+<ol type="1">
+<li>The dataset is randomly partitioned into k equally sized subsets.</li>
+<li>Each subset is used once as a test set.</li>
+<li>Performance is averaged across folds.</li>
+</ol>
+<p>This estimates the expected prediction error under the assumption that future data come from the <em>same joint distribution</em> as the observed data.</p>
+</div>
+</div>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="images/Train_test_CV.png" class="img-fluid figure-img"></p>
+<figcaption>Figure: Principle of cross-validation. The average performance for the 5 models than represents the overall performance after cross-validation (source: https://www.datacamp.com/tutorial/k-fold-cross-validation).</figcaption>
+</figure>
+</div>
+<p>In R, we can implement this functionality as follows:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>auc01 <span class="ot">&lt;-</span> <span class="cf">function</span>(y, p) <span class="fu">as.numeric</span>(pROC<span class="sc">::</span><span class="fu">auc</span>(pROC<span class="sc">::</span><span class="fu">roc</span>(y, p, <span class="at">quiet =</span> <span class="cn">TRUE</span>)))</span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a>k <span class="ot">&lt;-</span> <span class="dv">5</span></span>
+<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a>fold_id <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="fu">rep</span>(<span class="dv">1</span><span class="sc">:</span>k, <span class="at">length.out =</span> <span class="fu">nrow</span>(lsl)))</span>
+<span id="cb42-6"><a href="#cb42-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-7"><a href="#cb42-7" aria-hidden="true" tabindex="-1"></a>auc_kfoldcv <span class="ot">&lt;-</span> <span class="fu">numeric</span>(k)</span>
+<span id="cb42-8"><a href="#cb42-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-9"><a href="#cb42-9" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>k) {</span>
+<span id="cb42-10"><a href="#cb42-10" aria-hidden="true" tabindex="-1"></a>  train_i <span class="ot">&lt;-</span> lsl[fold_id <span class="sc">!=</span> i, ]</span>
+<span id="cb42-11"><a href="#cb42-11" aria-hidden="true" tabindex="-1"></a>  test_i  <span class="ot">&lt;-</span> lsl[fold_id <span class="sc">==</span> i, ]</span>
+<span id="cb42-12"><a href="#cb42-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-13"><a href="#cb42-13" aria-hidden="true" tabindex="-1"></a>  fit_i <span class="ot">&lt;-</span> <span class="fu">glm</span>(form, <span class="at">family =</span> <span class="fu">binomial</span>(), <span class="at">data =</span> train_i)</span>
+<span id="cb42-14"><a href="#cb42-14" aria-hidden="true" tabindex="-1"></a>  p_i   <span class="ot">&lt;-</span> <span class="fu">predict</span>(fit_i, <span class="at">newdata =</span> test_i, <span class="at">type =</span> <span class="st">"response"</span>)</span>
+<span id="cb42-15"><a href="#cb42-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-16"><a href="#cb42-16" aria-hidden="true" tabindex="-1"></a>  auc_kfoldcv[i] <span class="ot">&lt;-</span> <span class="fu">auc01</span>(test_i<span class="sc">$</span>lslpts, p_i)</span>
+<span id="cb42-17"><a href="#cb42-17" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb42-18"><a href="#cb42-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-19"><a href="#cb42-19" aria-hidden="true" tabindex="-1"></a><span class="fu">data.frame</span>(</span>
+<span id="cb42-20"><a href="#cb42-20" aria-hidden="true" tabindex="-1"></a>  <span class="at">Fold =</span> <span class="fu">seq_along</span>(auc_kfoldcv),</span>
+<span id="cb42-21"><a href="#cb42-21" aria-hidden="true" tabindex="-1"></a>  <span class="at">AUC  =</span> <span class="fu">round</span>(auc_kfoldcv, <span class="dv">3</span>)</span>
+<span id="cb42-22"><a href="#cb42-22" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  Fold   AUC
+1    1 0.761
+2    2 0.849
+3    3 0.806
+4    4 0.802
+5    5 0.792</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">round</span>(<span class="fu">mean</span>(auc_kfoldcv), <span class="dv">3</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>0.802 </code></pre>
+</div>
+</div>
+<hr>
+</section>
+<section id="forms-of-cross-validation" class="level2">
+<h2 class="anchored" data-anchor-id="forms-of-cross-validation">9. Forms of cross-validation</h2>
+<p>There are many forms of cross-validation. <strong>Stratified cross-validation</strong> extends standard k-fold CV by ensuring that each fold preserves the class proportions of the full dataset. This is particularly important in classification problems with imbalanced classes, as it prevents folds that contain too few (or no) positive cases. Stratification improves the stability and interpretability of performance metrics such as AUC.</p>
+<p><strong>Group cross-validation</strong> is used when observations are not independent but belong to meaningful groups (e.g.&nbsp;sites, subjects, time series, or spatial units). Entire groups are assigned to either the training or testing set, preventing information leakage across folds. This approach provides a more realistic assessment of predictive performance when the goal is to generalize to new groups rather than new observations within the same group.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 24%">
+<col style="width: 24%">
+<col style="width: 26%">
+<col style="width: 24%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Type of Cross-Validation</th>
+<th>Typical Usage</th>
+<th>Description</th>
+<th>When to Use</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Standard k-Fold CV</strong></td>
+<td>Regression &amp; Classification</td>
+<td>Splits the dataset into <em>k</em> equal-sized folds; each fold is used once as the test set.</td>
+<td>Best for balanced datasets to obtain a stable overall performance estimate.</td>
+</tr>
+<tr class="even">
+<td><strong>Stratified k-Fold CV</strong></td>
+<td>Classification</td>
+<td>Preserves the class proportions of the original dataset within each fold.</td>
+<td>Recommended for imbalanced classification problems.</td>
+</tr>
+<tr class="odd">
+<td><strong>Leave-One-Out CV (LOOCV)</strong></td>
+<td>Regression &amp; Classification</td>
+<td>Each observation is left out once as the test set, with all remaining data used for training.</td>
+<td>Suitable for very small datasets; computationally expensive and often high-variance.</td>
+</tr>
+<tr class="even">
+<td><strong>Leave-P-Out CV</strong></td>
+<td>Regression &amp; Classification</td>
+<td>Similar to LOOCV, but leaves out <em>p</em> observations per iteration.</td>
+<td>Useful for small datasets to explore sensitivity to data removal.</td>
+</tr>
+<tr class="odd">
+<td><strong>Group k-Fold CV</strong></td>
+<td>Regression &amp; Classification with grouped data</td>
+<td>Ensures that all observations from the same group are kept together in either training or testing.</td>
+<td>Appropriate when observations are not independent (e.g.&nbsp;repeated measures, sites).</td>
+</tr>
+<tr class="even">
+<td><strong>Stratified Group k-Fold CV</strong></td>
+<td>Classification with grouped data</td>
+<td>Combines stratification and group integrity, preserving class balance while respecting groups.</td>
+<td>Ideal for grouped and imbalanced classification problems.</td>
+</tr>
+</tbody>
+</table>
+<p>Leave-One-Out Cross-Validation (LOOCV) is an extreme form of k-fold cross-validation in which each observation is used once as the test set while all remaining observations are used for training. It maximizes training data per fit but is computationally expensive and often yields high-variance performance estimates, especially for spatial data. AUC cannot be computed per fold (one test observation), so we compute one pooled AUC from all out-of-fold predictions.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a>p_loocv <span class="ot">&lt;-</span> <span class="fu">numeric</span>(<span class="fu">nrow</span>(lsl))</span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">nrow</span>(lsl)) {</span>
+<span id="cb46-4"><a href="#cb46-4" aria-hidden="true" tabindex="-1"></a>  fit_i <span class="ot">&lt;-</span> <span class="fu">glm</span>(form, <span class="at">family =</span> <span class="fu">binomial</span>(), <span class="at">data =</span> lsl[<span class="sc">-</span>i, ])</span>
+<span id="cb46-5"><a href="#cb46-5" aria-hidden="true" tabindex="-1"></a>  p_loocv[i] <span class="ot">&lt;-</span> <span class="fu">predict</span>(fit_i, <span class="at">newdata =</span> lsl[i, , <span class="at">drop =</span> <span class="cn">FALSE</span>], <span class="at">type =</span> <span class="st">"response"</span>)</span>
+<span id="cb46-6"><a href="#cb46-6" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb46-7"><a href="#cb46-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb46-8"><a href="#cb46-8" aria-hidden="true" tabindex="-1"></a>auc_loocv <span class="ot">&lt;-</span> pROC<span class="sc">::</span><span class="fu">auc</span>(pROC<span class="sc">::</span><span class="fu">roc</span>(lsl<span class="sc">$</span>lslpts, p_loocv, <span class="at">quiet =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb46-9"><a href="#cb46-9" aria-hidden="true" tabindex="-1"></a>auc_loocv</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Area under the curve: 0.8069</code></pre>
+</div>
+</div>
+<hr>
+</section>
+<section id="spatial-cv" class="level2">
+<h2 class="anchored" data-anchor-id="spatial-cv">10. Spatial CV</h2>
+<p>Random CV assumes observations are (approximately) independent. Spatial data often violate this due to spatial autocorrelation, leading to over-optimistic performance estimates for spatial prediction. An excellent source that introduces this topic is <span class="citation" data-cites="Sun2023SpatialCV">@Sun2023SpatialCV</span>. The key is to split the data spatially rather than randomly, thereby increasing the independence between training and validation data. There are several different types of spatial CV and here we introduce the main methods.</p>
+<div class="callout callout-style-simple callout-none no-icon">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-body-container">
+<p>Spatial CV changes the validation question from: How well do I predict new <em>observations</em>? to: How well do I predict at <em>new locations</em>? This yields a more realistic estimate for spatial generalization.</p>
+</div>
+</div>
+</div>
+<hr>
+<section id="spatial-cv-cluster-based-folds" class="level3">
+<h3 class="anchored" data-anchor-id="spatial-cv-cluster-based-folds">Spatial CV: cluster-based folds</h3>
+<p>Cluster-based spatial CV separates data into k spatial clusters and uses them as folds. One method to split data spatially is to perform spatial clustering. Based on the geospatial coordinates of the data and leveraging a clustering algorithm (e.g., K-means clustering), we can split data into several subsets with data instances within the same subset being spatially continuous and those in different subsets being relatively separated from each other. We can do this using the <code>blockCV</code> package.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb48"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(blockCV)</span>
+<span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-3"><a href="#cb48-3" aria-hidden="true" tabindex="-1"></a>lsl_sf_utm <span class="ot">&lt;-</span> <span class="fu">st_as_sf</span>(lsl, <span class="at">coords =</span> <span class="fu">c</span>(<span class="st">"x"</span>, <span class="st">"y"</span>), <span class="at">crs =</span> <span class="dv">32717</span>)</span>
+<span id="cb48-4"><a href="#cb48-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-5"><a href="#cb48-5" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb48-6"><a href="#cb48-6" aria-hidden="true" tabindex="-1"></a>cv_clust <span class="ot">&lt;-</span> blockCV<span class="sc">::</span><span class="fu">cv_cluster</span>(</span>
+<span id="cb48-7"><a href="#cb48-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">x      =</span> lsl_sf_utm,</span>
+<span id="cb48-8"><a href="#cb48-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">column =</span> <span class="st">"lslpts"</span>,</span>
+<span id="cb48-9"><a href="#cb48-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">k      =</span> <span class="dv">5</span></span>
+<span id="cb48-10"><a href="#cb48-10" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  train_FALSE train_TRUE test_FALSE test_TRUE
+1         149        160         26        15
+2         137        165         38        10
+3         144        122         31        53
+4         132        150         43        25
+5         138        103         37        72</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb50"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a>fold_id_sp <span class="ot">&lt;-</span> cv_clust<span class="sc">$</span>folds_ids</span>
+<span id="cb50-2"><a href="#cb50-2" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(fold_id_sp)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>fold_id_sp
+  1   2   3   4   5 
+ 41  48  84  68 109 </code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb52"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a>ksp <span class="ot">&lt;-</span> <span class="fu">length</span>(<span class="fu">unique</span>(fold_id_sp))</span>
+<span id="cb52-2"><a href="#cb52-2" aria-hidden="true" tabindex="-1"></a>cols <span class="ot">&lt;-</span> grDevices<span class="sc">::</span><span class="fu">hcl.colors</span>(ksp, <span class="at">palette =</span> <span class="st">"Dark 3"</span>)</span>
+<span id="cb52-3"><a href="#cb52-3" aria-hidden="true" tabindex="-1"></a>pt_cols <span class="ot">&lt;-</span> cols[<span class="fu">as.integer</span>(<span class="fu">factor</span>(fold_id_sp, <span class="at">levels =</span> <span class="fu">sort</span>(<span class="fu">unique</span>(fold_id_sp))))]</span>
+<span id="cb52-4"><a href="#cb52-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb52-5"><a href="#cb52-5" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">st_geometry</span>(lsl_sf_utm), <span class="at">pch =</span> <span class="dv">16</span>, <span class="at">cex =</span> <span class="fl">0.9</span>, <span class="at">col =</span> pt_cols,</span>
+<span id="cb52-6"><a href="#cb52-6" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">"Cluster-based spatial CV folds (cv_cluster)"</span>)</span>
+<span id="cb52-7"><a href="#cb52-7" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">"topright"</span>,</span>
+<span id="cb52-8"><a href="#cb52-8" aria-hidden="true" tabindex="-1"></a>       <span class="at">legend =</span> <span class="fu">paste</span>(<span class="st">"Fold"</span>, <span class="fu">sort</span>(<span class="fu">unique</span>(fold_id_sp))),</span>
+<span id="cb52-9"><a href="#cb52-9" aria-hidden="true" tabindex="-1"></a>       <span class="at">col =</span> cols, <span class="at">pch =</span> <span class="dv">16</span>, <span class="at">pt.cex =</span> <span class="fl">0.9</span>, <span class="at">bty =</span> <span class="st">"n"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Machine_Learning_in_Geosciences_files/figure-html/unnamed-chunk-14-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="evaluate-glm-with-cluster-fold-cv" class="level3">
+<h3 class="anchored" data-anchor-id="evaluate-glm-with-cluster-fold-cv">Evaluate GLM with cluster-fold CV</h3>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb53"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a>auc_cluster <span class="ot">&lt;-</span> <span class="fu">numeric</span>(<span class="fu">length</span>(<span class="fu">unique</span>(fold_id_sp)))</span>
+<span id="cb53-2"><a href="#cb53-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb53-3"><a href="#cb53-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">sort</span>(<span class="fu">unique</span>(fold_id_sp))) {</span>
+<span id="cb53-4"><a href="#cb53-4" aria-hidden="true" tabindex="-1"></a>  train_sf <span class="ot">&lt;-</span> lsl_sf_utm[fold_id_sp <span class="sc">!=</span> i, ]</span>
+<span id="cb53-5"><a href="#cb53-5" aria-hidden="true" tabindex="-1"></a>  test_sf  <span class="ot">&lt;-</span> lsl_sf_utm[fold_id_sp <span class="sc">==</span> i, ]</span>
+<span id="cb53-6"><a href="#cb53-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb53-7"><a href="#cb53-7" aria-hidden="true" tabindex="-1"></a>  train <span class="ot">&lt;-</span> <span class="fu">st_drop_geometry</span>(train_sf)</span>
+<span id="cb53-8"><a href="#cb53-8" aria-hidden="true" tabindex="-1"></a>  test  <span class="ot">&lt;-</span> <span class="fu">st_drop_geometry</span>(test_sf)</span>
+<span id="cb53-9"><a href="#cb53-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb53-10"><a href="#cb53-10" aria-hidden="true" tabindex="-1"></a>  fit_i <span class="ot">&lt;-</span> <span class="fu">glm</span>(form, <span class="at">family =</span> <span class="fu">binomial</span>(), <span class="at">data =</span> train)</span>
+<span id="cb53-11"><a href="#cb53-11" aria-hidden="true" tabindex="-1"></a>  p_i   <span class="ot">&lt;-</span> <span class="fu">predict</span>(fit_i, <span class="at">newdata =</span> test, <span class="at">type =</span> <span class="st">"response"</span>)</span>
+<span id="cb53-12"><a href="#cb53-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb53-13"><a href="#cb53-13" aria-hidden="true" tabindex="-1"></a>  auc_cluster[i] <span class="ot">&lt;-</span> <span class="fu">auc01</span>(test<span class="sc">$</span>lslpts, p_i)</span>
+<span id="cb53-14"><a href="#cb53-14" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb53-15"><a href="#cb53-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb53-16"><a href="#cb53-16" aria-hidden="true" tabindex="-1"></a>auc_cluster</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.7282051 0.7342105 0.8180158 0.8288372 0.8003003</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb55"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(auc_cluster)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.7819138</code></pre>
+</div>
+</div>
+<p>Now that is all good, but how do we know how many blocks we should choose?</p>
+</section>
+<section id="choosing-a-block-size-from-spatial-autocorrelation-principle" class="level3">
+<h3 class="anchored" data-anchor-id="choosing-a-block-size-from-spatial-autocorrelation-principle">Choosing a block size from spatial autocorrelation (principle)</h3>
+<p>Block-based spatial cross-validation should be informed by the <strong>spatial range of autocorrelation</strong> present in the data. By analysing spatial autocorrelation in model residuals (e.g.&nbsp;using a correlogram or Moran’s I over distance classes), one can identify the distance beyond which observations become approximately independent. Choosing a block size equal to or slightly larger than this range reduces information leakage between training and test sets and yields a more realistic estimate of predictive performance at new locations. We estimate the spatial dependence range in <strong>model residuals</strong> (dependence left after accounting for predictors). Below: Moran’s I correlogram of Pearson residuals over distance bands.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>A key insight is that <strong>block size should reflect spatial autocorrelation</strong>. The workflow used here follows a principled logic: 1. Fit a model. 2. Analyze spatial autocorrelation in the residuals. 3. Identify the distance at which residual autocorrelation vanishes. 4. Use that distance (or slightly larger) as the block size. Residual-based autocorrelation matters because: it represents structure not explained by the model, and therefore the information that may leak between nearby training and test points.</p>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb57"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(spdep)</span>
+<span id="cb57-2"><a href="#cb57-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb57-3"><a href="#cb57-3" aria-hidden="true" tabindex="-1"></a>fit_all <span class="ot">&lt;-</span> <span class="fu">glm</span>(form, <span class="at">family =</span> <span class="fu">binomial</span>(), <span class="at">data =</span> <span class="fu">st_drop_geometry</span>(lsl_sf_utm))</span>
+<span id="cb57-4"><a href="#cb57-4" aria-hidden="true" tabindex="-1"></a>lsl_sf_utm<span class="sc">$</span>pearson_resid <span class="ot">&lt;-</span> <span class="fu">residuals</span>(fit_all, <span class="at">type =</span> <span class="st">"pearson"</span>)</span>
+<span id="cb57-5"><a href="#cb57-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb57-6"><a href="#cb57-6" aria-hidden="true" tabindex="-1"></a>coords <span class="ot">&lt;-</span> <span class="fu">st_coordinates</span>(lsl_sf_utm)</span>
+<span id="cb57-7"><a href="#cb57-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb57-8"><a href="#cb57-8" aria-hidden="true" tabindex="-1"></a>D <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(<span class="fu">dist</span>(coords))</span>
+<span id="cb57-9"><a href="#cb57-9" aria-hidden="true" tabindex="-1"></a>dmax <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">quantile</span>(D[<span class="fu">upper.tri</span>(D)], <span class="fl">0.95</span>))</span>
+<span id="cb57-10"><a href="#cb57-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb57-11"><a href="#cb57-11" aria-hidden="true" tabindex="-1"></a>nbins <span class="ot">&lt;-</span> <span class="dv">15</span></span>
+<span id="cb57-12"><a href="#cb57-12" aria-hidden="true" tabindex="-1"></a>breaks <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, dmax, <span class="at">length.out =</span> nbins <span class="sc">+</span> <span class="dv">1</span>)</span>
+<span id="cb57-13"><a href="#cb57-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb57-14"><a href="#cb57-14" aria-hidden="true" tabindex="-1"></a>moran_I <span class="ot">&lt;-</span> <span class="fu">numeric</span>(nbins)</span>
+<span id="cb57-15"><a href="#cb57-15" aria-hidden="true" tabindex="-1"></a>moran_p <span class="ot">&lt;-</span> <span class="fu">numeric</span>(nbins)</span>
+<span id="cb57-16"><a href="#cb57-16" aria-hidden="true" tabindex="-1"></a>mid_d   <span class="ot">&lt;-</span> <span class="fu">numeric</span>(nbins)</span>
+<span id="cb57-17"><a href="#cb57-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb57-18"><a href="#cb57-18" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (b <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>nbins) {</span>
+<span id="cb57-19"><a href="#cb57-19" aria-hidden="true" tabindex="-1"></a>  d1 <span class="ot">&lt;-</span> breaks[b]</span>
+<span id="cb57-20"><a href="#cb57-20" aria-hidden="true" tabindex="-1"></a>  d2 <span class="ot">&lt;-</span> breaks[b <span class="sc">+</span> <span class="dv">1</span>]</span>
+<span id="cb57-21"><a href="#cb57-21" aria-hidden="true" tabindex="-1"></a>  mid_d[b] <span class="ot">&lt;-</span> (d1 <span class="sc">+</span> d2) <span class="sc">/</span> <span class="dv">2</span></span>
+<span id="cb57-22"><a href="#cb57-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb57-23"><a href="#cb57-23" aria-hidden="true" tabindex="-1"></a>  nb <span class="ot">&lt;-</span> <span class="fu">dnearneigh</span>(coords, <span class="at">d1 =</span> d1, <span class="at">d2 =</span> d2, <span class="at">longlat =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb57-24"><a href="#cb57-24" aria-hidden="true" tabindex="-1"></a>  lw <span class="ot">&lt;-</span> <span class="fu">nb2listw</span>(nb, <span class="at">style =</span> <span class="st">"W"</span>, <span class="at">zero.policy =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb57-25"><a href="#cb57-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb57-26"><a href="#cb57-26" aria-hidden="true" tabindex="-1"></a>  mt <span class="ot">&lt;-</span> <span class="fu">moran.test</span>(lsl_sf_utm<span class="sc">$</span>pearson_resid, lw, <span class="at">zero.policy =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb57-27"><a href="#cb57-27" aria-hidden="true" tabindex="-1"></a>  moran_I[b] <span class="ot">&lt;-</span> mt<span class="sc">$</span>estimate[[<span class="st">"Moran I statistic"</span>]]</span>
+<span id="cb57-28"><a href="#cb57-28" aria-hidden="true" tabindex="-1"></a>  moran_p[b] <span class="ot">&lt;-</span> mt<span class="sc">$</span>p.value</span>
+<span id="cb57-29"><a href="#cb57-29" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in dnearneigh(coords, d1 = d1, d2 = d2, longlat = FALSE): neighbour
+object has 42 sub-graphs</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in dnearneigh(coords, d1 = d1, d2 = d2, longlat = FALSE): neighbour
+object has 11 sub-graphs</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in dnearneigh(coords, d1 = d1, d2 = d2, longlat = FALSE): neighbour
+object has 29 sub-graphs</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in dnearneigh(coords, d1 = d1, d2 = d2, longlat = FALSE): neighbour
+object has 68 sub-graphs</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb62"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb62-1"><a href="#cb62-1" aria-hidden="true" tabindex="-1"></a>corr_tbl <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">distance_m =</span> mid_d, <span class="at">moran_I =</span> moran_I, <span class="at">p_value =</span> moran_p)</span>
+<span id="cb62-2"><a href="#cb62-2" aria-hidden="true" tabindex="-1"></a>corr_tbl</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   distance_m      moran_I      p_value
+1    92.13888  0.155387884 1.358865e-04
+2   276.41664  0.093982804 3.322192e-05
+3   460.69439  0.046147853 5.226375e-03
+4   644.97215  0.026029043 4.254480e-02
+5   829.24991 -0.010835610 7.024814e-01
+6  1013.52767 -0.027043944 9.606966e-01
+7  1197.80543 -0.014668485 8.145082e-01
+8  1382.08318 -0.022637271 9.409734e-01
+9  1566.36094 -0.050843016 9.999323e-01
+10 1750.63870 -0.013705371 7.962514e-01
+11 1934.91646  0.008980048 2.048302e-01
+12 2119.19422 -0.043602296 9.934139e-01
+13 2303.47197 -0.103767485 9.999997e-01
+14 2487.74973 -0.048775124 9.623869e-01
+15 2672.02749  0.004104575 3.965119e-01</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb64"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb64-1"><a href="#cb64-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(mid_d, moran_I, <span class="at">type =</span> <span class="st">"b"</span>, <span class="at">pch =</span> <span class="dv">16</span>,</span>
+<span id="cb64-2"><a href="#cb64-2" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">"Distance (m)"</span>, <span class="at">ylab =</span> <span class="st">"Moran's I (Pearson residuals)"</span>,</span>
+<span id="cb64-3"><a href="#cb64-3" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">"Residual spatial autocorrelation (Moran correlogram)"</span>)</span>
+<span id="cb64-4"><a href="#cb64-4" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">h =</span> <span class="dv">0</span>, <span class="at">lty =</span> <span class="dv">2</span>)</span>
+<span id="cb64-5"><a href="#cb64-5" aria-hidden="true" tabindex="-1"></a>sig <span class="ot">&lt;-</span> moran_p <span class="sc">&lt;</span> <span class="fl">0.05</span></span>
+<span id="cb64-6"><a href="#cb64-6" aria-hidden="true" tabindex="-1"></a><span class="fu">points</span>(mid_d[sig], moran_I[sig], <span class="at">pch =</span> <span class="dv">16</span>, <span class="at">cex =</span> <span class="fl">1.3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Machine_Learning_in_Geosciences_files/figure-html/unnamed-chunk-17-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<hr>
+</section>
+<section id="spatial-cv-grid-based" class="level3">
+<h3 class="anchored" data-anchor-id="spatial-cv-grid-based">Spatial CV: Grid-based</h3>
+<p>Apply block CV with a chosen <code>size</code> (meters, EPSG:32717). If the study area is small, a large block size may yield too few blocks for k folds.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb65"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb65-1"><a href="#cb65-1" aria-hidden="true" tabindex="-1"></a>block_size_m <span class="ot">&lt;-</span> <span class="dv">1500</span>  <span class="co"># adjust based on correlogram range and feasibility</span></span>
+<span id="cb65-2"><a href="#cb65-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb65-3"><a href="#cb65-3" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb65-4"><a href="#cb65-4" aria-hidden="true" tabindex="-1"></a>cv_block <span class="ot">&lt;-</span> blockCV<span class="sc">::</span><span class="fu">cv_spatial</span>(</span>
+<span id="cb65-5"><a href="#cb65-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">x =</span> lsl_sf_utm,</span>
+<span id="cb65-6"><a href="#cb65-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">column =</span> <span class="st">"lslpts"</span>,</span>
+<span id="cb65-7"><a href="#cb65-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">k =</span> <span class="dv">8</span>,</span>
+<span id="cb65-8"><a href="#cb65-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">size =</span> block_size_m,</span>
+<span id="cb65-9"><a href="#cb65-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">selection =</span> <span class="st">"random"</span>,</span>
+<span id="cb65-10"><a href="#cb65-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">iteration =</span> <span class="dv">500</span>,</span>
+<span id="cb65-11"><a href="#cb65-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">progress =</span> <span class="cn">FALSE</span></span>
+<span id="cb65-12"><a href="#cb65-12" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+  train_FALSE train_TRUE test_FALSE test_TRUE
+1         139        123         36        52
+2         140        150         35        25
+3         163        166         12         9
+4         154        168         21         7
+5         155        169         20         6
+6         155        136         20        39
+7         154        143         21        32
+8         165        170         10         5</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Machine_Learning_in_Geosciences_files/figure-html/unnamed-chunk-18-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb67"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb67-1"><a href="#cb67-1" aria-hidden="true" tabindex="-1"></a>fold_id_block <span class="ot">&lt;-</span> cv_block<span class="sc">$</span>folds_ids</span>
+<span id="cb67-2"><a href="#cb67-2" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(fold_id_block)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>fold_id_block
+ 1  2  3  4  5  6  7  8 
+88 60 21 28 26 59 53 15 </code></pre>
+</div>
+</div>
+</section>
+<section id="evaluate-glm-with-block-fold-cv" class="level3">
+<h3 class="anchored" data-anchor-id="evaluate-glm-with-block-fold-cv">Evaluate GLM with block-fold CV</h3>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb69"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb69-1"><a href="#cb69-1" aria-hidden="true" tabindex="-1"></a>kblk <span class="ot">&lt;-</span> <span class="fu">length</span>(<span class="fu">unique</span>(fold_id_block))</span>
+<span id="cb69-2"><a href="#cb69-2" aria-hidden="true" tabindex="-1"></a>auc_spatial <span class="ot">&lt;-</span> <span class="fu">numeric</span>(kblk)</span>
+<span id="cb69-3"><a href="#cb69-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb69-4"><a href="#cb69-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">sort</span>(<span class="fu">unique</span>(fold_id_block))) {</span>
+<span id="cb69-5"><a href="#cb69-5" aria-hidden="true" tabindex="-1"></a>  train_sf <span class="ot">&lt;-</span> lsl_sf_utm[fold_id_block <span class="sc">!=</span> i, ]</span>
+<span id="cb69-6"><a href="#cb69-6" aria-hidden="true" tabindex="-1"></a>  test_sf  <span class="ot">&lt;-</span> lsl_sf_utm[fold_id_block <span class="sc">==</span> i, ]</span>
+<span id="cb69-7"><a href="#cb69-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb69-8"><a href="#cb69-8" aria-hidden="true" tabindex="-1"></a>  train <span class="ot">&lt;-</span> <span class="fu">st_drop_geometry</span>(train_sf)</span>
+<span id="cb69-9"><a href="#cb69-9" aria-hidden="true" tabindex="-1"></a>  test  <span class="ot">&lt;-</span> <span class="fu">st_drop_geometry</span>(test_sf)</span>
+<span id="cb69-10"><a href="#cb69-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb69-11"><a href="#cb69-11" aria-hidden="true" tabindex="-1"></a>  fit_i <span class="ot">&lt;-</span> <span class="fu">glm</span>(form, <span class="at">family =</span> <span class="fu">binomial</span>(), <span class="at">data =</span> train)</span>
+<span id="cb69-12"><a href="#cb69-12" aria-hidden="true" tabindex="-1"></a>  p_i   <span class="ot">&lt;-</span> <span class="fu">predict</span>(fit_i, <span class="at">newdata =</span> test, <span class="at">type =</span> <span class="st">"response"</span>)</span>
+<span id="cb69-13"><a href="#cb69-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb69-14"><a href="#cb69-14" aria-hidden="true" tabindex="-1"></a>  auc_spatial[i] <span class="ot">&lt;-</span> <span class="fu">auc01</span>(test<span class="sc">$</span>lslpts, p_i)</span>
+<span id="cb69-15"><a href="#cb69-15" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb69-16"><a href="#cb69-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb69-17"><a href="#cb69-17" aria-hidden="true" tabindex="-1"></a>auc_spatial</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.8034188 0.6902857 0.8425926 0.9047619 0.6833333 0.8282051 0.8720238
+[8] 0.5600000</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb71"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb71-1"><a href="#cb71-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(auc_spatial)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.7730777</code></pre>
+</div>
+</div>
+</section>
+<section id="visualize-blocks-fold-membership" class="level3">
+<h3 class="anchored" data-anchor-id="visualize-blocks-fold-membership">Visualize blocks + fold membership</h3>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb73"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb73-1"><a href="#cb73-1" aria-hidden="true" tabindex="-1"></a>cols_blk <span class="ot">&lt;-</span> grDevices<span class="sc">::</span><span class="fu">hcl.colors</span>(kblk, <span class="at">palette =</span> <span class="st">"Dark 3"</span>)</span>
+<span id="cb73-2"><a href="#cb73-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb73-3"><a href="#cb73-3" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">st_geometry</span>(cv_block<span class="sc">$</span>blocks), <span class="at">border =</span> <span class="st">"grey70"</span>,</span>
+<span id="cb73-4"><a href="#cb73-4" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="fu">paste0</span>(<span class="st">"Block CV folds (cv_spatial), size = "</span>, block_size_m, <span class="st">" m"</span>))</span>
+<span id="cb73-5"><a href="#cb73-5" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">st_geometry</span>(lsl_sf_utm), <span class="at">add =</span> <span class="cn">TRUE</span>, <span class="at">pch =</span> <span class="dv">16</span>, <span class="at">cex =</span> <span class="fl">0.8</span>, <span class="at">col =</span> cols_blk[fold_id_block])</span>
+<span id="cb73-6"><a href="#cb73-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb73-7"><a href="#cb73-7" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">"topright"</span>, <span class="at">legend =</span> <span class="fu">paste</span>(<span class="st">"Fold"</span>, <span class="fu">sort</span>(<span class="fu">unique</span>(fold_id_block))),</span>
+<span id="cb73-8"><a href="#cb73-8" aria-hidden="true" tabindex="-1"></a>       <span class="at">col =</span> cols_blk, <span class="at">pch =</span> <span class="dv">16</span>, <span class="at">bty =</span> <span class="st">"n"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Machine_Learning_in_Geosciences_files/figure-html/unnamed-chunk-20-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<hr>
+</section>
+<section id="summary-compare-evaluation-strategies" class="level3">
+<h3 class="anchored" data-anchor-id="summary-compare-evaluation-strategies">Summary: compare evaluation strategies</h3>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb74"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb74-1"><a href="#cb74-1" aria-hidden="true" tabindex="-1"></a>summary_tbl <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb74-2"><a href="#cb74-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">method =</span> <span class="fu">c</span>(<span class="st">"Apparent (train=test)"</span>, <span class="st">"Hold-out (test AUC)"</span>, <span class="st">"Random k-fold CV (mean AUC)"</span>,</span>
+<span id="cb74-3"><a href="#cb74-3" aria-hidden="true" tabindex="-1"></a>             <span class="st">"LOOCV (pooled AUC)"</span>, <span class="st">"Spatial CV (cluster mean AUC)"</span>, <span class="st">"Spatial CV (block mean AUC)"</span>),</span>
+<span id="cb74-4"><a href="#cb74-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">AUC =</span> <span class="fu">c</span>(<span class="fu">as.numeric</span>(auc_full),</span>
+<span id="cb74-5"><a href="#cb74-5" aria-hidden="true" tabindex="-1"></a>          <span class="fu">as.numeric</span>(auc_test),</span>
+<span id="cb74-6"><a href="#cb74-6" aria-hidden="true" tabindex="-1"></a>          <span class="fu">mean</span>(auc_kfoldcv),</span>
+<span id="cb74-7"><a href="#cb74-7" aria-hidden="true" tabindex="-1"></a>          <span class="fu">as.numeric</span>(auc_loocv),</span>
+<span id="cb74-8"><a href="#cb74-8" aria-hidden="true" tabindex="-1"></a>          <span class="fu">mean</span>(auc_cluster),</span>
+<span id="cb74-9"><a href="#cb74-9" aria-hidden="true" tabindex="-1"></a>          <span class="fu">mean</span>(auc_spatial))</span>
+<span id="cb74-10"><a href="#cb74-10" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb74-11"><a href="#cb74-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb74-12"><a href="#cb74-12" aria-hidden="true" tabindex="-1"></a>summary_tbl</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                         method       AUC
+1         Apparent (train=test) 0.8215837
+2           Hold-out (test AUC) 0.7714286
+3   Random k-fold CV (mean AUC) 0.8019156
+4            LOOCV (pooled AUC) 0.8068898
+5 Spatial CV (cluster mean AUC) 0.7819138
+6   Spatial CV (block mean AUC) 0.7730777</code></pre>
+</div>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>11. Take-home messages
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ul>
+<li>Cross-validation estimates performance under specific assumptions.</li>
+<li>Random CV assumes independence and exchangeability.</li>
+<li>Spatial CV changes the estimand to spatial generalization error.</li>
+<li>Block size should be informed by residual autocorrelation, not convenience.</li>
+</ul>
+</div>
+</div>
+<hr>
+</section>
+<section id="questions" class="level3">
+<h3 class="anchored" data-anchor-id="questions">💡Questions</h3>
+<blockquote class="blockquote">
+<p><strong>Question:</strong> What assumption does random k-fold CV make about the data?</p>
+</blockquote>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-8-contents" aria-controls="callout-8" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Tip
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-8" class="callout-8-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>Random CV assumes observations are exchangeable. In spatial data, this is often violated because nearby observations are more similar than distant ones.</p>
+</div>
+</div>
+</div>
+<blockquote class="blockquote">
+<p><strong>Question:</strong> Why is AUC computed on the training data misleading?</p>
+</blockquote>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-9-contents" aria-controls="callout-9" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Tip
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-9" class="callout-9-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>Because the model is evaluated on the same data used to fit it, leading to overly optimistic performance that does not reflect prediction at new locations.</p>
+</div>
+</div>
+</div>
+<blockquote class="blockquote">
+<p><strong>Question:</strong> What question does spatial CV answer that random CV does not?</p>
+</blockquote>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-10-contents" aria-controls="callout-10" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Tip
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-10" class="callout-10-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>Spatial CV estimates performance at <em>new locations</em>, not just new observations close to the training data.</p>
+</div>
+</div>
+</div>
+<blockquote class="blockquote">
+<p><strong>Question:</strong> Why is spatial autocorrelation assessed on model residuals?</p>
+</blockquote>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-11-contents" aria-controls="callout-11" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Tip
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-11" class="callout-11-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>Residuals represent unexplained structure. Autocorrelation in residuals indicates spatial dependence that can leak information between training and test data.</p>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="tidymodels-formalising-the-workflow." class="level2">
+<h2 class="anchored" data-anchor-id="tidymodels-formalising-the-workflow.">12. Tidymodels: formalising the workflow.</h2>
+<p>The above examples work well but require alot of coding in basic R and are not always transposable to other type of models. To address this, we can work with modelling pipeline that creates a uniform interface for the massive variety of statistical and machine learning models that exist. Here we are going to work with <code>tidymodels</code>. Tidymodels is a <strong>suite of R packages</strong> designed to make modeling workflows <strong>consistent, modular, and reproducible</strong>.<br>
+Instead of mixing preprocessing, model fitting, and validation in ad-hoc code, tidymodels encourages you to define:</p>
+<ul>
+<li>a <strong>recipe</strong> (preprocessing steps),</li>
+<li>a <strong>model specification</strong> (algorithm + engine),</li>
+<li>a <strong>workflow</strong> (recipe + model combined),</li>
+<li>and a <strong>resampling plan</strong> (e.g., k-fold CV) for evaluation and (later) tuning.</li>
+</ul>
+<p>This section follows the logic described by Rebecca Barter’s introduction to tidymodels.<br>
+(Reference: https://rebeccabarter.com/blog/2020-03-25_machine_learning#what-is-tidymodels)</p>
+<section id="installload" class="level3">
+<h3 class="anchored" data-anchor-id="installload">12.1 Install/load</h3>
+<div class="cell" data-echo="false">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb76"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb76-1"><a href="#cb76-1" aria-hidden="true" tabindex="-1"></a><span class="fu">suppressPackageStartupMessages</span>({</span>
+<span id="cb76-2"><a href="#cb76-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">library</span>(tidymodels)</span>
+<span id="cb76-3"><a href="#cb76-3" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: package 'broom' was built under R version 4.4.3</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: package 'infer' was built under R version 4.4.3</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: package 'parsnip' was built under R version 4.4.3</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: package 'purrr' was built under R version 4.4.3</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: package 'tidyr' was built under R version 4.4.3</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb82"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb82-1"><a href="#cb82-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidymodels)</span>
+<span id="cb82-2"><a href="#cb82-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: package 'tibble' was built under R version 4.4.3</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
+✔ forcats   1.0.0     ✔ stringr   1.6.0
+✔ lubridate 1.9.4     ✔ tibble    3.3.1
+✔ readr     2.1.5     
+── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+✖ readr::col_factor() masks scales::col_factor()
+✖ purrr::discard()    masks scales::discard()
+✖ tidyr::extract()    masks terra::extract()
+✖ dplyr::filter()     masks stats::filter()
+✖ stringr::fixed()    masks recipes::fixed()
+✖ dplyr::lag()        masks stats::lag()
+✖ readr::spec()       masks yardstick::spec()
+ℹ Use the conflicted package (&lt;http://conflicted.r-lib.org/&gt;) to force all conflicts to become errors</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb85"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb85-1"><a href="#cb85-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(workflows)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="traintest-split" class="level3">
+<h3 class="anchored" data-anchor-id="traintest-split">12.2 Train/Test split</h3>
+<p>Let’s first split the dataset we were working with <code>lsl</code>into training and testdata. This split can be done automatically using the <code>initial_split</code>function from <code>rsample</code>. Note that we use <code>strata</code> argument to sample randomly within the stratification variable (<code>lslpts</code>).</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb86"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb86-1"><a href="#cb86-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">234589</span>)</span>
+<span id="cb86-2"><a href="#cb86-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb86-3"><a href="#cb86-3" aria-hidden="true" tabindex="-1"></a>lsl_split <span class="ot">&lt;-</span> <span class="fu">initial_split</span>(lsl, <span class="at">prop =</span> <span class="dv">3</span><span class="sc">/</span><span class="dv">4</span>, <span class="at">strata =</span> lslpts)</span>
+<span id="cb86-4"><a href="#cb86-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb86-5"><a href="#cb86-5" aria-hidden="true" tabindex="-1"></a>lsl_train <span class="ot">&lt;-</span> <span class="fu">training</span>(lsl_split)</span>
+<span id="cb86-6"><a href="#cb86-6" aria-hidden="true" tabindex="-1"></a>lsl_test  <span class="ot">&lt;-</span> <span class="fu">testing</span>(lsl_split)</span>
+<span id="cb86-7"><a href="#cb86-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb86-8"><a href="#cb86-8" aria-hidden="true" tabindex="-1"></a>lsl_split</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>&lt;Training/Testing/Total&gt;
+&lt;262/88/350&gt;</code></pre>
+</div>
+</div>
+<p>The output of <code>lsl_split</code> is an object that contains the split information as well as the original dataframe.</p>
+</section>
+<section id="recipe" class="level3">
+<h3 class="anchored" data-anchor-id="recipe">12.3 Recipe</h3>
+<p>Recipes allow you to specify the role of each variable as an outcome or predictor variable (using a “formula”), and any pre-processing steps you want to conduct (such as normalization, imputation, PCA, etc).</p>
+<p>Creating a recipe has two parts (layered on top of one another using pipes <code>%&gt;%</code>):</p>
+<ol type="1">
+<li><p><strong>Specify the formula</strong> (<code>recipe()</code>): specify the outcome variable and predictor variables</p></li>
+<li><p><strong>Specify pre-processing steps</strong> (<code>step_zzz()</code>): define the pre-processing steps, such as imputation, creating dummy variables, scaling, and more.</p></li>
+</ol>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb88"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb88-1"><a href="#cb88-1" aria-hidden="true" tabindex="-1"></a>lsl_recipe <span class="ot">&lt;-</span> <span class="fu">recipe</span>(</span>
+<span id="cb88-2"><a href="#cb88-2" aria-hidden="true" tabindex="-1"></a>  lslpts <span class="sc">~</span> slope <span class="sc">+</span> cplan <span class="sc">+</span> cprof <span class="sc">+</span> elev <span class="sc">+</span> log10_carea,</span>
+<span id="cb88-3"><a href="#cb88-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> lsl_train</span>
+<span id="cb88-4"><a href="#cb88-4" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%&gt;%</span></span>
+<span id="cb88-5"><a href="#cb88-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_normalize</span>(<span class="fu">all_numeric_predictors</span>()) <span class="sc">%&gt;%</span></span>
+<span id="cb88-6"><a href="#cb88-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_nzv</span>(<span class="fu">all_predictors</span>())</span>
+<span id="cb88-7"><a href="#cb88-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb88-8"><a href="#cb88-8" aria-hidden="true" tabindex="-1"></a>lsl_recipe</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code></code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>── Recipe ──────────────────────────────────────────────────────────────────────</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code></code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>── Inputs </code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Number of variables by role</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>outcome:   1
+predictor: 5</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code></code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>── Operations </code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>• Centering and scaling for: all_numeric_predictors()</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>• Sparse, unbalanced variable filter on: all_predictors()</code></pre>
+</div>
+</div>
+<p>Notice how we define the model <code>lslpts ~ slope + cplan + cprof + elev + log10_carea</code>in the recipy, define the data, and the pre-processing steps that we want. You can find a full description of potential pre-processing steps here <a href="https://recipes.tidymodels.org/index.html" class="uri">https://recipes.tidymodels.org/index.html</a>. Note that we use the functions <code>all_numeric_predictors` and all_predictors</code> to specify and what variables you want to apply the pre-processing. You can explore this further by using <code>?selections</code>.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>It is important to realize that nothing has happened so far, we only defined the names and roles of the outcome and predictor variables in this recipe. We used <code>lsl_train</code> as dataset, we we could have also used <code>lsl</code>. We will apply this recipe later to datasets.</p>
+</div>
+</div>
+<p>On to the next step, the model</p>
+</section>
+</section>
+<section id="specify-the-model" class="level2">
+<h2 class="anchored" data-anchor-id="specify-the-model">12.4 Specify the model</h2>
+<p>At this stage, we explicitly define the statistical model and connect it to the data preprocessing steps in a single, reproducible workflow. We specify a logistic regression model (see above, we will work on the same landslide example), which is appropriate because the response variable is binary and the objective is to estimate the probability of occurrence of the target process.</p>
+<p>Using a workflow ensures that the model and the preprocessing recipe are treated as a single unit. This prevents data leakage, guarantees that the same transformations are applied consistently during resampling and prediction, and improves reproducibility. By separating what the model is (logistic regression) from how the data are prepared (the recipe), the workflow provides a transparent and extensible structure for evaluation, cross-validation, and spatial prediction.</p>
+<p>There are a few primary components that you need to provide for the model specification</p>
+<ul>
+<li><p>The model type: what kind of model you want to fit, set using a different function depending on the model, such as rand_forest() for random forest, logistic_reg() for logistic regression, svm_poly() for a polynomial SVM model etc. The full list of models available via parsnip can be found <a href="https://www.tidymodels.org/find/parsnip/">here</a>.</p></li>
+<li><p>The arguments: the model parameter values (now consistently named across different models), set using set_args(). We will deal with this later.</p></li>
+<li><p>The engine: the underlying package the model should come from (e.g. “glm” for the logistic_reg), set using set_engine().</p></li>
+<li><p>The mode: the type of prediction - since several packages can do both classification (binary/categorical prediction) and regression (continuous prediction), set using set_mode()</p></li>
+</ul>
+<p>In our test case we need:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb99"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb99-1"><a href="#cb99-1" aria-hidden="true" tabindex="-1"></a>lr_model <span class="ot">&lt;-</span> <span class="fu">logistic_reg</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb99-2"><a href="#cb99-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_engine</span>(<span class="st">"glm"</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb99-3"><a href="#cb99-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_mode</span>(<span class="st">"classification"</span>)</span>
+<span id="cb99-4"><a href="#cb99-4" aria-hidden="true" tabindex="-1"></a>lr_model</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Logistic Regression Model Specification (classification)
+
+Computational engine: glm </code></pre>
+</div>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Note that this code doesn’t actually fit the model. Like the recipe, it just outlines a description of the model. Also note that we do not deal with tuning the model at this stage (see later).</p>
+</div>
+</div>
+</section>
+<section id="putting-it-all-togetheter-in-a-workflow" class="level2">
+<h2 class="anchored" data-anchor-id="putting-it-all-togetheter-in-a-workflow">12.5 Putting it all togetheter in a workflow</h2>
+<p>Now we can put the model and recipe together into a worklfow. This can be done by using <code>workflow()</code>(from the <code>workflows</code>package) and by adding the recipe and model to it. Nice!</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb101"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb101-1"><a href="#cb101-1" aria-hidden="true" tabindex="-1"></a>lr_workflow <span class="ot">&lt;-</span> <span class="fu">workflow</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb101-2"><a href="#cb101-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">add_recipe</span>(lsl_recipe) <span class="sc">%&gt;%</span> </span>
+<span id="cb101-3"><a href="#cb101-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">add_model</span>(lr_model)</span>
+<span id="cb101-4"><a href="#cb101-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb101-5"><a href="#cb101-5" aria-hidden="true" tabindex="-1"></a>lr_workflow</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>══ Workflow ════════════════════════════════════════════════════════════════════
+Preprocessor: Recipe
+Model: logistic_reg()
+
+── Preprocessor ────────────────────────────────────────────────────────────────
+2 Recipe Steps
+
+• step_normalize()
+• step_nzv()
+
+── Model ───────────────────────────────────────────────────────────────────────
+Logistic Regression Model Specification (classification)
+
+Computational engine: glm </code></pre>
+</div>
+</div>
+</section>
+<section id="evaluate-the-model" class="level2">
+<h2 class="anchored" data-anchor-id="evaluate-the-model">12.6 Evaluate the model</h2>
+<p>We can now evaluate the workflow using two options; - evaluate the workflow using a held-out set (as we defined by `lsl_split’).</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb103"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb103-1"><a href="#cb103-1" aria-hidden="true" tabindex="-1"></a>lr_last <span class="ot">&lt;-</span> lr_workflow <span class="sc">%&gt;%</span></span>
+<span id="cb103-2"><a href="#cb103-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">last_fit</span>(</span>
+<span id="cb103-3"><a href="#cb103-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">split =</span> lsl_split,</span>
+<span id="cb103-4"><a href="#cb103-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">metrics =</span> <span class="fu">metric_set</span>(roc_auc)</span>
+<span id="cb103-5"><a href="#cb103-5" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb103-6"><a href="#cb103-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb103-7"><a href="#cb103-7" aria-hidden="true" tabindex="-1"></a>lr_last <span class="sc">%&gt;%</span> <span class="fu">collect_metrics</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1 × 4
+  .metric .estimator .estimate .config        
+  &lt;chr&gt;   &lt;chr&gt;          &lt;dbl&gt; &lt;chr&gt;          
+1 roc_auc binary         0.765 pre0_mod0_post0</code></pre>
+</div>
+</div>
+<p>Now we can easily adjust the tidymodel worklow, for example if you want a CV rather than a simple split:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb105"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb105-1"><a href="#cb105-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb105-2"><a href="#cb105-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb105-3"><a href="#cb105-3" aria-hidden="true" tabindex="-1"></a>lsl_folds <span class="ot">&lt;-</span> <span class="fu">vfold_cv</span>(lsl_train, <span class="at">v =</span> <span class="dv">5</span>, <span class="at">strata =</span> lslpts)</span>
+<span id="cb105-4"><a href="#cb105-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb105-5"><a href="#cb105-5" aria-hidden="true" tabindex="-1"></a>lr_cv <span class="ot">&lt;-</span> lr_workflow <span class="sc">%&gt;%</span></span>
+<span id="cb105-6"><a href="#cb105-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">fit_resamples</span>(</span>
+<span id="cb105-7"><a href="#cb105-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">resamples =</span> lsl_folds,</span>
+<span id="cb105-8"><a href="#cb105-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">metrics =</span> <span class="fu">metric_set</span>(roc_auc)</span>
+<span id="cb105-9"><a href="#cb105-9" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb105-10"><a href="#cb105-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb105-11"><a href="#cb105-11" aria-hidden="true" tabindex="-1"></a>lr_cv <span class="sc">%&gt;%</span> <span class="fu">collect_metrics</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1 × 6
+  .metric .estimator  mean     n std_err .config        
+  &lt;chr&gt;   &lt;chr&gt;      &lt;dbl&gt; &lt;int&gt;   &lt;dbl&gt; &lt;chr&gt;          
+1 roc_auc binary     0.827     5  0.0158 pre0_mod0_post0</code></pre>
+</div>
+</div>
+<p>We will build on these simple building blocks in the next session.</p>
+</section>
+<section id="assignment" class="level2 assignment">
+<h2 class="anchored" data-anchor-id="assignment">Assignment</h2>
+<p>Create a tidymodel where you predict the occurence of a species (eg Ursus arctos or Brown Bear) in Europe (or just the Alps). Create a model where you use the same logistic model as we used before, but valide using i) a simple 80/20 split and ii) a spatial cross validation. For the latter, you can use the <code>spatialsample</code> package that will give you and <code>rsample</code>-style object as output. Use `spatialsample::spatial_block_cv() to split your study area in blocks and assign it to folds. Then use tidymodels exactly like normal CV.</p>
+<p>Have fun!</p>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

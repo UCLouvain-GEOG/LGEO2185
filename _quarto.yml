@@ -41,8 +41,10 @@ website:
         contents:
           - text: "Drafting your project with Quarto"
             file: Collaboration/LGEO2185_Drafting_your_project_with_Quarto.qmd
-      - text: "Intro to ML"
-        file: ML/Machine Learning in Geosciences.qmd
+      - section: "ML in Geosciences"
+        contents:
+          - text: "Intro to ML"
+            file: ML/Machine_Learning_in_Geosciences.qmd
 
 
 bibliography: biblio.bib

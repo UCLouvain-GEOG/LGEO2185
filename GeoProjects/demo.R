@@ -1,5 +1,5 @@
 
-base_dir <- getwd()
+base_dir <- "~/RStudio_KVO/AGP/LGEO2185/GeoProjects"
 
 folders <- c(
   file.path(base_dir, "R"),
@@ -29,14 +29,68 @@ for (file in files) {
   }
 }
 
+
+
 # Add a message to the README file
 writeLines("This is the README file for the MyRProject_Session3", file.path(base_dir, "README.md"))
+setwd(base_dir)
+
+###### paste code from html here
 
 source("R/00_libraries.R")
 source("R/00_parameters.R")
 DRC <- gadm(country = "COD", level = 0, resolution = 1)
 Prec <- worldclim_global(var = "prec", res = 5)
 
+PrecF <- cmip6_world(
+  model = "CNRM-CM6-1", ssp = "585",
+  time = "2041-2060", var = "prec", res = 5
+)
+plot(PrecF)
+
+pacman::p_load(tictoc) # this call to library tictoc should eventually be moved to 00_libraries.R
+tic()
+Prec_DRC <- Prec %>%
+  terra::mask(DRC) %>% # let's explicitly call the function from the terra package
+  terra::crop(DRC) # to avoid namespace clash with e.g. the raster package
+toc()
+plot(Prec_DRC)
+tic()
+Prec_DRC <- Prec %>%
+  terra::crop(DRC) %>%
+  terra::mask(DRC)
+toc()
+
+# Do the same for future climate
+tic()
+PrecF_DRC <- PrecF %>%
+  terra::crop(DRC) %>%
+  terra::mask(DRC)
+toc()
+
+names(PrecF_DRC) <- names(Prec_DRC) <- c(
+  "Jan", "Feb", "Mar", "Apr", "May",
+  "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+)
+
+
+delta_annual <- sum(PrecF_DRC - Prec_DRC)
+names(delta_annual) <- "Difference"
+
+# let's save
+writeRaster(delta_annual,
+            filename = file.path("data", "processed", "projected_difference_annual_precipitation.tif"),
+            overwrite = T
+)
+
+DRC_L2 <- gadm(country = "COD", level = 2)
+
+# Average raster values by polygon
+DRC_L2$Difference <- terra::extract(delta_annual,
+                                    DRC_L2,
+                                    mean,
+                                    na.rm = TRUE
+)$Difference
 
 #' Estimate Changes in Precipitation Using CMIP Model Scenarios
 #'
