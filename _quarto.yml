@@ -8,6 +8,7 @@ project:
     - Intro to Spatial Data/**.qmd
     - Collaboration/LGEO2185_Drafting_your_project_with_Quarto.qmd
     - GeoProjects/**.qmd
+    - ML/**.qmd
 
 website:
   title: "LGEO2185: Advanced Geoprocessing"
