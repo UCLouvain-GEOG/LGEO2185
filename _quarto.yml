@@ -31,14 +31,18 @@ website:
         contents:
           - text: "Coding Principles"
             file: GeoProjects/LGEO2185_Clean_coding_principles.qmd
-          - text: "Geoprojects_1"
+          - text: "Lecture 1"
             file: GeoProjects/LGEO2185_Basic_projects.qmd
-          - text: "Geoprojects_2"
+          - text: "In Class Excercise"
+            file: GeoProjects/LGEO2185_Basic_projects_InClass_Assignment.qmd 
+          - text: "Lecture 2"
             file: GeoProjects/LGEO2185_Geoprojects.qmd
       - section: "Collaboration"
         contents:
           - text: "Drafting your project with Quarto"
             file: Collaboration/LGEO2185_Drafting_your_project_with_Quarto.qmd
+      - text: "Intro to ML"
+        file: ML/Machine Learning in Geosciences.qmd
 
 
 bibliography: biblio.bib

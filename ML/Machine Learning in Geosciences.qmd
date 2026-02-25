@@ -189,13 +189,18 @@ width="80%"}
 
 ## 1. Why do we evaluate/validate models?
 
-This session focuses on supervised ML techniques in which there is a
-training dataset, as opposed to unsupervised techniques such as
-clustering. Response variables can be binary (such as landslide or
-species occurrence), categorical (land use), integer (species richness
-count) or numeric (soil acidity measured in pH). Supervised techniques
-model the relationship between such responses and one or more
-predictors. When we fit a model, a key question is:
+Different metrics measure different aspects of a model fit, e.g., RMSE
+measures accuracy while the R^2^ measures correlation. Other metrics
+like the F1 statistic, ROC (see further) or just confusion matrices can
+reflect the quality of a model fit (we will use different metrics in
+this and the next sessions). This session focuses on supervised ML
+techniques in which there is a training dataset, as opposed to
+unsupervised techniques such as clustering. Response variables can be
+binary (such as landslide or species occurrence), categorical (land
+use), integer (species richness count) or numeric (soil acidity measured
+in pH). Supervised techniques model the relationship between such
+responses and one or more predictors. When we fit a model, a key
+question is:
 
 > How well will it predict *new, unseen data*?
 
@@ -236,20 +241,25 @@ Conceptual explanations in this document are inspired by Geocomputation
 with R (Lovelace et al.), (https://r.geocompx.org/). Install the
 following packages:
 
-```{r, echo = FALSE, eval = FALSE}
+```{r, }
 pkgs <- c(
   "sf","terra","dplyr","pROC","spDataLarge",
   "effects","ggplot2",
   "blockCV","spdep"
 )
 
-to_install <- pkgs[!pkgs %in% rownames(installed.packages())]
-if (length(to_install) > 0) install.packages(to_install)
+#to_install <- pkgs[!pkgs %in% rownames(installed.packages())]
+#if (length(to_install) > 0) install.packages(to_install)
 
-install.packages("spDataLarge", repos = "https://geocompr.r-universe.dev")
+#install.packages("spDataLarge", repos = "https://geocompr.r-universe.dev")
+
+invisible(lapply(pkgs, function(p) {
+  if (!require(p, character.only = TRUE)) install.packages(p)
+  library(p, character.only = TRUE)
+}))
 ```
 
-```{r}
+```{r, eval = TRUE, echo = FALSE}
 library(sf)
 library(terra)
 library(dplyr)
@@ -493,8 +503,32 @@ This evaluates on the same data used for training (optimistic but a
 useful baseline).
 
 ```{r}
-auc_full <- pROC::auc(pROC::roc(lsl$lslpts, fitted(fit), quiet = TRUE))
+#auc_full <- pROC::auc(pROC::roc(lsl$lslpts, fitted(fit), quiet = TRUE))
+#auc_full
+
+library(pROC)
+
+# Compute ROC object
+roc_obj <- pROC::roc(lsl$lslpts, fitted(fit), quiet = TRUE)
+
+# Compute AUC
+auc_full <- auc(roc_obj)
 auc_full
+
+# Plot ROC curve
+plot(roc_obj,
+     legacy.axes = TRUE,
+     xlim = c(1, 0),
+     ylim = c(0, 1),
+     xaxs = "i",   # important
+     yaxs = "i",   # important
+     col = "blue",
+     lwd = 3,
+     asp = 1)
+
+abline(0, 1, lty = 2, col = "gray")
+
+
 ```
 
 Now, that isnt a bad fit! Note however that this is a very optimistic
@@ -513,7 +547,7 @@ split.
 ![Figure: Train/Test Split illustration. Concept adapted from: DataCamp
 (n.d.), “K-Fold Cross Validation”.
 https://www.datacamp.com/tutorial/k-fold-cross-validation](images/Train_test.png){fig-align="center"
-width="80%"}
+width="40%"}
 
 ```{r}
 set.seed(1)
@@ -567,7 +601,7 @@ data.
 ![Figure: Principle of cross-validation. The average performance for the
 5 models than represents the overall performance after cross-validation
 (source:
-https://www.datacamp.com/tutorial/k-fold-cross-validation).](https://media.datacamp.com/legacy/v1718738336/image_0bb32b40f1.jpg)
+https://www.datacamp.com/tutorial/k-fold-cross-validation).](images/Train_test_CV.png)
 
 In R, we can implement this functionality as follows:
 
@@ -618,7 +652,7 @@ goal is to generalize to new groups rather than new observations within
 the same group.
 
 | Type of Cross-Validation       | Typical Usage                                 | Description                                                                                        | When to Use                                                                          |
-|--------------------------------|-----------------------------------------------|----------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------|
+|------------------|------------------|-------------------|------------------|
 | **Standard k-Fold CV**         | Regression & Classification                   | Splits the dataset into *k* equal-sized folds; each fold is used once as the test set.             | Best for balanced datasets to obtain a stable overall performance estimate.          |
 | **Stratified k-Fold CV**       | Classification                                | Preserves the class proportions of the original dataset within each fold.                          | Recommended for imbalanced classification problems.                                  |
 | **Leave-One-Out CV (LOOCV)**   | Regression & Classification                   | Each observation is left out once as the test set, with all remaining data used for training.      | Suitable for very small datasets; computationally expensive and often high-variance. |
@@ -881,7 +915,7 @@ summary_tbl
 ```
 
 ::: callout-note
-## 11. Take-home messages & Questions
+## 11. Take-home messages
 
 -   Cross-validation estimates performance under specific assumptions.
 -   Random CV assumes independence and exchangeability.
@@ -954,23 +988,23 @@ https://rebeccabarter.com/blog/2020-03-25_machine_learning#what-is-tidymodels)
 ### 12.1 Install/load
 
 ```{r, ECHO = FALSE}
+suppressPackageStartupMessages({
+  library(tidymodels)
+})
 library(tidymodels)
 library(tidyverse)
 library(workflows)
 ```
-
 ### 12.2 Train/Test split
 
 Let's first split the dataset we were working with `lsl`into training
 and testdata. This split can be done automatically using the
 `initial_split`function from `rsample`. Note that we use
-`strata`argument to sample randomly within the stratification variable
+`strata` argument to sample randomly within the stratification variable
 (`lslpts`).
 
 ```{r}
 set.seed(234589)
-
-# 75% train, 25% test
 
 lsl_split <- initial_split(lsl, prop = 3/4, strata = lslpts)
 
@@ -978,12 +1012,6 @@ lsl_train <- training(lsl_split)
 lsl_test  <- testing(lsl_split)
 
 lsl_split
-
-# 1) Create k-fold resamples (usually from the training set)
-set.seed(1)
-lsl_folds <- vfold_cv(lsl_train, v = 5, strata = lslpts)
-lsl_folds
-
 ```
 
 The output of `lsl_split` is an object that contains the split
@@ -1006,13 +1034,14 @@ pipes `%>%`):
     scaling, and more.
 
 ```{r}
-lsl_recipe <- recipe(lslpts ~ slope + cplan + cprof + elev + log10_carea,
-data = lsl_train) %>%
-step_normalize(all_numeric_predictors()) %>%     # scale/center predictors
-step_nzv(all_predictors())                       # remove near-zero variance predictors
+lsl_recipe <- recipe(
+  lslpts ~ slope + cplan + cprof + elev + log10_carea,
+  data = lsl_train
+) %>%
+  step_normalize(all_numeric_predictors()) %>%
+  step_nzv(all_predictors())
 
 lsl_recipe
-
 ```
 
 Notice how we define the model
@@ -1074,8 +1103,10 @@ model specification
 In our test case we need:
 
 ```{r}
-lr_model <- logistic_reg() %>% set_engine("glm") %>% set_mode("classification")
-
+lr_model <- logistic_reg() %>% 
+  set_engine("glm") %>% 
+  set_mode("classification")
+lr_model
 
 ```
 
@@ -1092,7 +1123,9 @@ be done by using `workflow()`(from the `workflows`package) and by adding
 the recipe and model to it. Nice!
 
 ```{r}
-lr_workflow <- workflow() %>% add_recipe(lsl_recipe) %>% add_model(lr_model)
+lr_workflow <- workflow() %>% 
+  add_recipe(lsl_recipe) %>% 
+  add_model(lr_model)
 
 lr_workflow
 
@@ -1103,27 +1136,42 @@ lr_workflow
 
 We can now evaluate the workflow using two options; - evaluate the
 workflow using a held-out set (as we defined by
-`lsl_split') -  or evaluate using a k-fold cross validation (as we defined by 'lsl_folds`)
-
-For the first, use `last_fit`, for the cross-validation, use
-`fit_resamples`
+`lsl_split').
 
 ```{r}
-lr_fit <- lr_workflow %>%
+lr_last <- lr_workflow %>%
   last_fit(
-    split   = lsl_split,
+    split = lsl_split,
     metrics = metric_set(roc_auc)
   )
-lr_fit %>%
-  collect_metrics()
+
+lr_last %>% collect_metrics()
 ```
 
+Now we can easily adjust the tidymodel worklow, for example if you want a CV rather than a simple split:
+
 ```{r}
-lr_cv_fit <- lr_workflow %>%
+set.seed(1)
+
+lsl_folds <- vfold_cv(lsl_train, v = 5, strata = lslpts)
+
+lr_cv <- lr_workflow %>%
   fit_resamples(
     resamples = lsl_folds,
-    metrics   = metric_set(roc_auc)
+    metrics = metric_set(roc_auc)
   )
-lr_cv_fit %>%
-  collect_metrics()
+
+lr_cv %>% collect_metrics()
 ```
+
+We will build on these simple building blocks in the next session.
+
+:::assignment
+
+## Assignment
+
+Create a tidymodel where you predict the occurence of a species (eg Ursus arctos or Brown Bear) in Europe (or just the Alps). Create a model where you use the same logistic model as we used before, but valide using i) a simple 80/20 split and ii) a spatial cross validation. For the latter, you can use the `spatialsample` package that will give you and `rsample`-style object as output. Use `spatialsample::spatial_block_cv() to split your study area in blocks and assign it to folds. Then use tidymodels exactly like normal CV.
+
+Have fun!
+
+:::
