@@ -1,0 +1,391 @@
+---
+title: "LGEO2185: Introduction to Git & Github"
+author: "Kristof Van Oost, Antoine Stevens & Valentin Charlier"
+Date: 2026-03-04
+---
+
+# Learning Objectives
+
+-   **Understand** the basics of Git
+
+-   **Setup** your machine
+
+-   **Apply** simple version control workflows
+
+# Resources
+
+-   [Happy Git and GitHub for the useR](https://happygitwithr.com/)
+-   [Reproducible workflow and version control with Git and Github](https://jules32.github.io/2016-07-12-Oxford/git/)
+-   [git/github guide a minimal tutorial](https://kbroman.org/github_tutorial/)
+-   [Version Control with Git](https://swcarpentry.github.io/git-novice/)
+-   [RWorkflow Intro to Git](https://rverse-tutorials.github.io/RWorkflow/intro-git.html#Git_(GitHubGitLab))
+-   [LGEO2185 GitHub repository](https://github.com/UCLouvain-GEOG/LGEO2185/)
+
+# 1. Introduction
+
+## 1.1 Version control & collaboration
+
+![](images/paste-1.png)
+
+## 1.2 Git & Github
+
+![](images/paste-3.png)
+
+::: callout-tip
+Read [Version Control with Git Lesson 1](https://swcarpentry.github.io/git-novice/01-basics.html) to see how Git addresses questions like *"what if an older version was better?"*, *"how can I share code?"*, and *"how can I collaborate?"*
+:::
+
+## 1.3 Basic vocabulary & mental model
+
+![](images/paste-4.png){width="440"}
+
+### Git language basics
+
+-   Git stores a project inside a **repository** (often shortened to “repo”)
+-   A repo has a full history of changes
+-   Git history is made of **commits** (snapshots)
+-   A **remote** is another copy of the repo, typically on GitHub
+-   A **branch** is an independent line of work
+-   A **merge** combines branches
+-   A **conflict** can happen because Git cannot auto-merge and some human decision is needed
+-   A **pull request (PR)** is a GitHub-based way to propose merging changes
+-   An **issue** is tracked task/discussion on GitHub
+-   Each Git command starts with `git ...`
+
+### The key mental model: 3 places your changes can live
+
+Working Tree → Staging Area → Repository
+
+#### Working Tree
+
+Your project folder *as you see it on disk*. - You edit files here - Changes here are **not** in Git history yet
+
+Typical situation: “I changed a file but haven’t saved it in Git.”
+
+#### Staging Area (Index)
+
+A “shopping cart” of changes you plan to commit next. - You choose what belongs to the next snapshot - You can stage only part of your work (useful if you did multiple things)
+
+### Repository
+
+The `.git/` database that stores commits and metadata. Each commit is a snapshot of the staged changes and contains: - Hash ID - Author - Timestamp - Message - Snapshot of entire project
+
+## 1.4 Typical worflow (solo)
+
+1.  Initialize repo once\
+2.  Edit files\
+3.  Stage selected files\
+4.  Commit a snapshot\
+5.  Repeat
+
+### `git init` (once per project)
+
+``` bash
+git init
+```
+
+### `git add` (choose what to snapshot)
+
+``` bash
+git add report.qmd
+git add scripts/analysis.R
+```
+
+Stage everything (use carefully):
+
+``` bash
+git add .
+```
+
+### `git commit` (create a snapshot)
+
+``` bash
+git commit -m "Clean data import and add summary table"
+```
+
+------------------------------------------------------------------------
+
+## 1.5 A typical Git workflow (with GitHub)
+
+When using GitHub, you also work with a **remote** repository.
+
+-   **push** uploads your commits to GitHub
+-   **pull** downloads others’ commits from GitHub
+
+### `git push`
+
+``` bash
+git push
+```
+
+### `git pull`
+
+``` bash
+git pull
+```
+
+------------------------------------------------------------------------
+
+## 1.4 Branching and merging (how collaboration stays safe)
+
+### What is a branch?
+
+A **branch** is a separate line of work inside the same repository.
+
+Branches solve two common problems:
+
+1.  **Safe experimentation**
+    -   You want to try something (new feature, refactor, new analysis approach)
+    -   You don’t want to risk breaking the “working” version
+    -   So you work on a branch, and `main` stays stable
+2.  **Parallel work (collaboration)**
+    -   Two people can work at the same time without overwriting each other
+    -   Each person uses their own branch
+    -   Later, the work is integrated (merged) in a controlled way
+
+-   `main` is usually the stable/reference branch
+-   feature branches are for specific tasks: `feature-xyz`, `fix-bug-42`, etc.
+
+### Create and switch to a new branch
+
+``` bash
+git checkout -b feature-xyz
+```
+
+### Merging
+
+Working on branches would be useless if we never brought changes back. Merging is the moment where you integrate work from a feature branch into `main`.
+
+``` bash
+git checkout main
+git pull              # optional but recommended (get latest main)
+git merge feature-xyz
+```
+
+### Merge conflicts (this is not an error !)
+
+A conflict happens when Git cannot automatically combine edits (often the same lines changed in different branches).
+
+Resolution process: 1. open conflicted file(s) 2. decide the final content 3. remove conflict markers 4. `git add` the resolved file 5. `git commit` to finish
+
+------------------------------------------------------------------------
+
+## 1.5 Issues and Pull Requests (GitHub collaboration model)
+
+### Issues
+
+Used for:
+
+\- bug reports
+
+\- feature requests
+
+\- tasks / to-do items
+
+\- questions and decisions
+
+Why they matter:
+
+\- create a written record of work
+
+\- help planning and delegation
+
+\- link code changes to a reason
+
+### Pull Requests (PRs)
+
+A PR is a proposal to merge one branch into another (usually into `main`).
+
+PRs provide:
+
+\- a place to review code
+
+\- discussion about changes
+
+\- documentation of decisions
+
+\- automatic checks (tests, formatting, etc.)
+
+Typical PR workflow:
+
+1\. create a branch
+
+2\. commit changes
+
+3\. push branch to GitHub
+
+4\. open a PR 5. review + adjust
+
+6\. merge
+
+## 1.6 Clone vs Fork :how you get a project onto your machine
+
+### Cloning (you want a local copy of *this* repository)
+
+**Clone** means: “download this repository (with its history) to my computer.”
+
+You typically clone when:
+
+\- it’s **your own repo**, or
+
+\- you are part of a team and have **write access**, or
+
+\- you are a student pulling course materials, and you don’t need to publish changes back
+
+Command:
+
+``` bash
+git clone https://github.com/OWNER/REPO.git
+```
+
+What happens after cloning:
+
+\- You now have a local copy (including commit history)
+
+\- Git automatically sets a remote named `origin` pointing to the URL you cloned from
+
+\- If you have permission, you can later `git push` back to that same repo
+
+### Forking (you want your own copy *on GitHub* first)
+
+**Fork** means: “create my own copy of someone else’s repo on GitHub, under my account.”
+
+You typically fork when:
+
+\- you **don’t have write access** to the original repo
+
+\- you want to propose changes to someone else’s project (open-source style)
+
+\- you want freedom to experiment without affecting the original repo
+
+# 2. Setup
+
+Follow steps 4-14 of [Happy Git - Install Git](https://happygitwithr.com/install-intro) for your OS and confirm with `git --version`.
+
+::: callout-tips
+-   Don't forget to register your identity using the commands documented in [Software Carpentry Lesson 2](https://swcarpentry.github.io/git-novice/02-setup.html) so that commits use your email.
+-   Generate SSH keys and register them via [GitHub Docs: Connecting with SSH](https://docs.github.com/en/authentication/connecting-to-github-with-ssh) to avoid repeated credential prompts.
+:::
+
+## 2.1 RStudio: start a project from Git
+
+Fortunately, you don’t have to memorize every Git command to be productive: **RStudio (and Positron) can handle the most common Git actions** (clone, stage, commit, pull, push) via the Git pane. You will still benefit from knowing what’s happening under the hood, but the IDE helps you avoid mistakes.
+
+For IDE-specific walkthroughs, see:
+
+\- [Happy Git: using Git in RStudio](https://happygitwithr.com/usage-intro)
+
+\- [Positron Git guide](https://positron.posit.co/git.html)
+
+Assuming the git repo is already present on Github, here is a short description of how this would work:
+
+1\. In RStudio, click **File ▸ New Project… ▸ Version Control ▸ Git**.\
+2. Paste the repository URL:
+
+\- HTTPS: `https://github.com/UCLouvain-GEOG/LGEO2185.git`\
+- SSH (only if you configured SSH keys): `git@github.com:UCLouvain-GEOG/LGEO2185.git`
+
+3\. Choose a local directory such as `~/Projects/LGEO2185` and let RStudio clone the repo.
+
+4\. RStudio opens the new `.Rproj` automatically. The **Git pane** lets you:
+
+\- see file status (modified / untracked)
+
+\- view diffs
+
+\- stage files
+
+\- write commit messages and commit
+
+\- push/pull with buttons
+
+5\. To update your local copy when new material is published, use **Git ▸ Pull**. This normally pulls from `origin` (the repo you cloned from).
+
+# 3. Practical applications
+
+::: assignment
+## Assignment: contribute to LGEO2185
+
+Put the workflow into practice by proposing a change to the course repository.
+**Goal:** create a branch, make a small edit, push, and open a Pull Request (PR).
+
+:::callout-note
+In this assignment we use **RStudio’s Git pane** (no command line needed).
+:::
+
+### 1) Clone (create an RStudio project from Git) 
+ 
+ 1. In RStudio: **File ▸ New Project… ▸ Version Control ▸ Git** 
+
+ 2. Repository URL: `https://github.com/UCLouvain-GEOG/LGEO2185.git` (or SSH if configured) 
+
+ 3. Choose a local folder and click **Create Project**
+
+RStudio clones the repo and opens the `.Rproj`. You should now see the **Git** tab/pane.
+
+### 2) Create a branch (work safely)
+
+We never work directly on `main` for contributions.
+
+1.  In the **Git** pane, find the **branch logo** (usually `main` is next to is) and choose:
+    -   **New Branch…**
+2.  Name your branch: `assignment/<your-id>`
+
+Use a short identifier that uniquely identifies you, for example:
+
+\- your GitHub username
+
+\- your initials + a number (if needed)
+
+### 3) Apply a small change
+
+Edit **one** Quarto file in the repository (e.g., clarify text, add a reference, fix a typo).
+
+Guidelines: - keep scope small (one file / one idea) - save the file
+
+### 4) Commit (snapshot your work)
+
+1.  Open the **Git** pane. You should see your edited file listed as *modified*.
+2.  Check the box next to **only the relevant file(s)** to stage them.
+3.  Click **Commit**.
+4.  Write an informative message, e.g.
+    -   “Fix typo in Collaboration section”
+    -   “Clarify explanation of pull requests”
+5.  Click **Commit**.
+
+### 5) Push (send your branch to GitHub)
+
+1.  In the Git pane, click **Push**.
+2.  If RStudio asks to set an upstream/tracking branch, accept the default.
+
+> If push fails because you don’t have permission to the main repo, ask the github owner (instructor) to get rights.
+
+### 6) Open a Pull Request (PR) on GitHub
+
+1.  Go to the repository on GitHub.
+2.  You should see a banner suggesting to open a PR from your recently pushed branch — click **Compare & pull request**.
+3.  Make sure the PR targets:
+    -   **base repo:** `UCLouvain-GEOG/LGEO2185`
+    -   **base branch:** `main`
+4.  In the description:
+    -   mention the file/section edited
+    -   summarize the change in 1–2 sentences
+
+### 7) Review & merge (GitHub UI)
+
+-   The instructor will review your PR.
+-   If changes are requested, update your work locally in RStudio, then **commit again** and **push again** (the PR updates automatically).
+-   The instructor will merge (or close) the PR via the GitHub UI.
+
+### 8) Clean up (optional but good practice)
+
+After the PR is merged (or closed), delete your branch:
+
+\- On GitHub: click **Delete branch** (often shown after merge)
+
+\- In RStudio: switch back to `main`, then delete `assignment/<your-id>` locally if the branch menu offers it
+
+### Submit
+
+Submit the **PR URL**.
+:::
