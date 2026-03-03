@@ -6,7 +6,7 @@ project:
     - index.qmd
     - R Basics/**.qmd
     - Intro to Spatial Data/**.qmd
-    - Collaboration/LGEO2185_Drafting_your_project_with_Quarto.qmd
+    - Collaboration/**.qmd
     - GeoProjects/**.qmd
     - ML/**.qmd
 
@@ -42,6 +42,8 @@ website:
         contents:
           - text: "Drafting your project with Quarto"
             file: Collaboration/LGEO2185_Drafting_your_project_with_Quarto.qmd
+          - text: "Intro to Git and Github"
+            file: Collaboration/LGEO2185_Intro_to_Git_and_Github.qmd
       - section: "ML in Geosciences"
         contents:
           - text: "Intro to ML"

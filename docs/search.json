@@ -676,5 +676,126 @@
       "ML in Geosciences",
       "Intro to ML"
     ]
+  },
+  {
+    "objectID": "Collaboration/LGEO2185_Intro_to_Git_and_Github.html",
+    "href": "Collaboration/LGEO2185_Intro_to_Git_and_Github.html",
+    "title": "LGEO2185: Introduction to Git & Github",
+    "section": "",
+    "text": "Understand the basics of Git\nSetup your machine\nApply simple version control workflows",
+    "crumbs": [
+      "Collaboration",
+      "Intro to Git and Github"
+    ]
+  },
+  {
+    "objectID": "Collaboration/LGEO2185_Intro_to_Git_and_Github.html#version-control-collaboration",
+    "href": "Collaboration/LGEO2185_Intro_to_Git_and_Github.html#version-control-collaboration",
+    "title": "LGEO2185: Introduction to Git & Github",
+    "section": "1.1 Version control & collaboration",
+    "text": "1.1 Version control & collaboration",
+    "crumbs": [
+      "Collaboration",
+      "Intro to Git and Github"
+    ]
+  },
+  {
+    "objectID": "Collaboration/LGEO2185_Intro_to_Git_and_Github.html#git-github",
+    "href": "Collaboration/LGEO2185_Intro_to_Git_and_Github.html#git-github",
+    "title": "LGEO2185: Introduction to Git & Github",
+    "section": "1.2 Git & Github",
+    "text": "1.2 Git & Github\n\n\n\n\n\n\n\nTip\n\n\n\nRead Version Control with Git Lesson 1 to see how Git addresses questions like “what if an older version was better?”, “how can I share code?”, and “how can I collaborate?”",
+    "crumbs": [
+      "Collaboration",
+      "Intro to Git and Github"
+    ]
+  },
+  {
+    "objectID": "Collaboration/LGEO2185_Intro_to_Git_and_Github.html#basic-vocabulary-mental-model",
+    "href": "Collaboration/LGEO2185_Intro_to_Git_and_Github.html#basic-vocabulary-mental-model",
+    "title": "LGEO2185: Introduction to Git & Github",
+    "section": "1.3 Basic vocabulary & mental model",
+    "text": "1.3 Basic vocabulary & mental model\n\n\nGit language basics\n\nGit stores a project inside a repository (often shortened to “repo”)\nA repo has a full history of changes\nGit history is made of commits (snapshots)\nA remote is another copy of the repo, typically on GitHub\nA branch is an independent line of work\nA merge combines branches\nA conflict can happen because Git cannot auto-merge and some human decision is needed\nA pull request (PR) is a GitHub-based way to propose merging changes\nAn issue is tracked task/discussion on GitHub\nEach Git command starts with git ...\n\n\n\nThe key mental model: 3 places your changes can live\nWorking Tree → Staging Area → Repository\n\nWorking Tree\nYour project folder as you see it on disk. - You edit files here - Changes here are not in Git history yet\nTypical situation: “I changed a file but haven’t saved it in Git.”\n\n\nStaging Area (Index)\nA “shopping cart” of changes you plan to commit next. - You choose what belongs to the next snapshot - You can stage only part of your work (useful if you did multiple things)\n\n\n\nRepository\nThe .git/ database that stores commits and metadata. Each commit is a snapshot of the staged changes and contains: - Hash ID - Author - Timestamp - Message - Snapshot of entire project",
+    "crumbs": [
+      "Collaboration",
+      "Intro to Git and Github"
+    ]
+  },
+  {
+    "objectID": "Collaboration/LGEO2185_Intro_to_Git_and_Github.html#typical-worflow-solo",
+    "href": "Collaboration/LGEO2185_Intro_to_Git_and_Github.html#typical-worflow-solo",
+    "title": "LGEO2185: Introduction to Git & Github",
+    "section": "1.4 Typical worflow (solo)",
+    "text": "1.4 Typical worflow (solo)\n\nInitialize repo once\n\nEdit files\n\nStage selected files\n\nCommit a snapshot\n\nRepeat\n\n\ngit init (once per project)\ngit init\n\n\ngit add (choose what to snapshot)\ngit add report.qmd\ngit add scripts/analysis.R\nStage everything (use carefully):\ngit add .\n\n\ngit commit (create a snapshot)\ngit commit -m \"Clean data import and add summary table\"",
+    "crumbs": [
+      "Collaboration",
+      "Intro to Git and Github"
+    ]
+  },
+  {
+    "objectID": "Collaboration/LGEO2185_Intro_to_Git_and_Github.html#a-typical-git-workflow-with-github",
+    "href": "Collaboration/LGEO2185_Intro_to_Git_and_Github.html#a-typical-git-workflow-with-github",
+    "title": "LGEO2185: Introduction to Git & Github",
+    "section": "1.5 A typical Git workflow (with GitHub)",
+    "text": "1.5 A typical Git workflow (with GitHub)\nWhen using GitHub, you also work with a remote repository.\n\npush uploads your commits to GitHub\npull downloads others’ commits from GitHub\n\n\ngit push\ngit push\n\n\ngit pull\ngit pull",
+    "crumbs": [
+      "Collaboration",
+      "Intro to Git and Github"
+    ]
+  },
+  {
+    "objectID": "Collaboration/LGEO2185_Intro_to_Git_and_Github.html#branching-and-merging-how-collaboration-stays-safe",
+    "href": "Collaboration/LGEO2185_Intro_to_Git_and_Github.html#branching-and-merging-how-collaboration-stays-safe",
+    "title": "LGEO2185: Introduction to Git & Github",
+    "section": "1.4 Branching and merging (how collaboration stays safe)",
+    "text": "1.4 Branching and merging (how collaboration stays safe)\n\nWhat is a branch?\nA branch is a separate line of work inside the same repository.\nBranches solve two common problems:\n\nSafe experimentation\n\nYou want to try something (new feature, refactor, new analysis approach)\nYou don’t want to risk breaking the “working” version\nSo you work on a branch, and main stays stable\n\nParallel work (collaboration)\n\nTwo people can work at the same time without overwriting each other\nEach person uses their own branch\nLater, the work is integrated (merged) in a controlled way\n\n\n\nmain is usually the stable/reference branch\nfeature branches are for specific tasks: feature-xyz, fix-bug-42, etc.\n\n\n\nCreate and switch to a new branch\ngit checkout -b feature-xyz\n\n\nMerging\nWorking on branches would be useless if we never brought changes back. Merging is the moment where you integrate work from a feature branch into main.\ngit checkout main\ngit pull              # optional but recommended (get latest main)\ngit merge feature-xyz\n\n\nMerge conflicts (this is not an error !)\nA conflict happens when Git cannot automatically combine edits (often the same lines changed in different branches).\nResolution process: 1. open conflicted file(s) 2. decide the final content 3. remove conflict markers 4. git add the resolved file 5. git commit to finish",
+    "crumbs": [
+      "Collaboration",
+      "Intro to Git and Github"
+    ]
+  },
+  {
+    "objectID": "Collaboration/LGEO2185_Intro_to_Git_and_Github.html#issues-and-pull-requests-github-collaboration-model",
+    "href": "Collaboration/LGEO2185_Intro_to_Git_and_Github.html#issues-and-pull-requests-github-collaboration-model",
+    "title": "LGEO2185: Introduction to Git & Github",
+    "section": "1.5 Issues and Pull Requests (GitHub collaboration model)",
+    "text": "1.5 Issues and Pull Requests (GitHub collaboration model)\n\nIssues\nUsed for:\n- bug reports\n- feature requests\n- tasks / to-do items\n- questions and decisions\nWhy they matter:\n- create a written record of work\n- help planning and delegation\n- link code changes to a reason\n\n\nPull Requests (PRs)\nA PR is a proposal to merge one branch into another (usually into main).\nPRs provide:\n- a place to review code\n- discussion about changes\n- documentation of decisions\n- automatic checks (tests, formatting, etc.)\nTypical PR workflow:\n1. create a branch\n2. commit changes\n3. push branch to GitHub\n4. open a PR 5. review + adjust\n6. merge",
+    "crumbs": [
+      "Collaboration",
+      "Intro to Git and Github"
+    ]
+  },
+  {
+    "objectID": "Collaboration/LGEO2185_Intro_to_Git_and_Github.html#clone-vs-fork-how-you-get-a-project-onto-your-machine",
+    "href": "Collaboration/LGEO2185_Intro_to_Git_and_Github.html#clone-vs-fork-how-you-get-a-project-onto-your-machine",
+    "title": "LGEO2185: Introduction to Git & Github",
+    "section": "1.6 Clone vs Fork :how you get a project onto your machine",
+    "text": "1.6 Clone vs Fork :how you get a project onto your machine\n\nCloning (you want a local copy of this repository)\nClone means: “download this repository (with its history) to my computer.”\nYou typically clone when:\n- it’s your own repo, or\n- you are part of a team and have write access, or\n- you are a student pulling course materials, and you don’t need to publish changes back\nCommand:\ngit clone https://github.com/OWNER/REPO.git\nWhat happens after cloning:\n- You now have a local copy (including commit history)\n- Git automatically sets a remote named origin pointing to the URL you cloned from\n- If you have permission, you can later git push back to that same repo\n\n\nForking (you want your own copy on GitHub first)\nFork means: “create my own copy of someone else’s repo on GitHub, under my account.”\nYou typically fork when:\n- you don’t have write access to the original repo\n- you want to propose changes to someone else’s project (open-source style)\n- you want freedom to experiment without affecting the original repo",
+    "crumbs": [
+      "Collaboration",
+      "Intro to Git and Github"
+    ]
+  },
+  {
+    "objectID": "Collaboration/LGEO2185_Intro_to_Git_and_Github.html#rstudio-start-a-project-from-git",
+    "href": "Collaboration/LGEO2185_Intro_to_Git_and_Github.html#rstudio-start-a-project-from-git",
+    "title": "LGEO2185: Introduction to Git & Github",
+    "section": "2.1 RStudio: start a project from Git",
+    "text": "2.1 RStudio: start a project from Git\nFortunately, you don’t have to memorize every Git command to be productive: RStudio (and Positron) can handle the most common Git actions (clone, stage, commit, pull, push) via the Git pane. You will still benefit from knowing what’s happening under the hood, but the IDE helps you avoid mistakes.\nFor IDE-specific walkthroughs, see:\n- Happy Git: using Git in RStudio\n- Positron Git guide\nAssuming the git repo is already present on Github, here is a short description of how this would work:\n1. In RStudio, click File ▸ New Project… ▸ Version Control ▸ Git.\n2. Paste the repository URL:\n- HTTPS: https://github.com/UCLouvain-GEOG/LGEO2185.git\n- SSH (only if you configured SSH keys): git@github.com:UCLouvain-GEOG/LGEO2185.git\n3. Choose a local directory such as ~/Projects/LGEO2185 and let RStudio clone the repo.\n4. RStudio opens the new .Rproj automatically. The Git pane lets you:\n- see file status (modified / untracked)\n- view diffs\n- stage files\n- write commit messages and commit\n- push/pull with buttons\n5. To update your local copy when new material is published, use Git ▸ Pull. This normally pulls from origin (the repo you cloned from).",
+    "crumbs": [
+      "Collaboration",
+      "Intro to Git and Github"
+    ]
+  },
+  {
+    "objectID": "Collaboration/LGEO2185_Intro_to_Git_and_Github.html#assignment-contribute-to-lgeo2185",
+    "href": "Collaboration/LGEO2185_Intro_to_Git_and_Github.html#assignment-contribute-to-lgeo2185",
+    "title": "LGEO2185: Introduction to Git & Github",
+    "section": "Assignment: contribute to LGEO2185",
+    "text": "Assignment: contribute to LGEO2185\nPut the workflow into practice by proposing a change to the course repository. Goal: create a branch, make a small edit, push, and open a Pull Request (PR).\n\n\n\n\n\n\nNote\n\n\n\nIn this assignment we use RStudio’s Git pane (no command line needed).\n\n\n\n1) Clone (create an RStudio project from Git)\n\nIn RStudio: File ▸ New Project… ▸ Version Control ▸ Git\nRepository URL: https://github.com/UCLouvain-GEOG/LGEO2185.git (or SSH if configured)\nChoose a local folder and click Create Project\n\nRStudio clones the repo and opens the .Rproj. You should now see the Git tab/pane.\n\n\n2) Create a branch (work safely)\nWe never work directly on main for contributions.\n\nIn the Git pane, find the branch logo (usually main is next to is) and choose:\n\nNew Branch…\n\nName your branch: assignment/&lt;your-id&gt;\n\nUse a short identifier that uniquely identifies you, for example:\n- your GitHub username\n- your initials + a number (if needed)\n\n\n3) Apply a small change\nEdit one Quarto file in the repository (e.g., clarify text, add a reference, fix a typo).\nGuidelines: - keep scope small (one file / one idea) - save the file\n\n\n4) Commit (snapshot your work)\n\nOpen the Git pane. You should see your edited file listed as modified.\nCheck the box next to only the relevant file(s) to stage them.\nClick Commit.\nWrite an informative message, e.g.\n\n“Fix typo in Collaboration section”\n“Clarify explanation of pull requests”\n\nClick Commit.\n\n\n\n5) Push (send your branch to GitHub)\n\nIn the Git pane, click Push.\nIf RStudio asks to set an upstream/tracking branch, accept the default.\n\n\nIf push fails because you don’t have permission to the main repo, ask the github owner (instructor) to get rights.\n\n\n\n6) Open a Pull Request (PR) on GitHub\n\nGo to the repository on GitHub.\nYou should see a banner suggesting to open a PR from your recently pushed branch — click Compare & pull request.\nMake sure the PR targets:\n\nbase repo: UCLouvain-GEOG/LGEO2185\nbase branch: main\n\nIn the description:\n\nmention the file/section edited\nsummarize the change in 1–2 sentences\n\n\n\n\n7) Review & merge (GitHub UI)\n\nThe instructor will review your PR.\nIf changes are requested, update your work locally in RStudio, then commit again and push again (the PR updates automatically).\nThe instructor will merge (or close) the PR via the GitHub UI.\n\n\n\n8) Clean up (optional but good practice)\nAfter the PR is merged (or closed), delete your branch:\n- On GitHub: click Delete branch (often shown after merge)\n- In RStudio: switch back to main, then delete assignment/&lt;your-id&gt; locally if the branch menu offers it\n\n\nSubmit\nSubmit the PR URL.",
+    "crumbs": [
+      "Collaboration",
+      "Intro to Git and Github"
+    ]
   }
 ]
