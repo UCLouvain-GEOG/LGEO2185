@@ -77,7 +77,7 @@ Vector data represents spatial features using geometries composed of coordinate 
 ### Lines
 
 -   **Definition:**\
-    A "line" refers to one or more polylines—a connected series of line segments.
+    A “line” refers to one or more polylines, which are connected series of line segments.
 
 -   **Geometry:**\
     Lines are represented as ordered sets of coordinates (nodes). The order is crucial, as it dictates how the points are connected to form the line segments.
