@@ -159,7 +159,7 @@ Resolution process: 1. open conflicted file(s) 2. decide the final content 3. re
 
 ### What conflict markers look like and how to resolve
 
-When Git cannot automatically merge two versions of the same lines, it edits the file and inserts **conflict markers** like this:
+When Git cannot automatically merge two versions of the same lines, it edits the file and inserts **conflict markers** like this: 
 
 ``` text
 ```
