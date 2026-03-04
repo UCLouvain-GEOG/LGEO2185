@@ -383,9 +383,9 @@ Create a basic Quarto file and a HTML report for your project where you define :
 
 -   Your primary workflow for your project. It is suggest that you include a nice figure which describe your work.
 
--   Chunks where you download data and make first data treatment.
-
 -   A Table of content to create a dynamic document.
+
+-   Optional: Chunks where you download data and make first data treatment.
 
 This assignment must be a small inch to start your project, it must not be perfect but just helps you to define your purpose and get used to work in a Quarto/Markdown file.
 
