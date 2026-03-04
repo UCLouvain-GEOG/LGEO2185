@@ -86,7 +86,7 @@ You use the R `knitr` package to render your markdown and create easy to read do
 
 Quarto script (left) and the HTML produced from the render Quarto script (right).
 
-## 5 How to create an Quarto File in R and the Quarto file structure
+## 5 How to create a Quarto File in R and the Quarto file structure
 
 ### 5.1 Create Your .qmd File
 
@@ -102,7 +102,7 @@ If everything went well, you should have an `html` format (web page) output afte
 
 Next, let's break down the structure of an `Quarto` file.
 
-### 5.2 The structure of an Quarto File
+### 5.2 The structure of a Quarto File
 
 Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>. Basically, Quarto works with two interfaces :
 
