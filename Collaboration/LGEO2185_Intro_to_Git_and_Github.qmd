@@ -29,32 +29,29 @@ Date: 2026-03-04
 
 ## 1.1 Version control & collaboration
 
-![](images/paste-1.png)
+![](images/paste-19.png)
 
-------------------------------------------------------------------------
-
-## 1.2 Git & Github
-
-![](images/paste-3.png)
+![](images/paste-20.png)
 
 ::: callout-tip
+Git isn’t specific to programming – it can version control any text-based files (manuscripts, data scripts, etc.). How many of us have manually tried to keep track of versions? Git prevents the chaos of files like `analysis_final_v2.R`. Git automates that process and maintains a complete history…
+
 Read [Version Control with Git Lesson 1](https://swcarpentry.github.io/git-novice/01-basics.html) to see how Git addresses questions like *"what if an older version was better?"*, *"how can I share code?"*, and *"how can I collaborate?"*
 :::
 
 ------------------------------------------------------------------------
 
-## 1.3 Basic vocabulary & mental model
-
-![](images/paste-4.png){width="440"}
+## 1.2 Basic vocabulary & mental model
 
 ### Git language basics
 
--   Git stores a project inside a **repository** (often shortened to “repo”)
--   A repo has a full history of changes
--   Git history is made of **commits** (snapshots)
+-   Git stores a project inside a **repository** (often shortened to “repo”). It contains both the files under version control and a hidden metadata folder that stores the full history of changes, configuration data, and branching information. A repository can exist entirely on a local machine. This means you can use Git for tracking versions without any connection to an online service.
+-   Git history is made of **commits** (snapshots). A commit is a recorded snapshot of the staged changes. Each commit includes information such as the author, timestamp, and a descriptive message. Commits are the building blocks of a project's version history. Once committed, a change is stored permanently in the repository and can be referenced, compared, or reverted at any time.
+-   The term “**HEAD**” refers to the current position in the commit history. It represents the most recent commit that is checked out in the working directory. When new commits are made, **HEAD** moves forward to reference the latest version. It acts as Git's internal pointer for tracking which part of the project a user is currently working on.
+-   A **diff** is a comparison between the current version of the file and the last committed version. This view highlights exactly what has changed, line by line
 -   A **remote** is another copy of the repo, typically on GitHub
--   A **branch** is an independent line of work
--   A **merge** combines branches
+-   A **branch** is a parallel line of development within a Git repository. It allows users to isolate different lines of work — such as new features, experimental code, or bug fixes — from the main project history. Branches are independent from each other until changes are explicitly merged. This supports safe experimentation and collaborative workflows, where each contributor can work independently.
+-   A **merge** combines branches. Merging is the process of integrating changes from one branch into another. It combines the histories and contents of two branches into a single branch. Merging is typically used to incorporate a feature or set of changes into the main project history after it has been tested and reviewed.
 -   A **conflict** can happen because Git cannot auto-merge and some human decision is needed
 -   A **pull request (PR)** is a GitHub-based way to propose merging changes
 -   An **issue** is tracked task/discussion on GitHub
@@ -64,33 +61,28 @@ Read [Version Control with Git Lesson 1](https://swcarpentry.github.io/git-novic
 
 Working Tree → Staging Area → Repository
 
-#### Working Tree
+#### Working Directory/Tree
 
-Your project folder *as you see it on disk*. - You edit files here - Changes here are **not** in Git history yet
-
-Typical situation: “I changed a file but haven’t saved it in Git.”
+The working directory (or working tree) refers to the current set of files in a Git project. These are the files that a user edits and interacts with directly — for example, code, documentation, or data files. Changes made in the working directory are not automatically tracked by Git until explicitly included. Typical situation: “I changed a file but haven’t saved it in Git.”
 
 #### Staging Area (Index)
 
-A “shopping cart” of changes you plan to commit next. - You choose what belongs to the next snapshot - You can stage only part of your work (useful if you did multiple things)
+The staging area, also known as the index, is an intermediate space where changes are listed before they are permanently recorded in the repository. When a file is modified in the working directory, it remains untracked by Git until it is added to the staging area. The staging area allows users to select which changes will be included in the next saved version, providing fine-grained control over versioning.
 
 ### Repository
 
 The `.git/` database that stores commits and metadata. Each commit is a snapshot of the staged changes and contains: - Hash ID - Author - Timestamp - Message - Snapshot of entire project
 
-------------------------------------------------------------------------
+## 1.3 A typical workflow (solo)
 
-## 1.4 A typical worflow (solo)
-
-1.  Initialize repo (once per project)\
+1.  Initialize **repo** (once per project)
 
 ``` bash
 git init
 ```
 
 2.  Edit files\
-3.  Stage selected files (choose what to snapshot)\
-
+3.  Stage selected files (choose what to snapshot)
 
 ``` bash
 git add report.qmd
@@ -103,8 +95,7 @@ Stage everything (use carefully):
 git add .
 ```
 
-4.  Commit a snapshot\
-
+4.  Commit a snapshot
 
 ``` bash
 git commit -m "Clean data import and add summary table"
@@ -112,27 +103,23 @@ git commit -m "Clean data import and add summary table"
 
 5.  Repeat
 
+## 1.4 A typical Git workflow (with GitHub)
 
-------------------------------------------------------------------------
-
-## 1.5 A typical Git workflow (with GitHub)
-
-When using GitHub, you also work with a **remote** repository.
+When using GitHub, you also work with a **remote** repository (we will see later how to setup)
 
 -   **push** uploads your commits to GitHub
 
 ``` bash
 git push
 ```
+
 -   **pull** downloads others’ commits from GitHub
 
 ``` bash
 git pull
 ```
 
-------------------------------------------------------------------------
-
-## 1.6 Branching and merging (how collaboration stays safe)
+## 1.4 Branching and merging (how collaboration stays safe)
 
 ### What is a branch?
 
@@ -172,18 +159,13 @@ git merge feature-xyz
 
 A conflict happens when Git cannot automatically combine edits (often the same lines changed in different branches).
 
-Resolution process: 
-1. open conflicted file(s) 
-2. decide the final content 
-3. remove conflict markers 
-4. `git add` the resolved file 
-5. `git commit` to finish
+Resolution process: 1. open conflicted file(s) 2. decide the final content 3. remove conflict markers 4. `git add` the resolved file 5. `git commit` to finish
 
 ### What conflict markers look like and how to resolve
 
 When Git cannot automatically merge two versions of the same lines, it edits the file and inserts **conflict markers** like this:
 
-```text
+``` text
 <<<<<<< HEAD
 text from your current branch (what you had locally)
 =======
@@ -193,20 +175,19 @@ text from the other branch (what Git tried to merge in)
 
 How to read this:
 
-* `<<<<<<< HEAD` starts the conflicting region (your current version)
+-   `<<<<<<< HEAD` starts the conflicting region (your current version)
 
-* `=======` separates the two versions
+-   `=======` separates the two versions
 
-* `>>>>>>> feature-xyz` ends the region (the incoming version, branch name may vary)
+-   `>>>>>>> feature-xyz` ends the region (the incoming version, branch name may vary)
 
 How to fix it:
 
-Open the file and manually edit it so it contains the final correct content you want.
-Then delete all conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`) and any duplicate lines you don’t want.
+Open the file and manually edit it so it contains the final correct content you want. Then delete all conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`) and any duplicate lines you don’t want.
 
 ------------------------------------------------------------------------
 
-## 1.6 Issues and Pull Requests (GitHub collaboration model)
+## 1.5 Issues and Pull Requests (GitHub collaboration model)
 
 ### Issues
 
@@ -254,7 +235,7 @@ Typical PR workflow:
 
 6\. merge
 
-## 1.7 Clone vs Fork : how you get a project onto your machine
+## 1.6 Clone vs Fork : how you get a project onto your machine
 
 ### Cloning (you want a local copy of *this* repository)
 
@@ -296,12 +277,46 @@ You typically fork when:
 
 # 2. Setup
 
-Follow steps 4-14 of [Happy Git - Install Git](https://happygitwithr.com/install-intro) for your OS and confirm with `git --version`.
+Follow detailed steps 4-14 of [Happy Git - Install Git](https://happygitwithr.com/install-intro) for your OS. See also below section 2.1 and 2.2
 
 ::: callout-tips
+-   A significant portion of the process is often spent installing and configuring the right tools. Be patient: once done, the rest becomes much smoother!
 -   Don't forget to register your identity using the commands documented in [Software Carpentry Lesson 2](https://swcarpentry.github.io/git-novice/02-setup.html) so that commits use your email.
 -   Generate SSH keys and register them via [GitHub Docs: Connecting with SSH](https://docs.github.com/en/authentication/connecting-to-github-with-ssh) to avoid repeated credential prompts.
 :::
+
+## 2.1 Git
+
+In short, to start using Git on Windows, you’ll need to install Git for Windows (which includes Git Bash, a command-line terminal for Git). Download the installer from the [official Git website](https://git-scm.com/downloads) and run it
+
+After installation, launch Git Bash (or any terminal) and run `git --version` to verify Git is installed. You’ll also be able to integrate Git with RStudio, which we’ll set up next.
+
+Once Git is installed, you should introduce yourself to Git by setting your name and email – this information will be associated with your commits. In Git Bash (or the RStudio Terminal), run:
+
+```         
+git config --global user.name "Your Name"
+git config --global user.email "youremail@example.com"
+```
+
+These commands write to Git’s config file and only need to be done once. You can check your settings with `git config --global --list`.
+
+## 2.2 Github
+
+In short, for Github, you should **register a personal Github account**: go to [https://github.com](https://github.com/) and follow the "Sign up" link at the top-right of the window. Follow the instructions.
+
+To create a c**reate a repo**: Click on the 'Repositories' tab at the top and then on the 'New' button on the right
+
+![](images/paste-2.png)
+
+Then fill in the details
+
+![](images/paste-3.png)
+
+When interacting with a remote Git server, such as GitHub, you must provide credentials as part of the request. This authentication confirms your identity as a specific GitHub user and verifies that you have the necessary permissions to perform the requested action.
+
+See [here](https://happygitwithr.com/https-pat) (https, easier) and [here](https://happygitwithr.com/ssh-keys) (ssh) for detailed instructions
+
+## 2.3 IDE integration
 
 Fortunately, you don’t have to memorize every Git command to be productive: **RStudio (and other IDEs) can handle the most common Git actions** (clone, stage, commit, pull, push) via the Git pane. You will still benefit from knowing what’s happening under the hood, but the IDE helps you avoid mistakes.
 
@@ -313,17 +328,53 @@ For IDE-specific walkthroughs, see:
 
 \- [Source Control in VS Code](https://code.visualstudio.com/docs/sourcecontrol/overview)
 
-Assuming you are using Rstudio, and the git repo is already present on Github, here is a short description of how this would work:
+Assuming you are using Rstudio, Git integrates well and will provide a nice GUI to move files to staging area, do commits, etc. To enable Git integration in RStudio, you need to ensure that RStudio can locate the Git executable installed on your system. Follow these steps:
 
-1\. In RStudio, click **File ▸ New Project… ▸ Version Control ▸ Git**.\
-2. Paste the repository URL:
+1.  In RStudio, go to **Tools \> Global Options \> Git/SVN**.
 
-\- HTTPS: `https://github.com/UCLouvain-GEOG/LGEO2185.git`\
-- SSH (only if you configured SSH keys): `git@github.com:UCLouvain-GEOG/LGEO2185.git`
+2.  Confirm that the option **“Enable version control interface for RStudio projects”** is checked.
 
-3\. Choose a local directory such as `~/Projects/LGEO2185` and let RStudio clone the repo.
+3.  Verify that the **“Git executable:”** path points to the correct location of the Git installation on your computer.
 
-4\. RStudio opens the new `.Rproj` automatically. The **Git pane** lets you:
+4.  If the path is missing or incorrect, click **“Browse...”**, navigate to the folder where Git is installed, and select the Git executable file (typically named `git.exe` on Windows).
+
+5.  After making these changes, **restart RStudio** to ensure the settings take effect.
+
+Once correctly configured, RStudio will display a **Git** tab in your project pane whenever you open a project that is under version control, making it easy to manage commits, view file changes, and synchronize with a remote repository.
+
+![](images/paste-1.png)
+
+Some tips for common problems can be found [here](https://happygitwithr.com/rstudio-see-git#rstudio-see-git)
+
+## **2.4 Creating a Rstudio project with git and Github**
+
+Now that we have git and Github ready, let’s see how to start a Rstudio project. As suggested [here](https://intro2r.com/setting-up-a-project-in-rstudio.html), there are really two ways to get this done.
+
+-   **Option 1**: Create a GitHub repository first, then use RStudio to clone it to your local computer and begin working.
+
+-   **Option 2**: Create a local Git repository within RStudio first, then connect it to a new repository on GitHub.
+
+Both methods are valid and widely used. But if you're completely new to Git and GitHub, it is recommend starting with **Option 1**. It's more straightforward, as RStudio takes care of much of the setup for you. You'll have a fully functional Git repository linked to GitHub right away, allowing you to push and pull with minimal configuration. **Option 2** involves setting up Git locally first and configuring the GitHub connection afterward. While it offers more flexibility, it also requires more manual steps and is more prone to setup errors.
+
+Let’s follow **Option 1**, and proceed with the following steps:
+
+1.  In RStudio click on the `File` -\> `New Project` menu. In the pop up window select `Version Control`.
+
+    ![](images/paste-4.png)
+
+<!-- -->
+
+2.  Paste the the URL (e.g., `https://github.com/UCLouvain-GEOG/LGEO2185.git` , it could be an empty repo that you created following section 2.2) from GitHub, fill in the directory name and subdirectory and create the Project 
+
+    ![](images/paste-5.png)
+
+3.  This will basically clone the repo to your local machine and start a new Project.
+
+With that, **Option 1 is complete**: you now have a GitHub repository set up and linked to a local Git repository managed through RStudio. From this point on, any changes you make to files within this project directory will be tracked by Git, enabling full version control of your work.
+
+4\. RStudio opens the new `.Rproj` automatically. Notice the **Git pane** lets you:
+
+![](images/paste-6.png)
 
 \- see file status (modified / untracked)
 
@@ -335,27 +386,130 @@ Assuming you are using Rstudio, and the git repo is already present on Github, h
 
 \- push/pull with buttons
 
-5\. To update your local copy when new material is published, use **Git ▸ Pull**. This normally pulls from `origin` (the repo you cloned from).
+# 3. A simple version control workflow
 
-# 3. Practical applications
+We are now ready to start developing our scripts and tracking changes using git and Github.
 
-::: assignment
+## **3.1 Staging files**
+
+After creating new scripts, you will notice under the Git pane that we have now files in the staging area (below an example after copy-pasting the SuitR package folder developed in a previous session):
+
+![](images/paste-7.png)
+
+This is not necessarily all your files, but only those that have changed since the last commit (since we didn’t commit anything yet, we can see all the files). This is what the staging area is for!
+
+In RStudio, the coloured squares show the *status* of each file, according to the following convention:
+
+![](images/paste-8.png) 
+
+-   **Staged File (checkmark):** The file has been **staged** and is ready to be committed. This means you've checked the box next to the file in the Git pane.
+
+-   **Modified File (blue “M”):** the file has been **modified** since the last commit but is **not yet staged**. You need to check the box next to the file to stage it before committing.
+
+-   **Untracked File (yellow question mark “?”):** Git sees this file for the first time — it's **not being tracked yet**. You'll need to stage it to start tracking it (by checking the box in the Git pane). If the file should never be tracked (e.g., a temporary file), consider adding it to `.gitignore`.
+
+-   **Deleted File (red “D”):** The file has been **deleted** from your working directory, but Git still tracks it. If this is intentional, stage the deletion to reflect the change in the next commit. If it was deleted accidentally, you can recover it before committing.
+
+-   **New File (green “A”):** This file has been **added and staged** — ready to be committed. It was previously untracked and has now been marked to be included in the version history.
+
+The files we have now are “untracked” and we can *stage* the files we want to commit by clicking the appropriate tick box
+
+## **3.2 Committing**
+
+Once you've staged the files you want to include, click the **Commit** button to open the commit interface. This will bring up a new window with three panes:
+
+![](images/paste-9.png)
+
+1.  **Staging Area (Top Left Pane):** This pane shows the list of files you've staged, identical to what you see in the main Git tab. You can still stage or unstage files here by checking or unchecking them. Only the staged files will be included in the commit.
+
+2.  **2. Commit Message (Top Right Pane):** Here, you enter a short message describing the changes you're about to commit. While Git doesn't enforce specific formatting, it's a good habit to write clear, meaningful messages that explain *what* you changed and *why*. This makes it much easier to review your project's history later.
+
+    **Examples of good commit messages:** `"Add initial data cleaning script"` , `"Fix typo in model fitting function"` , `"Update README with usage instructions"` .
+
+    **Avoid vague messages** like "stuff" or "final version" — they offer no useful context when you’re trying to troubleshoot or revisit past work.
+
+3.  **Differences (Bottom Pane):** This pane shows the **diff** for the selected file — that is, the line-by-line differences between the current version and the last committed version. **Green lines** indicate new code or text that has been added. **Red lines** show what has been removed. If a line was modified, you'll see both a red (removed) and a green (added) version. This view allows you to **review your changes before committing**, which is a great way to catch mistakes or double-check that you’re committing only what you intended.
+
+After reviewing your changes and writing a commit message, click the **Commit** button at the bottom right of the window. The selected changes are now saved to your local Git history. A pop up will appear with the outcome of your commit. We changed here 1 file, made 3 insertions and 1 deletion…
+
+![](images/paste-10.png)
+
+If you are running with a local and online version of the repository then your Git pane will now show a message detailing how out of sync they are.
+
+![](images/paste-11.png)
+
+## **3.3 Going back to previous versions**
+
+One of the most powerful features of Git is the ability to roll back changes and restore previous versions of your files. This is especially useful when you've made a mistake, introduced a bug, or simply want to undo recent edits.
+
+### **Reverting to the last commit**
+
+If you've made changes to a file and want to discard them — returning the file to its most recently committed state, you shoud:
+
+-   Open the **Git** tab in RStudio
+
+-   Find the file you want to revert
+
+-   Click the file to view the **diff** (i.e., what has changed)
+
+-   At the top of the diff viewer, click the **“Revert”** button.
+
+Be careful, you will definitely loose any edits by reverting to the last commit!
+
+![](images/paste-12.png)
+
+### **Reverting to an older version of a file from any previous commit**
+
+If you want to restore a file to how it looked at an earlier point in time, you will need to find the hash of that commit and use the `git checkout` command:
+
+-   In the **Commit** view, click the **History** button to open the commit history of the project.
+
+-   Select the commit where the file was in the state you want to recover.
+
+-   When you click on a commit, RStudio will show the list of files that were changed in that commit.
+
+-   In the diff view, you'll see the **commit hash** (a alphanumeric string, e.g., `a1b2c3d`).
+
+-   ![](images/paste-17.png)
+
+<!-- -->
+
+-   Copy that hash — you'll use it to check out the file from that exact commit.
+
+-   Click the **Terminal** tab (next to the Console) in Rstudio
+
+-   Use the following Git command to restore the file: `git checkout <commit-hash> path/to/your/file.R`
+
+    ![](images/paste-18.png)
+
+The file will now appear in the **Git** tab as modified. Review it if needed, then stage and commit the change to make the restored version part of your current project history.
+
+## **3.4 Push/pull**
+
+Once you’re satisfied with your commit(s), you can send them to GitHub by clicking the green **Push**arrow in the Git tab. Before doing that, it’s a good idea to check whether your local repository is up to date with the remote version (typically the `main` branch on GitHub). To do this, use the **Pull**button (the blue downward-facing arrow) to fetch and apply any changes from the remote repository. This helps prevent potential conflicts and ensures you’re working with the latest version of the project.
+
+If you visit your repository on GitHub, you’ll see that your changes have been successfully reflected online. This confirms that your local commits have been pushed and are now part of the remote project history.
+
+![](images/paste-16.png)
+
+# 4. Practical applications
+
+:::: assignment
 ## Assignment: contribute to LGEO2185
 
-Put the workflow into practice by proposing a change to the course repository.
-**Goal:** create a branch, make a small edit, push, and open a Pull Request (PR) ready to be merged to `main`.
+Put the workflow into practice by proposing a change to the course repository. **Goal:** create a branch, make a small edit, push, and open a Pull Request (PR) ready to be merged to `main`.
 
-:::callout-note
+::: callout-note
 In this assignment we use **RStudio’s Git pane** (no command line needed).
 :::
 
-### 1) Clone (create an RStudio project from Git) 
- 
- 1. In RStudio: **File ▸ New Project… ▸ Version Control ▸ Git** 
+### 1) Clone (create an RStudio project from Git)
 
- 2. Repository URL: `https://github.com/UCLouvain-GEOG/LGEO2185.git` (or SSH if configured) 
+1.  In RStudio: **File ▸ New Project… ▸ Version Control ▸ Git**
 
- 3. Choose a local folder and click **Create Project**
+2.  Repository URL: `https://github.com/UCLouvain-GEOG/LGEO2185.git` (or SSH if configured)
+
+3.  Choose a local folder and click **Create Project**
 
 RStudio clones the repo and opens the `.Rproj`. You should now see the **Git** tab/pane.
 
@@ -424,4 +578,4 @@ After the PR is merged (or closed), delete your branch:
 ### Submit
 
 Submit the **PR URL**.
-:::
+::::
