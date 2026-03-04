@@ -28,9 +28,9 @@ Download the files from this repo under `Intro To Spatial Data/data` (or clone t
 
 # 1. Introduction
 
-This session introduces you to spatial data manipulation in R using the **terra** and **sf** package. In this context, *spatial data* refers to information about geographic locations (i.e., places on Earth). Although “geospatial data” is more precise, we use the shorter term “spatial” throughout this resource. This introduction is part of a broader series on spatial analysis and modeling with R. In this section, we cover the basics of spatial data manipulation. Prior familiarity with the R programming language is recommended. If you are new to R or need a refresher, consider reviewing this brief [Introduction to R](https://rspatial.org/intr).
+This session introduces you to spatial data manipulation in *R* using the **terra** and **sf** package. In this context, *spatial data* refers to information about geographic locations (i.e., places on Earth). Although “geospatial data” is more precise, we use the shorter term “spatial” throughout this resource. This introduction is part of a broader series on spatial analysis and modeling with *R*. In this section, we cover the basics of spatial data manipulation. Prior familiarity with the *R* programming language is recommended. If you are new to *R* or need a refresher, consider reviewing this brief [Introduction to R](https://rspatial.org/intr).
 
-This tutorial is based on the materials provided by the chapter `Spatial data with terra` from @sds and "terra" ([website](https://rspatial.org/spatial/index.html#))[^License: https://creativecommons.org/licenses/by-sa/4.0/]
+This tutorial is based on the materials provided by the chapter `Spatial data with terra` from @sds and "terra" ([website](https://rspatial.org/spatial/index.html#))\[\^License: https://creativecommons.org/licenses/by-sa/4.0/\]
 
 ## Understanding spatial data
 
@@ -392,10 +392,7 @@ plot(points_sf, col = "green", pch = 20, cex = 1.5, add = TRUE)
 
 The `terra` package has functions for creating, reading, manipulating, and writing raster data. The package provides, among other things, general raster data manipulation functions that can easily be used to develop more specific functions. For example, there are functions to read a chunk of raster values from a file or to convert cell numbers to coordinates and back. The package also implements raster algebra and many other functions for raster data manipulation.
 
-The `terra` package is a modern replacement of the `raster`/`sp` packages, with cleaner classes (`SpatRaster`, `SpatVector`). It is designed to be faster and more efficient, especially for large datasets. Key improvements brought by `terra` include:
-* C++ core: Heavy raster/vector operations are implemented in C++ via R interfaces. This results in significant speedups compared to pure R implementations.
-* Chunked I/O: Reads/writes in blocks so you can process rasters much larger than RAM; intermediate results stream to disk automatically.
-* On-disk outputs: Most transforms can write directly to files, avoiding large in-memory objects and keeping memory bounded.
+The `terra` package is a modern replacement of the `raster`/`sp` packages, with cleaner classes (`SpatRaster`, `SpatVector`). It is designed to be faster and more efficient, especially for large datasets. Key improvements brought by `terra` include: \* C++ core: Heavy raster/vector operations are implemented in C++ via R interfaces. This results in significant speedups compared to pure R implementations. \* Chunked I/O: Reads/writes in blocks so you can process rasters much larger than RAM; intermediate results stream to disk automatically. \* On-disk outputs: Most transforms can write directly to files, avoiding large in-memory objects and keeping memory bounded.
 
 ## 4.2 SpatRaster
 
@@ -592,7 +589,6 @@ crs(pp)
 ::: callout-warning
 You should **not** use this approach to change the CRS of a data set from what it **is** to what you **want it to be**. Assigning a CRS is like labeling something. You need to provide the label that corresponds to the item. Not to what you would like it to be. For example if you label a bicycle, you can write “bicycle”. Perhaps you would prefer a car, and you can label your bicycle as “car” but that would not do you any good. It is still a bicycle. You can try to transform your bicycle into a car. That would not be easy. Transforming spatial data is easier.
 :::
-
 
 ## 6.4 Transforming vector data
 
@@ -1014,7 +1010,7 @@ ggplot(france_sf) +
 
 [![sf cheatsheet (page 2)](images/sf_cheat2.png){fig-align="center"}](https://rstudio.github.io/cheatsheets/sf.pdf)
 
-:::callout-warning
+::: callout-warning
 When working with `sf` objects, summarizing functions can unintentionally create unions of geometries. This is because the `geometry` column, which stores spatial data, is treated as part of the dataset and will be summarized too. While this behavior can be desirable for some use cases, it may not always be what you want...
 
 #### Example: Summarizing without dropping geometry
@@ -1068,7 +1064,6 @@ region_summary_no_geom <- france_sf %>%
 # Inspect the result
 print(region_summary_no_geom)
 ```
-
 :::
 
 ## 8.3 Raster
