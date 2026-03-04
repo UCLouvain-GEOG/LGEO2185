@@ -12,6 +12,8 @@ Date: 2026-03-04
 
 -   **Apply** simple version control workflows
 
+------------------------------------------------------------------------
+
 # Resources
 
 -   [Happy Git and GitHub for the useR](https://happygitwithr.com/)
@@ -21,11 +23,15 @@ Date: 2026-03-04
 -   [RWorkflow Intro to Git](https://rverse-tutorials.github.io/RWorkflow/intro-git.html#Git_(GitHubGitLab))
 -   [LGEO2185 GitHub repository](https://github.com/UCLouvain-GEOG/LGEO2185/)
 
+------------------------------------------------------------------------
+
 # 1. Introduction
 
 ## 1.1 Version control & collaboration
 
 ![](images/paste-1.png)
+
+------------------------------------------------------------------------
 
 ## 1.2 Git & Github
 
@@ -34,6 +40,8 @@ Date: 2026-03-04
 ::: callout-tip
 Read [Version Control with Git Lesson 1](https://swcarpentry.github.io/git-novice/01-basics.html) to see how Git addresses questions like *"what if an older version was better?"*, *"how can I share code?"*, and *"how can I collaborate?"*
 :::
+
+------------------------------------------------------------------------
 
 ## 1.3 Basic vocabulary & mental model
 
@@ -70,21 +78,19 @@ A “shopping cart” of changes you plan to commit next. - You choose what belo
 
 The `.git/` database that stores commits and metadata. Each commit is a snapshot of the staged changes and contains: - Hash ID - Author - Timestamp - Message - Snapshot of entire project
 
-## 1.4 Typical worflow (solo)
+------------------------------------------------------------------------
 
-1.  Initialize repo once\
-2.  Edit files\
-3.  Stage selected files\
-4.  Commit a snapshot\
-5.  Repeat
+## 1.4 A typical worflow (solo)
 
-### `git init` (once per project)
+1.  Initialize repo (once per project)\
 
 ``` bash
 git init
 ```
 
-### `git add` (choose what to snapshot)
+2.  Edit files\
+3.  Stage selected files (choose what to snapshot)\
+
 
 ``` bash
 git add report.qmd
@@ -97,11 +103,15 @@ Stage everything (use carefully):
 git add .
 ```
 
-### `git commit` (create a snapshot)
+4.  Commit a snapshot\
+
 
 ``` bash
 git commit -m "Clean data import and add summary table"
 ```
+
+5.  Repeat
+
 
 ------------------------------------------------------------------------
 
@@ -110,15 +120,11 @@ git commit -m "Clean data import and add summary table"
 When using GitHub, you also work with a **remote** repository.
 
 -   **push** uploads your commits to GitHub
--   **pull** downloads others’ commits from GitHub
-
-### `git push`
 
 ``` bash
 git push
 ```
-
-### `git pull`
+-   **pull** downloads others’ commits from GitHub
 
 ``` bash
 git pull
@@ -126,7 +132,7 @@ git pull
 
 ------------------------------------------------------------------------
 
-## 1.4 Branching and merging (how collaboration stays safe)
+## 1.6 Branching and merging (how collaboration stays safe)
 
 ### What is a branch?
 
@@ -166,11 +172,41 @@ git merge feature-xyz
 
 A conflict happens when Git cannot automatically combine edits (often the same lines changed in different branches).
 
-Resolution process: 1. open conflicted file(s) 2. decide the final content 3. remove conflict markers 4. `git add` the resolved file 5. `git commit` to finish
+Resolution process: 
+1. open conflicted file(s) 
+2. decide the final content 
+3. remove conflict markers 
+4. `git add` the resolved file 
+5. `git commit` to finish
+
+### What conflict markers look like and how to resolve
+
+When Git cannot automatically merge two versions of the same lines, it edits the file and inserts **conflict markers** like this:
+
+```text
+<<<<<<< HEAD
+text from your current branch (what you had locally)
+=======
+text from the other branch (what Git tried to merge in)
+>>>>>>> feature-xyz
+```
+
+How to read this:
+
+* `<<<<<<< HEAD` starts the conflicting region (your current version)
+
+* `=======` separates the two versions
+
+* `>>>>>>> feature-xyz` ends the region (the incoming version, branch name may vary)
+
+How to fix it:
+
+Open the file and manually edit it so it contains the final correct content you want.
+Then delete all conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`) and any duplicate lines you don’t want.
 
 ------------------------------------------------------------------------
 
-## 1.5 Issues and Pull Requests (GitHub collaboration model)
+## 1.6 Issues and Pull Requests (GitHub collaboration model)
 
 ### Issues
 
@@ -218,7 +254,7 @@ Typical PR workflow:
 
 6\. merge
 
-## 1.6 Clone vs Fork :how you get a project onto your machine
+## 1.7 Clone vs Fork : how you get a project onto your machine
 
 ### Cloning (you want a local copy of *this* repository)
 
@@ -267,9 +303,7 @@ Follow steps 4-14 of [Happy Git - Install Git](https://happygitwithr.com/install
 -   Generate SSH keys and register them via [GitHub Docs: Connecting with SSH](https://docs.github.com/en/authentication/connecting-to-github-with-ssh) to avoid repeated credential prompts.
 :::
 
-## 2.1 RStudio: start a project from Git
-
-Fortunately, you don’t have to memorize every Git command to be productive: **RStudio (and Positron) can handle the most common Git actions** (clone, stage, commit, pull, push) via the Git pane. You will still benefit from knowing what’s happening under the hood, but the IDE helps you avoid mistakes.
+Fortunately, you don’t have to memorize every Git command to be productive: **RStudio (and other IDEs) can handle the most common Git actions** (clone, stage, commit, pull, push) via the Git pane. You will still benefit from knowing what’s happening under the hood, but the IDE helps you avoid mistakes.
 
 For IDE-specific walkthroughs, see:
 
@@ -277,7 +311,9 @@ For IDE-specific walkthroughs, see:
 
 \- [Positron Git guide](https://positron.posit.co/git.html)
 
-Assuming the git repo is already present on Github, here is a short description of how this would work:
+\- [Source Control in VS Code](https://code.visualstudio.com/docs/sourcecontrol/overview)
+
+Assuming you are using Rstudio, and the git repo is already present on Github, here is a short description of how this would work:
 
 1\. In RStudio, click **File ▸ New Project… ▸ Version Control ▸ Git**.\
 2. Paste the repository URL:
@@ -307,7 +343,7 @@ Assuming the git repo is already present on Github, here is a short description 
 ## Assignment: contribute to LGEO2185
 
 Put the workflow into practice by proposing a change to the course repository.
-**Goal:** create a branch, make a small edit, push, and open a Pull Request (PR).
+**Goal:** create a branch, make a small edit, push, and open a Pull Request (PR) ready to be merged to `main`.
 
 :::callout-note
 In this assignment we use **RStudio’s Git pane** (no command line needed).
@@ -358,7 +394,7 @@ Guidelines: - keep scope small (one file / one idea) - save the file
 1.  In the Git pane, click **Push**.
 2.  If RStudio asks to set an upstream/tracking branch, accept the default.
 
-> If push fails because you don’t have permission to the main repo, ask the github owner (instructor) to get rights.
+> If push fails because you don’t have permission to the main repo, ask the repo owner (instructor) to get rights.
 
 ### 6) Open a Pull Request (PR) on GitHub
 
