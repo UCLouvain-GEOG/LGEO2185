@@ -65,7 +65,7 @@ You use Quarto(.`qmd)` files to document workflows and to share data processing,
 There are many advantages to using R Markdown in your work:
 
 -   **Human readable**: it's much easier to read a web page or a report containing text and figures.
--   **Simple syntax**: Markdown and .Rmd can be learned quickly. A Reminder for Your Future Self All components of your work are clearly documented. You don't have to remember what steps, assumptions, tests were used.
+-   **Simple syntax**: Markdown and .qmd can be learned quickly. A Reminder for Your Future Self All components of your work are clearly documented. You don't have to remember what steps, assumptions, tests were used.
 -   **Easy to Modify**: you can easily extend or refine analyses by modifying existing or adding new code blocks.
 -   **Flexible export formats**: analysis results can be disseminated in various formats including html, pdf, slide shows and more.
 -   **Easy to share**: code and data can be shared with a colleague to replicate the workflow.
@@ -138,7 +138,7 @@ When you click the **Render** button a document will be generated that includes 
 
 Indeed to make your document more interesting you can add several parameters to improve the clarity and style of your html.
 
-```yaml
+``` yaml
 ---
 title: "Session 4 : open sciences"
 format: html
@@ -183,7 +183,7 @@ execute:
     </style>
     ```
 
-:::callout-tip
+::: callout-tip
 While the YAML header configures a single document, a special file named `_quarto.yml` sets options for the **entire project**.
 
 When you render any `.qmd` file, Quarto looks for a `_quarto.yml` in the same folder or parent folders. If it finds one, it uses the settings defined there as defaults for all documents. This is the perfect place to define shared options like the project title, theme, and execution settings.
@@ -269,11 +269,11 @@ You can insert **figures** with caption, define their size and position in your 
 
 ![Beautiful picture of a cow in the sun ! :) Don't forget the [source](https://www.futura-sciences.com/planete/definitions/vache-vache-17479/)](https://cdn.futura-sciences.com/buildsv6/images/wide1920/8/5/8/85876892f7_132257_prim-holstein.jpg){fig-align="center"}
 
-You can also add external links to internet resources, such as references to your document, complementary information or even videos such as [How Quarto is an extension of Rmardown ?](https://www.youtube.com/watch?v=GIqpYO4xinc). 
+You can also add external links to internet resources, such as references to your document, complementary information or even videos such as [How Quarto is an extension of Rmardown ?](https://www.youtube.com/watch?v=GIqpYO4xinc).
 
-In source mode, you can of course (cross-reference)[https://quarto.org/docs/authoring/cross-references.html] objects too!
+In source mode, you can of course (cross-reference)\[https://quarto.org/docs/authoring/cross-references.html\] objects too!
 
-For instance, I can refer to @fig-headings using `![](images/section_headings.png){#fig-headings}`. The presence of the label `{#fig-headings}` make it cross-referencable. Then I can refer to it in my document using `@fig-headings` 
+For instance, I can refer to @fig-headings using `![](images/section_headings.png){#fig-headings}`. The presence of the label `{#fig-headings}` make it cross-referencable. Then I can refer to it in my document using `@fig-headings`
 
 To add an internet link to a piece of text, use `[my text](https://someurl.org)`
 
@@ -301,17 +301,14 @@ Which corresponds in source mode to:
 
 Quarto supports also bibliography files in a wide variety of formats including BibLaTeX. Add a bibliography to your document using the bibliography YAML metadata field. For example:
 
-```plaintext
+``` plaintext
 ---
 title: "My Document"
 bibliography: references.bib
 ---
 ```
 
-Then inside Quarto, use the standard Pandoc markdown representation for citations (e.g. `[@lovelace_geocomputation_2025]` will give [@lovelace_geocomputation_2025], and `@lovelace_geocomputation_2025` gives @lovelace_geocomputation_2025). 
-At the end, the document will automatically make a bibliography with all your references.
-Look [here](https://quarto.org/docs/authoring/citations.html ) for more information.
-
+Then inside Quarto, use the standard Pandoc markdown representation for citations (e.g. `[@lovelace_geocomputation_2025]` will give [@lovelace_geocomputation_2025], and `@lovelace_geocomputation_2025` gives @lovelace_geocomputation_2025). At the end, the document will automatically make a bibliography with all your references. Look [here](https://quarto.org/docs/authoring/citations.html) for more information.
 
 #### 5.3.3 Code chunks
 
@@ -360,21 +357,18 @@ knitr::opts_chunk$set(
 
 You would typically don't want to show this this chunk in your final output, you would use the option `include = FALSE` to hide it.
 
-:::callout-warning
-
+::: callout-warning
 When you render a Quarto document, code chunks run with a *working directory*. This affects how **relative paths** (like `data/myfile.csv`) are resolved.
 
 You can control this with `execute-dir`:
 
-- **`execute-dir: project`** (recommended for reproducibility): all chunks run from the **Quarto project root** (the folder that contains `_quarto.yml`). Then paths like `data/...`, `images/...`, etc. are consistent across all `.qmd` files in the project.
-- **`execute-dir: file`**: chunks run from the **folder that contains the current `.qmd` file**. This can be convenient, but relative paths may change when you move a file or render a different document.
+-   **`execute-dir: project`** (recommended for reproducibility): all chunks run from the **Quarto project root** (the folder that contains `_quarto.yml`). Then paths like `data/...`, `images/...`, etc. are consistent across all `.qmd` files in the project.
+-   **`execute-dir: file`**: chunks run from the **folder that contains the current `.qmd` file**. This can be convenient, but relative paths may change when you move a file or render a different document.
 
 You can set it globally in the project `_quarto.yml` (applies to all documents) or set it per-document in the YAML front matter of a `.qmd`
-
 :::
 
-:::assignment
-
+::: assignment
 # Assignment
 
 Create a basic Quarto file and a HTML report for your project where you define :
@@ -388,5 +382,4 @@ Create a basic Quarto file and a HTML report for your project where you define :
 -   Optional: Chunks where you download data and make first data treatment.
 
 This assignment must be a small inch to start your project, it must not be perfect but just helps you to define your purpose and get used to work in a Quarto/Markdown file.
-
 :::
