@@ -156,7 +156,7 @@ execute:
 ---
 ```
 
-**Don't forget these parameters :** the following options are indispensable if you want to share your work with others people.
+**Don't forget these parameters :** the following options are indispensable if you want to share your work with other people.
 
 -   `standalone` and `embed-ressources` must be `TRUE` if you want to share your html only and not the Quarto document (`.qmd`). You will notice that Quarto is creating folders on your computer with results and images used in the document. But when you share an html, people do not have this external dependency. Using those parameters will create a document without links to your directory.
 
