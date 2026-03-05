@@ -24,7 +24,7 @@ First, read @markowetz2015 and get to understand the five reason to use reproduc
 
 1.  Reproducibility helps to avoid disaster;
 
-2.  reproducibility makes it easier to write papers;
+2.  Reproducibility makes it easier to write papers;
 
 3.  Reproducibility enables continuity of your work;
 
