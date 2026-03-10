@@ -1,0 +1,164 @@
+---
+title: "LGEO2185: Efficient Spatial Data I/O -- Assignment"
+author: "Kristof Van Oost, Antoine Stevens & Valentin Charlier"
+Date: 2026-03-11
+---
+
+::: assignment
+## Assignment
+
+-   Query a Microsoft Planetary Computer STAC catalog for a satellite dataset of your choice.
+
+-   Create a monthly time-series for a given region.
+
+-   Apply an unsupervised kmean algorithm to the image to classify 
+
+-   Visualize the output and interpret
+
+:::
+
+::: {.callout-important icon="false" collapse="true"}
+# Answer
+
+# 1. Download data & create monthly time series
+
+Let's zoom in an agriculture area in Belgium (Hesbaye)^[You can choose one rapidly using [bboxfinder](http://bboxfinder.com/)]
+
+```{r, echo = FALSE}
+pacman::p_load("readr", "sf", "tictoc", "tidyverse", "geodata", "sfarrow", "arrow", "rstac", "tmap", "terra","tmap","rstac","gdalcubes","RColorBrewer","lubridate")
+
+aoi <- c(xmin = 4.612999, ymin = 50.638113, xmax = 4.732475, ymax = 50.576054)
+tmap_mode("view")
+tm_basemap("OpenStreetMap") +
+    tm_shape(st_as_sfc(st_bbox(aoi, crs = 4326))) +
+    tm_polygons(fill_alpha = 0)
+```
+
+```{r set study area}
+# Define parameters
+aoi <- c(xmin = 4.612999, ymin = 50.638113, xmax = 4.732475, ymax = 50.576054)  # define area of interest in Hesbaye
+t0 <- "2020-01-01" # start date
+t1 <- "2024-12-31" # end date
+toi <- paste(t0, t1, sep = "/") # time of interest
+
+# Search collection
+items <- stac("https://planetarycomputer.microsoft.com/api/stac/v1") %>%
+    stac_search(
+        collections = "sentinel-2-l2a",
+        bbox = c(aoi["xmin"], aoi["ymin"], aoi["xmax"], aoi["ymax"]),
+        datetime = toi
+    ) %>%
+    ext_filter(`eo:cloud_cover` < 10) %>% 
+    post_request() %>%
+    items_sign(sign_fn = sign_planetary_computer())
+
+# number of matches
+paste("Number of matches: ", items_length(items))
+
+# Create collection
+s2_collection <- stac_image_collection(items$features)
+```
+
+Get a 30x30m monthly average of NDVI of our study area
+
+```{r monthly avg}
+aoi_utm <- st_as_sfc(st_bbox(aoi, crs = 4326)) %>%
+    st_transform("EPSG:32632") %>% # to UTM32N 
+    st_bbox()
+
+v <- cube_view(
+    srs = "EPSG:32632",
+    dx = 30, dy = 30,
+    dt = "P1M", # Time aggregation, here 1 month (ISO 8601 duration format)
+    aggregation = "median", # defining how to deal with pixels containing data from multiple images
+    resampling = "average",
+    extent = list(
+        t0 = t0,
+        t1 = t1,
+        left = aoi_utm["xmin"],
+        right = aoi_utm["xmax"],
+        bottom = aoi_utm["ymin"],
+        top = aoi_utm["ymax"]
+    )
+)
+
+gdalcubes_options(parallel = 8)
+r <- raster_cube(s2_collection, v) %>%
+    select_bands(c("B04","B08")) %>%
+    apply_pixel("(B08-B04)/(B08+B04)", "NDVI") %>% # calculate NDVI on the fly
+    write_ncdf(file.path("data", "processed", "ndvi_hesbaye.nc"), overwrite = T)
+```
+
+# 2. Classify
+
+Let's explore unsupervised classification. In this approach, we rely solely on the spectral (NDVI) data, without providing any pre-assigned class labels or ground truth. This method can seem counterintuitive at first—after all, we're not telling the algorithm which pixels belong to which land cover type—but it proves extremely valuable when detailed prior knowledge or ground data is scarce.
+
+Various unsupervised classification algorithms exist, each with its own strengths and weaknesses. Here, we illustrate the general principle using the k-means algorithm. K-means works by grouping pixels into clusters based on the similarity of their NDVI time series. Essentially, the algorithm identifies patterns in the data and groups together pixels that share similar spectral characteristics.
+
+This unsupervised approach is particularly useful when:
+
+- *Limited ground data is available*: It allows for exploratory analysis even when specific class labels are unknown.
+- *General trends are of interest*: Even if you have a broad idea of the distribution of land cover types, unsupervised classification can reveal natural groupings and patterns in the data.
+
+By clustering the pixels, we can derive valuable insights into the spatial and temporal variations in vegetation, which can then serve as a basis for further analysis or more targeted supervised classification.
+
+```{r classify}
+# Load the multi-temporal NDVI cube (each layer is one month)
+ndvi_ts <- rast(r)
+time(ndvi_ts) <- seq(as_date(t0),as_date(t1),by = "month") # somehow we lost the dates, so I set this here
+
+# Remove layers having all na's
+ndvi_ts <- ndvi_ts[[terra::global(ndvi_ts,"anynotNA")]]
+
+# Set seed for reproducibility and define the number of clusters
+set.seed(123)
+k <- 10  # number of clusters
+
+# Very cool, applying kmeans to a raster is just 1 command!
+classification <- k_means(ndvi_ts, centers = k, iter.max = 100, nstart = 10)
+classification
+```
+
+This returns a `spatRaster`! Let's see what we've got...
+
+# 4. Visualize
+
+```{r visualize}
+# Plot NDVI
+tm_shape(ndvi_ts[[1]])+
+  tm_raster(col.legend = tm_legend("NDVI"), 
+            palette = "Greens") +
+  tm_layout(legend.outside=TRUE)
+
+# Plot distribution of clusters using tmap
+tm_shape(classification) +
+  tm_raster(title = "Cluster", palette = "Set3", style = "cat") +
+  tm_layout(main.title = "Spatial Distribution of NDVI Time Series Clusters",
+            legend.outside = TRUE)
+
+# Create a SpatRaster with a layer for each class 
+clusters <- segregate(classification,other = NA)
+
+# Mask each NDVI by cluster class and get the mean NDVI
+ndvi_mean <- purrr::map_dfr(1:k,function(x){
+                                  df <- tibble(global(ndvi_ts*clusters[[x]],
+                                                      "mean",na.rm=T))
+                                  df$time <- time(ndvi_ts)
+                                  df
+                                  },
+                            .id = "cluster")
+# Plot until 2022
+ggplot(filter(ndvi_mean,time <= as_date("2022-01-01")) ,
+       aes(x = time,y = mean, col = cluster)) + 
+  geom_line() +
+  theme_minimal()
+```
+We can see rapidly that most likely clusters 2 & 8 are the same rotation, with peaks in the summer in 2020 and spring in 2021, while cluster 1, 7 & 10 display the reverse sequence. Clusters 4, 5 & 9 are built-up areas.
+
+# Session info
+
+```{r}
+sessionInfo()
+```
+
+:::

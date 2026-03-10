@@ -9,6 +9,7 @@ project:
     - Collaboration/**.qmd
     - GeoProjects/**.qmd
     - ML/**.qmd
+    - Efficient Spatial IO/**.qmd
 
 website:
   title: "LGEO2185: Advanced Geoprocessing"
@@ -48,6 +49,12 @@ website:
         contents:
           - text: "Intro to ML"
             file: ML/Machine_Learning_in_Geosciences.qmd
+      - section: "Efficient Spatial I/O"
+        contents:
+          - text: "Lecture"
+            file: Efficient Spatial IO/LGEO2185_Efficient_Spatial_Data_I_O.qmd
+          - text: "Assignment"
+            file: Efficient Spatial IO/LGEO2185_Efficient_Spatial_Data_I_O_Assignment.qmd
 
 
 bibliography: biblio.bib
