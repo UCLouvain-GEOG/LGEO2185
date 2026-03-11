@@ -502,6 +502,19 @@ r <- rast(file.path("data", "processed", "s2.nc"))
 plotRGB(r, r = 3, g = 2, b = 1, stretch = "lin", zlim = c(0, 4000))
 ```
 
+:::callout-note
+
+- The first three steps (`raster_cube()`, `select_bands()`, `reduce_time()`) mostly build a “processing graph” (lazy evaluation). They don’t necessarily compute all pixels immediately.
+- The real compute kicks in when you materialize the result. `write_ncdf()` forces evaluation: it reads source imagery, reprojects, resamples, aggregates over time, and writes NetCDF.
+:::
+
+There are a few reasons why this code is very efficient:
+
+1.	**Lazy evaluation + streaming**: `gdalcubes` pulls just the data needed chunk-by-chunk, computes, and writes out.
+2.	**Spatial and temporal subsetting**: `cube_view()` restricts work to the Nairobi bounding box in the target projection, and to `t0..t1`, which prevents unnecessary IO and processing outside the AOI/time window
+3.	**Chunked parallelism**: the cube is split into independent blocks that are processed in parallel (`gdalcubes_options(parallel = 8)`)
+4. **Processing is done in compiled code**: Reprojection/resampling/aggregation are executed in optimized C++/GDAL routines rather than R-level iteration
+
 # 4. Further Readings
 
 -   **Using GeoParquet in R**\
