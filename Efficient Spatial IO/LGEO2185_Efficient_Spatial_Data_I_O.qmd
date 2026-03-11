@@ -432,7 +432,7 @@ Now that we have collected the metadata for our STAC Items—including the links
 ```{r download, output = FALSE}
 download_items <- items |>
     assets_select(asset_names = "B01") |> # Only 1 band
-    assets_download(output_dir = file.path("data","raw"))
+    assets_download(output_dir = file.path("data","raw"), overwrite = TRUE)
 ```
 ```{r}
 download_items

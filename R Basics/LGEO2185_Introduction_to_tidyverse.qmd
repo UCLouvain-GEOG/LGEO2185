@@ -4,12 +4,10 @@ author: "Kristof Van Oost, Antoine Stevens & Valentin Charlier"
 Date: 2026-02-04
 --- 
 
-
 ```{r "setup", include=FALSE}
 require("knitr")
-pacman::p_load(tidyverse, here)
+pacman::p_load(tidyverse)
 ```
-
 
 ## 1. Introduction
 

@@ -86,9 +86,13 @@ course) is:
 Machine learning (ML) is a subset of AI focused on creating models by
 training algorithms to make predictions or decisions based on data. In
 essence, it can be seen as **advanced statistical learning from past
-observations**. ::: callout-note Machine learning enables a machine to
+observations**.
+
+::: callout-note 
+Machine learning enables a machine to
 automatically learn from data, improve performance from experiences, and
-predict things without being explicitly programmed :::
+predict things without being explicitly programmed 
+:::
 
 Machine learning encompasses a broad range of techniques that allow
 computers to learn from data **without being explicitly programmed**.
@@ -133,10 +137,7 @@ images, time series, and text.
 ::: callout-note
 If you want to know more about machine learning and deep learning
 approaches in geosciences (including hybrid approaches and integration
-with physically based models), here is a good review paper: Reichstein,
-M., Camps-Valls, G., Stevens, B. et al. Deep learning and process
-understanding for data-driven Earth system science. Nature 566, 195–204
-(2019). <https://doi.org/10.1038/s41586-019-0912-1>
+with physically based models), here is a good review paper: @Reichstein2019
 :::
 
 ## How does Machine Learning work?
@@ -182,9 +183,7 @@ Model development is cyclical. Exploration, feature construction,
 tuning, and evaluation continuously inform one another until a
 defensible and well-understood model is obtained.
 
-![Model development and selection workflow. Concept adapted from: Kuhn &
-Silge (2022), *Tidy Modeling with R*.
-https://www.tmwr.org/software-modeling](images/ML_pipeline.png){fig-align="center"
+![Model development and selection workflow. Concept adapted from: @KuhnSilge2022](images/ML_pipeline.png){fig-align="center"
 width="80%"}
 
 ## 1. Why do we evaluate/validate models?
@@ -238,35 +237,14 @@ Primary inputs (for concepts and best practices):
 
 The data used in this tutorial is derived from Lovelace et al.:
 Conceptual explanations in this document are inspired by Geocomputation
-with R (Lovelace et al.), (https://r.geocompx.org/). Install the
+with R (@lovelace_geocomputation_2025). Install and load the
 following packages:
 
 ```{r, }
-pkgs <- c(
-  "sf","terra","dplyr","pROC","spDataLarge",
-  "effects","ggplot2",
-  "blockCV","spdep"
-)
-
-#to_install <- pkgs[!pkgs %in% rownames(installed.packages())]
-#if (length(to_install) > 0) install.packages(to_install)
-
-#install.packages("spDataLarge", repos = "https://geocompr.r-universe.dev")
-
-invisible(lapply(pkgs, function(p) {
-  if (!require(p, character.only = TRUE)) install.packages(p)
-  library(p, character.only = TRUE)
-}))
-```
-
-```{r, eval = TRUE, echo = FALSE}
-library(sf)
-library(terra)
-library(dplyr)
-library(pROC)
-library(spDataLarge)
-library(effects)
-library(ggplot2)
+pacman::p_load("sf","terra","dplyr","pROC",
+  "effects","ggplot2","tidymodels",
+  "blockCV","spdep")
+install.packages("spDataLarge", repos = "https://geocompx.r-universe.dev")
 ```
 
 ------------------------------------------------------------------------
@@ -527,8 +505,6 @@ plot(roc_obj,
      asp = 1)
 
 abline(0, 1, lty = 2, col = "gray")
-
-
 ```
 
 Now, that isnt a bad fit! Note however that this is a very optimistic
@@ -1128,8 +1104,6 @@ lr_workflow <- workflow() %>%
   add_model(lr_model)
 
 lr_workflow
-
-
 ```
 
 ## 12.6 Evaluate the model
@@ -1175,3 +1149,9 @@ Create a tidymodel where you predict the occurence of a species (eg Ursus arctos
 Have fun!
 
 :::
+
+# Session info
+
+```{r}
+sessionInfo()
+```

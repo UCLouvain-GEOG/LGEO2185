@@ -6,9 +6,8 @@ Date: 2026-02-11
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+pacman::p_load("raster", "sf", "tictoc", "tidyverse", "geodata", "terra","rasterVis","leaflet")
 ```
-
-------------------------------------------------------------------------
 
 # Learning Objectives
 
@@ -846,9 +845,8 @@ The [rasterVis](https://oscarperpinan.github.io/rastervis/#intro) package comple
 
 ```{r 7.3}
 tmin1 <- rast("data/tmin1crop.tif")
-library(geodata)
+library(geodata);library(rasterVis)
 tmin <- geodata::worldclim_global(var = "tmin", res = 10)
-library(rasterVis)
 ```
 
 Different plotting functions:

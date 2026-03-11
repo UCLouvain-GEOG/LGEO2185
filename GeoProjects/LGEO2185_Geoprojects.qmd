@@ -11,7 +11,7 @@ knitr::opts_chunk$set(
     warning = FALSE
 )
 
-pacman::p_load(geodata, terra, leaflet, mapview, leafsync, here)
+pacman::p_load(geodata, terra, leaflet, mapview, leafsync, here, MASS, caret)
 ```
 
 # Today’s program
@@ -43,7 +43,6 @@ image <- "https://iiif.elifesciences.org/lax/08347%2Felife-08347-fig3-v3.tif/ful
 htmltools::HTML(
   sprintf('<div style="text-align:center;"><img src="%s" style="width:70%%;"></div>', image)
 )
-
 ```
 
 The above maps are the result of a statistical model where the species presence/absence is modelled as:
@@ -56,11 +55,7 @@ Such model can be easily constructed based a database with observations and pred
 
 ```{r}
 pacman::p_load(tidyverse, here, corrplot, modEvA)
-# url <- "https://uclouvain-geog.github.io/LGEO2185/Data/occurrence_data.Rds"
-# tmp <- tempfile(fileext = ".rds")
-# download.file(url, tmp, mode = "wb")
-# occurrence_df <- readRDS(tmp)
-occurrence_df <- readRDS("data/raw/occurrence_data.Rds")
+occurrence_df <- readRDS(url("https://uclouvain-geog.github.io/LGEO2185/Data/occurrence_data.Rds","rb"))
 #glimpse(occurrence_df)
 ```
 
@@ -76,7 +71,6 @@ corrplot::corrplot(correlation)
 myMod <- glm(pres ~ ., data = occurrence_df, family = "binomial")
 summary(myMod)
 modEvA::Dsquared(myMod, adjust = TRUE) # proportion of deviance explained by a GLM
-
 ```
 
 ```{r}
@@ -101,7 +95,6 @@ myMod_selection <- step(
 
 summary(myMod_selection)
 modEvA::Dsquared(myMod_selection, adjust = TRUE) # proportion of deviance explained by a GLM
-
 ```
 
 If you have spatial data describing the predictors, you could apply the model and create spatial maps. That is what we will do below!

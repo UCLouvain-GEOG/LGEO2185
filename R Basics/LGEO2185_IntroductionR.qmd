@@ -51,8 +51,7 @@ Let's first do some basic setup:\
 - Create a `data` folder within your working directory
 
 ```{r "setup", include=FALSE}
-require("knitr")
-#opts_knit$set(root.dir ="/Users/Antoine_Stevens/Library/CloudStorage/OneDrive-McKinsey&Company/Documents/Projects/LGEO")
+pacman::p_load("knitr")
 ```
 
 ```{r, eval=FALSE}
@@ -516,3 +515,9 @@ myfunct<-function(Mean,size,SD){
 myfunct(Mean=2,size=1000,SD=17)
 ```
 :::
+
+# Session info
+
+```{r}
+sessionInfo()
+```

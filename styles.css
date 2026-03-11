@@ -19,11 +19,16 @@ code {
 
 /* Prevent changes to inline code blocks */
 .assignment code {
-     color: #d6336c; /* Default Quarto inline code color */
+    color: #d6336c; /* Default Quarto inline code color */
     background-color: #f8f9fa; /* Default Quarto inline code background */
     font-family: "Courier New", Courier, monospace;
     padding: 2px 4px;
     border-radius: 3px;
+}
+
+/* Make sure blockquote appear nicely*/
+.assignment blockquote p {
+  color: #ffffff;
 }
 
 /* Style the title within the .assignment block */

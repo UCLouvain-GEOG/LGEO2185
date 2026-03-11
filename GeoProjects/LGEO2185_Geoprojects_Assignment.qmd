@@ -10,7 +10,7 @@ knitr::opts_chunk$set(
     message = FALSE,
     warning = FALSE
 )
-pacman::p_load(tidyverse, here)
+pacman::p_load(tidyverse, here, leafsync, geodata, leaflet)
 source("R/suitability_fn.R")
 ```
 
@@ -57,3 +57,10 @@ change <- list(
 plot_leaflet(change)
 ```
 :::
+
+
+# Session info
+
+```{r}
+sessionInfo()
+```

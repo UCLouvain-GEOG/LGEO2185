@@ -10,7 +10,7 @@ knitr::opts_chunk$set(
     message = FALSE,
     warning = FALSE
 )
-pacman::p_load(tidyverse, here)
+pacman::p_load(tidyverse, here, terra)
 ```
 
 # Learning Objectives
@@ -131,7 +131,7 @@ write.csv(results, here("data", "outputs", "results.csv"))
 ## 1.3 Loading libraries
 
 It is good practice to gather at the same place your `library()` calls. One solution is to create a R/load_libraries.R script where you load all required packages.
-You could then run `source("R/load_librarie.R")` at the beginning of all your scripts to load libraries automatically
+You could then run `source("R/load_libraries.R")` at the beginning of all your scripts to load libraries automatically
 
 Tips: 
 
@@ -708,3 +708,10 @@ You can create this function by combining the functions described above. Also cr
 Have fun!
 
 :::
+
+
+# Session info
+
+```{r}
+sessionInfo()
+```
