@@ -56,7 +56,6 @@ website:
           - text: "Assignment"
             file: Efficient Spatial IO/LGEO2185_Efficient_Spatial_Data_I_O_Assignment.qmd
 
-
 bibliography: biblio.bib
 
 format:
