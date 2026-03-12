@@ -19,77 +19,48 @@ pacman::p_load("shiny")
 ## 2 Today's Learning Objectives
 
 -   List benefits of using Shiny app to create reports
--   Explain how Shiny app is a useful and a funny interactive tool in
-    Open Science
+-   Explain how Shiny app is a useful and a funny interactive tool in Open Science
 -   Learn Shiny app basics
 
 ## 3 Introduction to Shiny app
 
 ### 3.1 What is Shiny ?
 
-**Shiny** is an R package that makes it easy to build interactive web
-apps straight from R. You can host standalone apps on a webpage or embed
-them in R Markdown documents or build dashboards. You can also extend
-your Shiny apps with CSS themes, [htmlwidgets](https://www.htmlwidgets.org/), [bslib](https://rstudio.github.io/bslib/index.html), and JavaScript actions.
+**Shiny** is an R package that makes it easy to build interactive web apps straight from R. You can host standalone apps on a webpage or embed them in R Markdown documents or build dashboards. You can also extend your Shiny apps with CSS themes, [htmlwidgets](https://www.htmlwidgets.org/), [bslib](https://rstudio.github.io/bslib/index.html), and JavaScript actions.
 
-**Shiny** combines the computational power of R with the interactivity
-of the modern web and its apps are easy to write.
+**Shiny** combines the computational power of R with the interactivity of the modern web and its apps are easy to write.
 
-You can find **Shiny Learning Ressources** to start, explore and enjoy
-interactive interface computing
-[here](https://shiny.rstudio.com/tutorial/).
+You can find **Shiny Learning Ressources** to start, explore and enjoy interactive interface computing [here](https://shiny.rstudio.com/tutorial/).
 
 ### 3.2 How to start with Shiny ?
 
-In R Studio you can open a `Shiny Web App` file which while allow you to
-make your own app with **Shiny**. An app that can be manipulate directly
-by a user. You have also the possibility to create an `RMarkdown`
-working with Shiny. The rules are the same than in session 4, only the
-content of the `chunks`will be different and specific to **Shiny app**.
-To create this Shiny `RMarkdown`, you just have to specify the nature of
-your document when you create it.
+In R Studio you can open a `Shiny Web App` file which while allow you to make your own app with **Shiny**. An app that can be manipulate directly by a user. You have also the possibility to create an `RMarkdown` working with Shiny. The rules are the same than in session 4, only the content of the `chunks`will be different and specific to **Shiny app**. To create this Shiny `RMarkdown`, you just have to specify the nature of your document when you create it.
 
 ### 3.3 Structure of a Shiny app
 
-:::callout-tip
+::: callout-tip
 See the Shiny basics lesson for reference: <https://shiny.posit.co/r/getstarted/shiny-basics/lesson1/>
 :::
 
-Shiny apps are contained in a single script called `app.R`. 
-The script `app.R` lives in a directory (for example, `newdir/`) and the app can be run with `runApp("newdir")`.
+Shiny apps are contained in a single script called `app.R`. The script `app.R` lives in a directory (for example, `newdir/`) and the app can be run with `runApp("newdir")`.
 
 A **Shiny app** script file has three major components :
 
-1.  **The user interface** (`ui`) object controls the layout and
-    appearance of your app. Basically, it is here where you will provide
-    information about the structure of your html and how user will
-    interact with it.
+1.  **The user interface** (`ui`) object controls the layout and appearance of your app. Basically, it is here where you will provide information about the structure of your html and how user will interact with it.
 
-2.  The **server** function contains the instructions that your computer
-    needs to build your app. This function contain codes and functions
-    that you want to apply in your app.
+2.  The **server** function contains the instructions that your computer needs to build your app. This function contain codes and functions that you want to apply in your app.
 
-3.  Finally a call to the `shinyApp` function that creates Shiny app objects from an
-    explicit UI/server pair.
+3.  Finally a call to the `shinyApp` function that creates Shiny app objects from an explicit UI/server pair.
 
 ::: callout-note
-Prior to version `0.10.2`, Shiny did not support single-file apps
-and the ui object and server function needed to be contained in separate
-scripts called ui.R and server.R, respectively. This functionality is
-still supported in Shiny, however the tutorial and much of the
-supporting documentation focus on single-file apps.
+Prior to version `0.10.2`, Shiny did not support single-file apps and the ui object and server function needed to be contained in separate scripts called ui.R and server.R, respectively. This functionality is still supported in Shiny, however the tutorial and much of the supporting documentation focus on single-file apps.
 :::
 
-Below you can find a simple Shiny web application which show you the
-structure of a Shiny app producing an histogram where you can
-change the number of bins.
+Below you can find a simple Shiny web application which show you the structure of a Shiny app producing an histogram where you can change the number of bins.
 
-First you describe the **User interface** (`ui`) with a title
-(`titlePanel`), the sidebar parameters using by the user to change the
-number of bins(`sidebarLayout`) and the result expected at the end : a
-plot (`mainPanel`).
+First you describe the **User interface** (`ui`) with a title (`titlePanel`), the sidebar parameters using by the user to change the number of bins(`sidebarLayout`) and the result expected at the end : a plot (`mainPanel`).
 
-```{r, eval = FALSE}
+```{r, eval = FALSE, echo = TRUE}
 library(shiny)
 
 # Define UI for app that draws a histogram ----
@@ -112,10 +83,9 @@ ui <- page_sidebar(
 )
 ```
 
-Then you describe the **server function** (`server`) which works like a
-`function` using *input* and *output* to create your histogram.
+Then you describe the **server function** (`server`) which works like a `function` using *input* and *output* to create your histogram.
 
-```{r, eval = FALSE}
+```{r, eval = FALSE, echo = TRUE}
 # Define server logic required to draw a histogram
 server <- function(input, output) {
     output$distPlot <- renderPlot({
@@ -133,10 +103,9 @@ server <- function(input, output) {
 }
 ```
 
-Finally you can run the application to create your Shiny web application
-by using the `shinyApp` function.
+Finally you can run the application to create your Shiny web application by using the `shinyApp` function.
 
-```{r, eval = FALSE}
+```{r, eval = FALSE, echo = TRUE}
 # Run the application
 shinyApp(ui = ui, server = server)
 ```
@@ -159,11 +128,9 @@ output$distPlot <- renderPlot({
 })
 ```
 
-You can create Shiny apps by copying and modifying existing Shiny apps.
-The [Shiny gallery](https://shiny.rstudio.com/gallery/) provides some
-good examples, or use the eleven pre-built Shiny examples listed below.
+You can create Shiny apps by copying and modifying existing Shiny apps. The [Shiny gallery](https://shiny.rstudio.com/gallery/) provides some good examples, or use the eleven pre-built Shiny examples listed below.
 
-```{r, eval = FALSE}
+```{r, eval = FALSE, echo = TRUE}
 runExample("01_hello") # a histogram
 runExample("02_text") # tables and data frames
 runExample("03_reactivity") # a reactive expression
@@ -177,31 +144,22 @@ runExample("10_download") # file download wizard
 runExample("11_timer") # an automated timer
 ```
 
-Each demonstrates a feature of Shiny apps. All Shiny example apps open
-in "showcase" mode (with the app.R script in the display).
+Each demonstrates a feature of Shiny apps. All Shiny example apps open in "showcase" mode (with the app.R script in the display).
 
 ### 3.4 Other options to make a Shiny app
 
-You can also add **Shiny-style interactivity directly inside a Quarto document**
-(instead of building a standalone `app.R`). When the document YAML contains
-`server: shiny`, Quarto starts a Shiny backend and provides the usual reactive
-objects (`input`, `output`, `session`).
+You can also add **Shiny-style interactivity directly inside a Quarto document** (instead of building a standalone `app.R`). When the document YAML contains `server: shiny`, Quarto starts a Shiny backend and provides the usual reactive objects (`input`, `output`, `session`).
 
 In this setup there are **two contexts**:
 
-- **Document (UI) context**: regular chunks where you place inputs/outputs
-  (e.g., `selectInput()`, `sliderInput()`, `plotOutput()`).
-- **Shiny server context**: chunks marked with `#| context: server`, where you
-  write reactive logic (e.g., `renderPlot()`, `reactive()`, `observe()`) and
-  assign results to `output$...`.
+-   **Document (UI) context**: regular chunks where you place inputs/outputs (e.g., `selectInput()`, `sliderInput()`, `plotOutput()`).
+-   **Shiny server context**: chunks marked with `#| context: server`, where you write reactive logic (e.g., `renderPlot()`, `reactive()`, `observe()`) and assign results to `output$...`.
 
-This differs from a “true” Shiny app (`app.R`), where you must explicitly define
-a `ui` object, a `server()` function, and then call `shinyApp(ui, server)`.
+This differs from a “true” Shiny app (`app.R`), where you must explicitly define a `ui` object, a `server()` function, and then call `shinyApp(ui, server)`.
 
-Below, the UI chunk creates two inputs and a plot placeholder, and the server
-chunk generates the histogram that updates automatically when inputs change.
+Below, the UI chunk creates two inputs and a plot placeholder, and the server chunk generates the histogram that updates automatically when inputs change.
 
-```{r eruptions}
+```r
 inputPanel(
     selectInput("n_breaks",
         label = "Number of bins:",
@@ -215,7 +173,7 @@ inputPanel(
 plotOutput("eruptionsPlot")
 ```
 
-```{r eruptions server}
+```r
 #| context: server
 output$eruptionsPlot <- renderPlot({
   hist(
@@ -231,137 +189,46 @@ output$eruptionsPlot <- renderPlot({
 })
 ```
 
-It's also possible to embed an entire Shiny application within an R
-Markdown document using the `shinyAppDir` function. This example embeds
-a Shiny application located in another directory:
-
-```{r tabsets, echo=TRUE, eval = FALSE}
-shinyAppDir(
-    system.file("examples/06_tabsets", package = "shiny"),
-    options = list(
-        width = "100%", height = 550
-    )
-)
-```
-
-```{r tabsets running, echo=FALSE, eval = TRUE, warning = FALSE, message = FALSE}
-library(shiny)
-library(bslib)
-
-# Define UI for random distribution app ----
-# Sidebar layout with input and output definitions ----
-page_sidebar(
-
-  # App title ----
-  title = "Tabsets",
-
-  # Sidebar panel for inputs ----
-  sidebar = sidebar(
-
-    # Input: Select the random distribution type ----
-    radioButtons(
-      "dist",
-      "Distribution type:",
-      c(
-        "Normal" = "norm",
-        "Uniform" = "unif",
-        "Log-normal" = "lnorm",
-        "Exponential" = "exp"
-      )
+```{r eruptions}
+inputPanel(
+    selectInput("n_breaks",
+        label = "Number of bins:",
+        choices = c(10, 20, 35, 50), selected = 20
     ),
-    # br() element to introduce extra vertical spacing ----
-    br(),
-    # Input: Slider for the number of observations to generate ----
-    sliderInput(
-      "n",
-      "Number of observations:",
-      value = 500,
-      min = 1,
-      max = 1000
+    sliderInput("bw_adjust",
+        label = "Bandwidth adjustment:",
+        min = 0.2, max = 2, value = 1, step = 0.2
     )
-  ),
-
-  # Main panel for displaying outputs ----
-  # Output: A tabset that combines three panels ----
-  navset_card_underline(
-    # Panel with plot ----
-    nav_panel("Plot", plotOutput("plot")),
-
-    # Panel with summary ----
-    nav_panel("Summary", verbatimTextOutput("summary")),
-
-    # Panel with table ----
-    nav_panel("Table", tableOutput("table"))
-  )
 )
+plotOutput("eruptionsPlot")
 ```
 
-
-```{r tabsets running II, echo=FALSE, eval = TRUE}
+```{r eruptionsserver}
 #| context: server
+#| echo: true
+output$eruptionsPlot <- renderPlot({
+  hist(
+    faithful$eruptions,
+    probability = TRUE,
+    breaks = as.numeric(input$n_breaks),
+    xlab = "Duration (minutes)",
+    main = "Geyser eruption duration"
+  )
 
-# Define server logic for random distribution app ----
-
-# Reactive expression to generate the requested distribution ----
-# This is called whenever the inputs change. The output functions
-# defined below then use the value computed from this expression
-d <- reactive({
-    dist <- switch(
-        input$dist,
-        norm = rnorm,
-        unif = runif,
-        lnorm = rlnorm,
-        exp = rexp,
-        rnorm
-    )
-
-    dist(input$n)
-})
-
-# Generate a plot of the data ----
-# Also uses the inputs to build the plot label. Note that the
-# dependencies on the inputs and the data reactive expression are
-# both tracked, and all expressions are called in the sequence
-# implied by the dependency graph.
-output$plot <- renderPlot({
-    dist <- input$dist
-    n <- input$n
-
-    hist(
-        d(),
-        main = paste("r", dist, "(", n, ")", sep = ""),
-        col = "#75AADB",
-        border = "white"
-    )
-    })
-
-    # Generate a summary of the data ----
-    output$summary <- renderPrint({
-    summary(d())
-    })
-
-    # Generate an HTML table view of the data ----
-    output$table <- renderTable({
-    d()
+  dens <- density(faithful$eruptions, adjust = input$bw_adjust)
+  lines(dens, col = "blue")
 })
 ```
 
-Note the use of the `height` parameter to determine how much vertical
-space the embedded application should occupy.
 
-You can also use the `shinyApp` function to define an application inline
-rather then in an external directory.
 
-In all of R code chunks above you can write `echo = FALSE`if you want to
-prevent the R code within the chunk from rendering in the document
-alongside the Shiny components.
+In all of R code chunks above you can write `echo = FALSE` if you want to prevent the R code within the chunk from rendering in the document alongside the Shiny components.
 
 ### 3.5 Syntax in Shiny app
 
 Shiny UIs are web pages. Instead of writing raw HTML, Shiny provides R functions whose names match common HTML tags (`p`, `div`, `span`, etc.). These functions generate HTML that the browser displays. You can style elements with the `style=` argument using standard CSS.
 
-You can see below code lines, the results of differents syntax
-parameters into the html of your Shiny Web application.
+You can see below code lines, the results of differents syntax parameters into the html of your Shiny Web application.
 
 ```{r}
 ### HTML tags in Shiny: raw code vs output (two columns)
@@ -416,9 +283,7 @@ fluidPage(
 
 ## 4 Practical example : Shiny app to compare the effect EPSG choice by country
 
-This **Shiny app** was made to compare projections of a chosen country
-regarding the *Mercator projection (WGS84)* and a projection that the
-user can select by changing the projection code.
+This **Shiny app** was made to compare projections of a chosen country regarding the *Mercator projection (WGS84)* and a projection that the user can select by changing the projection code.
 
 ```{r,warning=FALSE}
 # Load packages ----
@@ -441,12 +306,7 @@ World <- ne_countries(scale = "medium", returnclass = "sf") %>%
     dplyr::arrange(name_long)
 ```
 
-First you describe the **User interface** (`ui`) with a title
-(`titlePanel`), the sidebar parameters using by the user to change the
-country chosen (`selectInput`)and the code of the projection
-(`numericInput`) and the result expected at the end : a country
-projection in *Mercator* and in a chosen projection with a comparaison
-table (`mainPanel`).
+First you describe the **User interface** (`ui`) with a title (`titlePanel`), the sidebar parameters using by the user to change the country chosen (`selectInput`)and the code of the projection (`numericInput`) and the result expected at the end : a country projection in *Mercator* and in a chosen projection with a comparaison table (`mainPanel`).
 
 ```{r, eval = FALSE, echo = TRUE}
 #---- GUI- User interface ----
@@ -476,19 +336,11 @@ ui <- fluidPage(
 )
 ```
 
-Then you describe the **server function** (`server`) which works like a
-`function` using *input* and *output* to create your plots and
-comparaison table.
+Then you describe the **server function** (`server`) which works like a `function` using *input* and *output* to create your plots and comparaison table.
 
-Notice that the input in the server are linked with those in the `UI` !
-By example when you subset the chosen country at the beginning you are
-using `input$Country` which was created in the `UI`. Same things for the
-outputs !
+Notice that the input in the server are linked with those in the `UI` ! By example when you subset the chosen country at the beginning you are using `input$Country` which was created in the `UI`. Same things for the outputs !
 
-The function in **Shiny apps** have always the same structure, in the
-following you can see that your are asking two plots and a table by
-using `renderPlot`and `renderTable`, the function is the same but you
-define the kind of output you are waiting for.
+The function in **Shiny apps** have always the same structure, in the following you can see that your are asking two plots and a table by using `renderPlot`and `renderTable`, the function is the same but you define the kind of output you are waiting for.
 
 ```{r, eval = FALSE, echo = TRUE}
 server <- function(input, output, session) {
@@ -542,8 +394,7 @@ server <- function(input, output, session) {
 }
 ```
 
-Finally you can run the application to create your Shiny web application
-by using the `shinyApp` function. Have fun!
+Finally you can run the application to create your Shiny web application by using the `shinyApp` function. Have fun!
 
 ```{r, eval = FALSE, echo = TRUE}
 # Run the app
@@ -650,15 +501,11 @@ output$ComparisonTable <- renderTable({
 })
 ```
 
-
 ## 5. Using Leaflet in shiny : two examples
 
-Below you can find two examples of `ShinyApp` using `leaflet` in order
-to create an interactive map where users can switch input and use
-`leaflet` proprieties to change the scale of analysis.
+Below you can find two examples of `ShinyApp` using `leaflet` in order to create an interactive map where users can switch input and use `leaflet` proprieties to change the scale of analysis.
 
-You can find more information about these functions
-[here](https://rstudio.github.io/leaflet/articles/shiny.html).
+You can find more information about these functions [here](https://rstudio.github.io/leaflet/articles/shiny.html).
 
 ```{r, eval = FALSE, echo = TRUE}
 library(shiny)
@@ -693,7 +540,6 @@ server <- function(input, output, session) {
 shinyApp(ui, server)
 ```
 
-
 ```{r, eval = TRUE, echo = FALSE}
 library(shiny)
 library(leaflet)
@@ -707,6 +553,7 @@ fluidPage(
     actionButton("recalc", "New points")
 )
 ```
+
 ```{r, eval = TRUE, echo = FALSE}
 #| context: server
 library(shiny)
@@ -732,10 +579,7 @@ output$mymap <- renderLeaflet({
 
 ```
 
-
-You can also create `ShinyApp` where the model parameters can be changed
-and not only the input information. For example, here, users are allowed
-to change the color scheme for the `ShinyApp`.
+You can also create `ShinyApp` where the model parameters can be changed and not only the input information. For example, here, users are allowed to change the color scheme for the `ShinyApp`.
 
 ```{r, echo = TRUE, eval = FALSE}
 library(shiny)
@@ -815,7 +659,6 @@ server <- function(input, output, session) {
 shinyApp(ui, server)
 ```
 
-
 ```{r, eval = TRUE, echo = FALSE}
 library(shiny)
 library(dplyr)
@@ -840,6 +683,7 @@ fluidPage(
   )
 )
 ```
+
 ```{r, eval = TRUE, echo = FALSE}
 #| context: server
 library(shiny)
@@ -901,63 +745,30 @@ observe({
 })
 ```
 
-There are plenty of possibility and you can find others examples in this
-[ShinyApp](https://shiny.posit.co/r/gallery/interactive-visualizations/superzip-example/)
-or [here](https://www.r-rse.eu/portfolio/shiny-apps/) and on this
-tutorial website [How to work in
-Shiny](https://www.paulamoraga.com/book-geospatial/sec-shinyexample.html).
+There are plenty of possibility and you can find others examples in this [ShinyApp](https://shiny.posit.co/r/gallery/interactive-visualizations/superzip-example/) or [here](https://www.r-rse.eu/portfolio/shiny-apps/) and on this tutorial website [How to work in Shiny](https://www.paulamoraga.com/book-geospatial/sec-shinyexample.html).
 
-For example, you can make a `ShinyApp` using `leaflet` to provide
-access, selection, summarising and visualisation of raster maps of the
-north-west European Shelf sedimentary environment. This is the purpose
-of the [sedMaps
-App](https://sheffield-university.shinyapps.io/sedmap_shiny/) made by
-the University of Sheffield.
+For example, you can make a `ShinyApp` using `leaflet` to provide access, selection, summarising and visualisation of raster maps of the north-west European Shelf sedimentary environment. This is the purpose of the [sedMaps App](https://sheffield-university.shinyapps.io/sedmap_shiny/) made by the University of Sheffield.
 
 ![](https://www.r-rse.eu/work/sedmaps.png)
 
 ## 6. The future is now : Shiny Assistant
 
-Have you ever dream about doing a code just by asking what you want ?
-Put your fingers in the sand and drink Virgin Mojito while a computer is
-performing your task. This is now possible by using **Shiny Assistant**
-You can learn the basic of it
-[here](https://shiny.posit.co/blog/posts/shiny-assistant/) and try it by
-yourself directly in [Shiny
-app](https://gallery.shinyapps.io/assistant/?_gl=1*95qn5j*_ga*MTY1NzI5NjIyMC4xNzM3MDM3ODM4*_ga_2C0WZ1JHG0*MTc0MTY4MzgyNC4zLjEuMTc0MTY4Mzg1MC4wLjAuMA..).
+Have you ever dream about doing a code just by asking what you want ? Put your fingers in the sand and drink Virgin Mojito while a computer is performing your task. This is now possible by using **Shiny Assistant** You can learn the basic of it [here](https://shiny.posit.co/blog/posts/shiny-assistant/) and try it by yourself directly in [Shiny app](https://gallery.shinyapps.io/assistant/?_gl=1*95qn5j*_ga*MTY1NzI5NjIyMC4xNzM3MDM3ODM4*_ga_2C0WZ1JHG0*MTc0MTY4MzgyNC4zLjEuMTc0MTY4Mzg1MC4wLjAuMA..).
 
-**Shiny Assistant** is a new AI-powered tool that helps you get things
-done: you can ask it questions about Shiny, or to create a Shiny
-application from scratch, or ask it to make changes to an existing
-application. You can think of it as a knowledgeable colleague who is
-always ready to help with your Shiny projects, in R and Python.
+**Shiny Assistant** is a new AI-powered tool that helps you get things done: you can ask it questions about Shiny, or to create a Shiny application from scratch, or ask it to make changes to an existing application. You can think of it as a knowledgeable colleague who is always ready to help with your Shiny projects, in R and Python.
 
-Just ask what you want, discuss with the IA and try to make something
-interesting, you can follow the example here, where I ask to make a
-simple map.
+Just ask what you want, discuss with the IA and try to make something interesting, you can follow the example here, where I ask to make a simple map.
 
-![](images/clipboard-2140048318.png)
+![](images/paste-1.jpeg)
 
-However,I want to remind you that using **IA** is not free! Indeed,
-generating and processing through ChatGPT and other IA generators is a
-huge carbon emission source today. You can read more about it in [Vilain
-ChatGPT
-Vilain](https://www.intelligence-artificielle-school.com/actualite/bilan-carbone-de-l-intelligence-artificielle-analyse-et-axes-d-amelioration/).
-I am not telling you to not use it, just do it smartly and cautiously,
-learn with it and then do it by yourself, it will be better for you and
-the planet.
-
-![](images/clipboard-3586824547.png)
+However,I want to remind you that using **IA** is not free! Indeed, generating and processing through ChatGPT and other IA generators is a huge carbon emission source today. You can read more about it in [Vilain ChatGPT Vilain](https://www.intelligence-artificielle-school.com/actualite/bilan-carbone-de-l-intelligence-artificielle-analyse-et-axes-d-amelioration/). I am not telling you to not use it, just do it smartly and cautiously, learn with it and then do it by yourself, it will be better for you and the planet.
 
 ::: assignment
 ## Assignment
 
-Today you learn about **Shiny app** and you progressively start to have
-ideas about your personal project, for next week :
+Today you learn about **Shiny app** and you progressively start to have ideas about your personal project, for next week :
 
-1.  Define clearly what is your subject and make a workflow that you
-    will use for your project. **!!! It must be done in order to start
-    quickly your project !**
+1.  Define clearly what is your subject and make a workflow that you will use for your project. **!!! It must be done in order to start quickly your project !**
 
 -   What is the subject ?
 
@@ -967,18 +778,9 @@ ideas about your personal project, for next week :
 
     What are the different steps you will make to reach your goals? E.g.
 
-    :   *I will create a function to calculate land use change in
-        Belgium over the years, so first I will create a function to
-        estimate land use, each years then make a loop to estimate the
-        difference ...*
+    :   *I will create a function to calculate land use change in Belgium over the years, so first I will create a function to estimate land use, each years then make a loop to estimate the difference ...*
 
-2.  Play with the several **Shiny apps** in the Teams folders of session
-    5, change parameters and get used to the syntax and the structure of
-    a **Shiny app**. Then try to create a `shiny.app` presenting the
-    current suitbility map in a `leaflet` environment for a giving
-    country and species. This map will allow the user to make several
-    choices :
+2.  Play with the several **Shiny apps** in the Teams folders of session 5, change parameters and get used to the syntax and the structure of a **Shiny app**. Then try to create a `shiny.app` presenting the current suitbility map in a `leaflet` environment for a giving country and species. This map will allow the user to make several choices :
     1.  Choice of the country
     2.  Choice of the species
-
 :::
