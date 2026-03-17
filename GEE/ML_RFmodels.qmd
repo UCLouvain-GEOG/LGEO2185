@@ -1,0 +1,1152 @@
+---
+title: "LGEO2185: Session ? -- RF classification with tidymodels"
+authors: "Kristof Van Oost & Antoine Stevens"
+Date: 03/14/2025
+---
+
+## Session learning objectives
+
+By the end of this session, students should be able to:
+
+1.  Understand the main building blocks of ML implementation. This
+    tutorial is based on [**tidymodels**](https://www.tidymodels.org/):
+    `rsample`, `recipes`, `parsnip`, `workflows`, `tune`, `yardstick`.\
+2.  Build a **reproducible classification pipeline** (data split →
+    recipe → model → workflow → cross-validation → tuning → final fit).\
+3.  Use **k-fold cross-validation** to estimate generalization
+    performance and understand why it beats a single train/test split
+    for model selection.\
+4.  Tune Random Forest hyperparameters (`mtry`, `min_n`, `trees`) and
+    select a final model using a clear metric.\
+5.  Interpret the fitted model using **variable importance** and connect
+    it to geography/remote sensing reasoning (what drivers make sense,
+    and why).
+
+## Introduction Decision trees and Random Forest
+
+A decision tree is a rule-based model that partitions the predictor
+space into rectangular regions using simple threshold rules. In this
+example, we model **landslide occurrence (`lslpts`)** using terrain
+predictors from the `spDataLarge` dataset. We fit a **small tree** (only
+two decision levels) so the rules remain easy to interpret. We then
+visualize the tree rules as **threshold lines** in a scatterplot.
+
+```{r}
+#| message: false
+#| warning: false
+
+data("lsl", "study_mask", package = "spDataLarge")
+ta <- terra::rast(system.file("raster/ta.tif", package = "spDataLarge"))
+
+library(rpart)
+library(rpart.plot)
+library(ggplot2)
+library(patchwork)
+library(png)
+library(grid)
+
+set.seed(1)
+
+tree2 <- rpart(
+  lslpts ~ slope + cplan + cprof + elev + log10_carea,
+  data = lsl,
+  method = "class",
+  control = rpart.control(
+    maxdepth = 2,
+    cp = 0.0,
+    minsplit = 20
+  )
+)
+
+# --- 1) Render tree to a PNG (base plot) ---
+tree_png <- tempfile(fileext = ".png")
+png(tree_png, width = 900, height = 600, res = 130)
+rpart.plot(tree2, type = 2, extra = 104, fallen.leaves = TRUE, box.palette = "Blues")
+dev.off()
+
+# Read PNG and wrap as a patchwork-able element
+img <- png::readPNG(tree_png)
+p_tree <- patchwork::wrap_elements(full = grid::rasterGrob(img, interpolate = TRUE))
+
+# --- 2) Scatter plot with clearer TRUE/FALSE colors ---
+p_scatter <- ggplot(lsl, aes(x = slope, y = cplan, color = lslpts)) +
+    geom_point(alpha = 0.6, size = 2) +
+  geom_vline(xintercept = 35, 
+             linetype = "dashed", 
+             linewidth = 1.0, 
+             color = "black") +
+  
+  geom_segment(aes(x = min(slope), xend = 35,
+                   y = -0.095, yend = -0.095),
+               inherit.aes = FALSE,
+               linetype = "dashed",
+               linewidth = 1.0,
+               color = "black") +
+  
+  geom_segment(aes(x = 35, xend = max(slope),
+                   y = -0.02, yend = -0.02),
+               inherit.aes = FALSE,
+               linetype = "dashed",
+               linewidth = 1.0,
+               color = "black") +
+  
+  scale_color_manual(values = c("FALSE" = "#1f78b4",
+                                "TRUE"  = "#e31a1c")) +
+  
+  theme_minimal(base_size = 12)
+
+# --- Make sure scatter has a proper legend ---
+p_scatter <- p_scatter +
+  labs(color = "Landslide") +           # legend title (optional)
+  guides(color = guide_legend(title = NULL))  # remove title if you prefer
+
+# --- (Optional) give both panels similar margins for better vertical alignment ---
+p_scatter <- p_scatter + theme(plot.margin = margin(5, 5, 5, 5))
+p_tree    <- p_tree    + theme(plot.margin = margin(5, 5, 5, 5))
+
+# --- Two-panel figure with legend ABOVE the whole figure ---
+(p_tree | p_scatter) +
+  plot_layout(
+    widths = c(1.8, 1),
+    guides = "collect"     # collect legend(s) into one
+  ) +
+  plot_annotation(
+    theme = theme(
+      legend.position  = "top",
+      legend.direction = "horizontal",
+      legend.box       = "horizontal"
+    )
+  )
+  
+```
+
+To understand *why* decision trees behave differently than linear
+models, it helps to look at the **geometry of the decision boundary** in
+a 2-predictor space (X1–X2).
+
+-   **Linear models** separate classes with (at most) a *single straight
+    line* in predictor space.
+-   **Decision trees** split the space using *axis-aligned thresholds*
+    (vertical/horizontal cuts), creating **rectangular regions**.
+-   As trees grow deeper, they can approximate curved/diagonal
+    boundaries, but they do so via increasingly fine “steps”.
+
+The figure below illustrates these ideas in four panels:
+
+1.  Linear model: one straight boundary\
+2.  Same linear boundary, with illustrative tree-style axis splits
+    overlaid\
+3.  Tree decision regions (rectangular partitions)\
+4.  A tiny tree with only two criteria (two splits)
+
+```{r, ECHO=FALSE}
+#| message: false
+#| warning: false
+
+library(ggplot2)
+library(patchwork)
+
+# --- 1) Make a predictor grid (toy 2D feature space) ---
+grid <- expand.grid(
+  x1 = seq(-2.2, 2.2, length.out = 320),
+  x2 = seq(-2.2, 2.2, length.out = 320)
+)
+
+# --- 2) Define a LINEAR classifier (one diagonal boundary) ---
+grid$cls_linear <- ifelse(grid$x2 >= 0.6 * grid$x1 - 0.4, "A", "B")
+
+# --- 3) Define a TREE-like classifier (axis-aligned rectangles) ---
+grid$cls_tree <- with(grid, ifelse(
+  x1 < -1.0,
+  ifelse(x2 >= -1.2, "A", "B"),
+  ifelse(
+    x1 < 0.8,
+    ifelse(x2 >= -0.3, "A", "B"),
+    ifelse(x2 >= 0.4, "A", "B")
+  )
+))
+
+# --- 4) Define a very small 2-split tree example ---
+grid$cls_tree2 <- with(grid, ifelse(x1 < -1, "A", ifelse(x2 < 1, "B", "A")))
+
+# --- Colors (light blue vs sand) ---
+fill_cols <- c(A = "#A7D0E3", B = "#F2D6A2")
+
+# --- Shared styling: no titles ---
+thm <- theme_minimal(base_size = 11) +
+  theme(
+    panel.grid = element_blank(),
+    legend.position = "none",
+    plot.title = element_blank()
+  )
+
+p1 <- ggplot(grid, aes(x1, x2, fill = cls_linear)) +
+  geom_raster() +
+  geom_abline(slope = 0.6, intercept = -0.4, linewidth = 0.7) +
+  scale_fill_manual(values = fill_cols) +
+  coord_equal() +
+  labs(x = "X1", y = "X2") +
+  thm
+
+p2 <- ggplot(grid, aes(x1, x2, fill = cls_linear)) +
+  geom_raster(alpha = 0.95) +
+  geom_abline(slope = 0.6, intercept = -0.4, linewidth = 0.6) +
+  geom_vline(xintercept = c(-1.0, 0.8), linewidth = 0.6) +
+  geom_hline(yintercept = c(-1.2, -0.3, 0.4), linewidth = 0.6) +
+  scale_fill_manual(values = fill_cols) +
+  coord_equal() +
+  labs(x = "X1", y = "X2") +
+  thm
+
+p3 <- ggplot(grid, aes(x1, x2, fill = cls_tree)) +
+  geom_raster() +
+  geom_vline(xintercept = c(-1.0, 0.8), linewidth = 0.7) +
+  geom_segment(aes(x = -2.2, xend = -1.0, y = -1.2, yend = -1.2), linewidth = 0.7) +
+  geom_segment(aes(x = -1.0, xend = 0.8,  y = -0.3, yend = -0.3), linewidth = 0.7) +
+  geom_segment(aes(x = 0.8,  xend = 2.2,  y = 0.4,  yend = 0.4),  linewidth = 0.7) +
+  scale_fill_manual(values = fill_cols) +
+  coord_equal() +
+  labs(x = "X1", y = "X2") +
+  thm
+
+p4 <- ggplot(grid, aes(x1, x2, fill = cls_tree2)) +
+  geom_raster() +
+  geom_vline(xintercept = -1, linewidth = 0.7) +
+  geom_hline(yintercept = 1, linewidth = 0.7) +
+  scale_fill_manual(values = fill_cols) +
+  coord_equal() +
+  labs(x = "X1", y = "X2") +
+  thm
+
+(p1 | p2) / (p3 | p4)
+```
+
+Top-left: a linear decision boundary (one straight line). Top-right: the
+same linear boundary, with tree-style axis-aligned split lines overlaid
+(vertical/horizontal thresholds). Bottom-left: the resulting tree
+decision regions (rectangular partitions). Bottom-right: a minimal tree
+with only two split criteria (very interpretable, but limited
+flexibility). This illustrates the key geometric difference: linear
+models are global and smooth, while trees build step-wise, rectangular
+approximations by repeatedly applying simple threshold rules.Note that
+decision trees can also be applied to both classification and regression
+problems. In the case of regression problems, the predicted value
+becomes the average value of the partition.
+
+Decision trees are unstable (high variance) and are also sensitive to
+small data changes. This is illustrated below: we fit the trees across
+multiple random splits. The figure shows that the Training AUROC (see
+session 4) is stable, while the AUROC of the test models varies a lot.
+
+```{r}
+library(rsample)
+library(pROC)
+library(purrr)
+
+set.seed(1)
+
+splits <- replicate(30, initial_split(lsl, prop = 0.75), simplify = FALSE)
+
+aucs <- map_dfr(splits, function(spl) {
+
+  train_dat <- training(spl)
+  test_dat  <- testing(spl)
+
+  m <- rpart(lslpts ~ slope + cplan + cprof + elev + log10_carea,
+             data = train_dat,
+             method = "class")
+
+  prob_train <- predict(m, train_dat, type = "prob")[,2]
+  prob_test  <- predict(m, test_dat, type = "prob")[,2]
+
+  tibble(
+    auc_train = as.numeric(auc(roc(train_dat$lslpts, prob_train, quiet = TRUE))),
+    auc_test  = as.numeric(auc(roc(test_dat$lslpts, prob_test, quiet = TRUE)))
+  )
+})
+
+ggplot(aucs) +
+  geom_density(aes(x = auc_train, color = "Train")) +
+  geom_density(aes(x = auc_test, color = "Test")) +
+  theme_minimal()
+
+
+```
+
+::: callout-note
+**Advantages and Limitations of Decision Trees**
+
+Decision trees, whether used for regression or classification, offer
+several important advantages compared to more classical modelling
+approaches such as linear regression or logistic regression.
+
+**Advantages**
+
+-   **Interpretability**\
+    Trees are extremely easy to explain. In many cases, they are even
+    more intuitive than linear models because they rely on simple
+    *if–then* rules.
+
+-   **Human-like reasoning**\
+    The hierarchical structure of trees often resembles human
+    decision-making processes: we tend to evaluate one criterion, then
+    refine based on another.
+
+-   **Graphical representation**\
+    Trees can be visualised directly as diagrams, making them accessible
+    even to non-experts — especially when the tree is small and shallow.
+
+-   **Handling of qualitative predictors**\
+    Trees naturally incorporate categorical variables without requiring
+    the creation of dummy variables or contrast coding.
+
+**Limitations**
+
+-   **Predictive performance**\
+    A single decision tree often does not achieve the same predictive
+    accuracy as more flexible or regularised statistical learning
+    methods.
+
+-   **Instability (non-robustness)**\
+    Trees can be sensitive to small changes in the data. A slight
+    modification in the training dataset may result in a substantially
+    different tree structure.
+:::
+
+From Single Trees to Tree Ensembles: Many of these limitations can be
+addressed by combining multiple trees into an ensemble. Methods such as:
+
+-   **Bagging**
+-   **Random Forests**
+-   **Boosting**
+
+aggregate large numbers of trees to improve predictive performance and
+stability. A natural way to reduce the variance and increase the test
+set accuracy of a statistical learning method is to take many training
+sets from the population, build a separate prediction model using each
+training set and then average the resulting predictions. This is called
+bagging and this is particularly useful for decision trees. This
+approach has been demonstrated to substantially improve accuracy by
+combining hundreds or even thousands or trees into a single prediction
+model.
+
+::: call-out note 
+Bagging can improve the accuracy, but this comes at a
+cost as the decision trees are no longer simple and interpretable. So
+the improved accuracy comes at the expense of interpretability.
+:::
+
+**Random Forests** provide a further improvement over bagged trees: In
+each split, only a random sample of the predictors are allowed to be
+used. This is counter-intuitive but this process decorrelates the trees
+and results in more robust predictions.
+
+Here we create both a logistic regression as well as an RF model for our
+landslide problem using the tidymodel approach:
+
+```{r}
+#| message: false
+#| warning: false
+
+data("lsl", package = "spDataLarge")
+
+library(tidymodels)
+library(dplyr)
+library(ggplot2)
+library(patchwork)
+
+set.seed(1)
+
+# Ensure outcome is a factor
+lsl <- lsl %>% mutate(lslpts = as.factor(lslpts))
+
+# --- 1) Train/test split ---
+lsl_split <- initial_split(lsl, prop = 0.75, strata = lslpts)
+lsl_train <- training(lsl_split)
+lsl_test  <- testing(lsl_split)
+
+# --- 2) 5-fold CV on training set ---
+lsl_folds <- vfold_cv(lsl_train, v = 5, strata = lslpts)
+
+# --- 3) A common recipe (same preprocessing for both models) ---
+lsl_recipe <- recipe(lslpts ~ slope + cplan + cprof + elev + log10_carea,
+                     data = lsl_train) %>%
+  step_normalize(all_numeric_predictors()) %>%
+  step_nzv(all_predictors())
+
+# --- 4) Model specs ---
+glm_spec <- logistic_reg() %>%
+  set_engine("glm") %>%
+  set_mode("classification")
+
+rf_spec <- rand_forest(
+  trees = 500,
+  mtry  = tune(),     # we'll set a simple default below (no full tuning yet)
+  min_n = 5
+) %>%
+  set_engine("ranger", importance = "impurity") %>%
+  set_mode("classification")
+
+# A simple non-tuned choice for mtry (sqrt(p) is common)
+p <- 5
+rf_spec <- finalize_model(rf_spec, tibble(mtry = floor(sqrt(p))))
+
+# --- 5) Workflows ---
+glm_wf <- workflow() %>%
+  add_recipe(lsl_recipe) %>%
+  add_model(glm_spec)
+
+rf_wf <- workflow() %>%
+  add_recipe(lsl_recipe) %>%
+  add_model(rf_spec)
+
+
+```
+
+Now let's have a look at the hold-out test performance using the same
+split for both models
+
+```{r}
+#| message: false
+#| warning: false
+mets <- metric_set(accuracy, roc_auc)
+glm_last <- last_fit(glm_wf, split = lsl_split, metrics = mets)
+rf_last  <- last_fit(rf_wf,  split = lsl_split, metrics = mets)
+
+test_comp <- bind_rows(
+  glm_last %>% collect_metrics() %>% mutate(model = "GLM (logistic)"),
+  rf_last  %>% collect_metrics() %>% mutate(model = "Random Forest")
+) %>%
+  select(model, .metric, .estimate)
+
+test_comp
+
+```
+
+Interpretation
+
+Logistic regression fits a smooth, global relationship (linear in the
+predictors after transformation).
+
+Random Forest combines many trees, capturing nonlinearities and
+interactions automatically.
+
+In many geoscience susceptibility problems, RF typically achieves higher
+AUROC, especially when relationships are nonlinear.
+
+::: call-out note
+Note that we did not fine-tune the (hyper)parameters
+of the RF model yet. For example the nubmer of predictors sampled at
+each sple `mtry`, the number of trees in the forest `trees`, and the
+minimum observations per tree (`min_n`are typical parameters that can
+also be tuned. We will develop this forther in a machine learning
+workflow below.
+:::
+
+## RF tuturial: land cover mapping
+
+As we discussed in session 4, Tidymodels is a **coherent “grammar”** for
+machine learning in R: rather than every model/package having its own
+interface, tidymodels standardizes the steps you do again and again,
+i.e. splitting, pre-processing, training, tuning, and evaluation.
+
+This module follows the workflow described in Rebecca Barter’s
+tidymodels tour (@barter2020tidymodels) and adapts it to **spatial
+training data**. We will re-use the training data and predictors we
+created in Google Earth Engine (link to session).
+
+![Source:
+https://bookdown.org/paul/ai_ml_for_social_scientists/06_01_ml_with_tidymodels.html](https://bookdown.org/paul/ai_ml_for_social_scientists/06_tidy_models.png)
+
+
+```{r}
+#| message: false
+#| warning: false
+# Core spatial + ML workflow packages
+library(terra)
+
+library(tidymodels)  # loads rsample, recipes, parsnip, yardstick, workflows, etc.
+library(tune)
+library(workflows)
+
+# Optional but often useful
+library(dplyr)
+library(ggplot2)
+
+# For variable importance with ranger models
+library(vip)
+```
+
+To keep things reproducible we seed:
+
+```{r}
+set.seed(42)
+```
+
+------------------------------------------------------------------------
+
+## 1. Load data (your spatial training set)
+
+We will use a shapefile exported from GEE with training polygons/points
+and predictors for a small study site near the town of Ilebo in the DR
+Congo. Put the data (shapefile- and geotif-files into a subfolder
+`/GEE_Exports_Annual`). The shapefile contains small polygons that were digitized in Google Earth on high resolution satellite imagery and where an opererator labelled the polygons according to five possible land use classes: 
+
+
+```{r}
+# path to the shapefile
+shp_path <- "GEE_Exports_Annual/sampled_kasai_polygons.shp"
+shp_path <- "GEE_Exports_S2_Ilebo/ilebo_polygon_band_values.shp"
+# load shapefile (SpatVector)
+kasai_observations <- terra::vect(shp_path)
+names(kasai_observations)
+kasai_observations
+```
+
+A quick visualization of the data we are going to work with:
+
+```{r, echo=FALSE}
+library(leaflet)
+library(sf)
+
+kasai_sf_ll <- st_as_sf(kasai_observations) |>
+st_make_valid() |>
+st_transform(4326)
+
+bb <- st_bbox(kasai_sf_ll)
+center_lng <- as.numeric((bb["xmin"] + bb["xmax"]) / 2)
+center_lat <- as.numeric((bb["ymin"] + bb["ymax"]) / 2)
+
+m <- leaflet(kasai_sf_ll, options = leafletOptions(preferCanvas = TRUE)) |>
+addProviderTiles(providers$Esri.WorldImagery) |>
+setView(lng = center_lng, lat = center_lat, zoom = 10) |>
+addPolygons(color = "yellow", weight = 2, fillOpacity = 0)
+
+m
+```
+
+We convert to a data.frame for tidymodels as Tidymodels works on tabular data. We typically:
+
+-   keep geometry in a separate object
+-   model on attribute table
+
+```{r}
+kasai_df <- as.data.frame(kasai_observations)
+kasai_df$class <- as.factor(kasai_df$class) #for modelling later outcome should be a factor
+# quick check
+#glimpse(kasai_df)
+```
+
+**Note:** if you later want spatial CV, you will need coordinates/geometry *somewhere* (even if you don’t model on them). We
+keep `kasai_observations` for that purpose.
+
+------------------------------------------------------------------------
+
+## 2. EDA (exploration + quality checks)
+
+### 2.1 Inspect columns + class label
+
+The observed landcover classes in the database are given in the column
+`class`. Let's explore what we have:
+
+```{r}
+# What are the unique classes?
+table(kasai_df$class, useNA = "ifany")
+```
+
+### 2.2 Missing values and obvious issues
+
+```{r}
+# Count NAs per column (largest first)
+na_counts <- sort(colSums(is.na(kasai_df)), decreasing = TRUE)
+head(na_counts, 20)
+```
+
+It looks like our database is fully populated.
+
+### 2.3 Quick sanity plot
+
+```{r}
+# Example: NDVI
+if ("NDVI" %in% names(kasai_df)) {
+  ggplot(kasai_df, aes(x = NDVI, fill = class)) +
+    geom_histogram(bins = 30, alpha = 0.7) +
+    theme_minimal()
+}
+```
+
+What do we see here? built-up mostly under 0.5 and confirms mixed pixels
+as it aggregates houses + trees and gardens. Note overlap between
+cropland and savannah, this points to the need to look at multiple
+predictors.
+
+```{r}
+# Example: BSI
+if ("BSI" %in% names(kasai_df)) {
+  ggplot(kasai_df, aes(x = BSI, fill = class)) +
+    geom_histogram(bins = 30, alpha = 0.7) +
+    theme_minimal()
+}
+
+```
+
+------------------------------------------------------------------------
+
+::: callout-note
+Now we are getting to the core. The tidymodels standardizes the steps
+you do again and again—splitting, pre-processing, training, tuning, and
+evaluation.
+
+A helpful overview is:
+
+-   \*\* 3 `rsample`\*\*: how you create training/test sets and
+    resamples (folds)
+-   \*\* 4 `recipes`\*\*: how you define preprocessing steps
+-   \*\* 5`parsnip`\*\*: a consistent interface to many model engines
+    (e.g., `ranger`)
+-   \*\* 6 `workflows`\*\*: bundle recipe + model into a single object
+    you can fit
+-   \*\* 7-9 `tune`\*\*: systematic tuning across resamples
+-   \*\* 10-11 `yardstick`\*\*: model performance metrics
+    (classification + regression)
+:::
+
+## 3. Split into training and testing
+
+Use a stratified split to preserve class proportions in both sets using
+`initial_split` from the `rsample` package.
+
+```{r}
+kasai_split <- initial_split(kasai_df, prop = 0.8, strata = class)
+
+kasai_train <- training(kasai_split)
+kasai_test  <- testing(kasai_split)
+
+nrow(kasai_train); nrow(kasai_test)
+```
+
+------------------------------------------------------------------------
+
+## 4. Recipe (preprocessing)
+
+A recipe is **trained only on the training set** and then applied to test/validation data. This reduces accidental leakage.
+
+> *Data leakage* occurs when information from the test or validation
+> data influences model training, leading to overly optimistic
+> performance estimates. In land-cover classification, leakage often
+> happens when preprocessing steps (e.g. normalization, imputation,
+> variable selection) are computed using the full dataset. This is
+> especially problematic for spatial data, where nearby samples can be
+> highly correlated. A recipe avoids leakage by learning all
+> pre-processing parameters only from the training data. The same
+> learned transformations are then applied unchanged to validation and
+> test data, ensuring a fair assessment of model performance.
+
+### 4.1 Choose predictors
+
+-   Exclude identifiers (`system:index`, `date`, etc.)
+-   Exclude geometry fields if present (but we dealt with this before)
+-   Keep only numeric predictors (for RF it is fine to mix factors too,
+    but let's keep it simple for now)
+
+```{r}
+# drop  non-predictor fields (this is why we explored the dataset above)
+drop_cols <- c("date", "yymm", "site", "year")
+
+kasai_train2 <- kasai_train %>% select(-any_of(drop_cols))
+
+kasai_test2 <- kasai_test %>% select(-any_of(drop_cols))
+
+#glimpse(kasai_train2)
+```
+
+Note to self: this could have been done in step 3 just before the
+initial splitting.
+
+### 4.2 Build the recipe
+
+> **Note:** Random Forest does not require normalized predictors in most
+> cases. Still, we often: - remove near-zero variance predictors\
+> - handle missing values\
+> - encode categorical predictors if any
+
+```{r}
+rf_recipe <- recipe(class ~ ., data = kasai_train2) %>%
+  step_zv(all_predictors()) %>%           # remove zero-variance predictors
+  step_nzv(all_predictors()) %>%          # remove near-zero variance predictors
+  step_impute_median(all_numeric_predictors())  # simple imputation for NA, not relevant here
+```
+
+The last part of the recipe
+`step_impute_median(all_numeric_predictors())` is just for illustration
+as we have no missing values. This function replaces missing values in a
+dataset (NA) in numeric predictor variables by replacing them with the
+median value, computed from the training data only.
+
+------------------------------------------------------------------------
+
+## 5. Model specification
+
+In [tidymodels](https://www.tidymodels.org/), you specify **what kind of
+model** (random forest classifier in our case) and then choose an
+**engine** (`ranger`) that actually fits it.
+
+We’ll tune three parameters (see introduction session to Machine
+Learning):
+
+-   `mtry`: number of predictors sampled at each split\
+-   `min_n`: minimum node size\
+-   `trees`: number of trees
+
+```{r}
+rf_model <- rand_forest(
+  mode  = "classification",
+  mtry  = tune(),
+  min_n = tune(),
+  trees = tune()
+) %>%
+  set_engine("ranger", importance = "impurity")  # enables variable importance citeturn0search8
+
+rf_model
+```
+
+------------------------------------------------------------------------
+
+## 6. Workflow (recipe + model)
+
+A workflow glues preprocessing + model together into a single object you
+can resample, tune, and fit.
+
+```{r}
+rf_workflow <- workflow() %>%
+  add_recipe(rf_recipe) %>%
+  add_model(rf_model)
+
+rf_workflow
+```
+
+------------------------------------------------------------------------
+
+## 7. Cross-validation
+
+Cross-validation gives a more stable estimate of performance than a
+single split (and is the standard approach for tuning).
+
+```{r}
+set.seed(42)
+kasai_folds <- vfold_cv(kasai_train2, v = 5, strata = class)
+
+kasai_folds
+```
+
+------------------------------------------------------------------------
+
+## 8. Tuning grid
+
+At this step, we do not fit just one Random Forest model. Instead, we test several versions of the model with different settings. This is called **hyperparameter tuning**.
+
+With the `ranger` engine, the most important parameters are usually:
+
+- `mtry`: the number of predictor variables randomly considered at each split
+- `min_n`: the minimum number of samples allowed in a terminal node
+- `trees`: the number of trees grown in the forest
+
+The model is trained repeatedly on resampled training data, and its predictive performance is evaluated for each parameter combination. The goal is to identify the settings that give the best balance between accuracy and generalization. After tuning, the best parameter combination is selected and used to fit the final Random Forest model.We start with a modest grid to speed up the calculations.
+
+```{r}
+rf_grid <- grid_regular(
+  mtry(range = c(2, 14)),   # adjust based on number of predictors
+  min_n(range = c(2, 20)),
+  trees(range = c(200, 500)),
+  levels = 4
+)
+
+rf_grid
+```
+
+------------------------------------------------------------------------
+
+## 9. Tune the model (fit across folds)
+
+We select metrics that are appropriate for classification.
+
+-   F1 metric (`f_meas`)
+
+> F1 score measure the harmonic mean of precision and recall. An
+> introduction to classification performance metrics can be found
+> [here](https://developers.google.com/machine-learning/crash-course/classification/accuracy-precision-recall).
+
+```{r}
+rf_metrics <- metric_set(f_meas)
+
+set.seed(42)
+rf_tune <- tune_grid(
+  rf_workflow,
+  resamples = kasai_folds,
+  grid      = rf_grid,
+  metrics   = rf_metrics,
+  control   = control_grid(save_pred = TRUE)
+)
+
+rf_tune
+```
+
+### 9.1 Visualize tuning results
+
+```{r}
+autoplot(rf_tune)
+```
+
+### 9.2 Select the best model
+
+```{r}
+best_params <- select_best(rf_tune, metric = "f_meas")
+best_params
+```
+
+------------------------------------------------------------------------
+
+## 10. Finalize workflow + evaluate on the test set
+
+```{r}
+rf_final_workflow <- finalize_workflow(rf_workflow, best_params)
+
+test_model_fit <- last_fit(rf_final_workflow, split = kasai_split, metrics = rf_metrics)
+
+test_model_fit
+```
+
+### 10.1 Test-set metrics
+
+```{r}
+collect_metrics(test_model_fit)
+```
+
+### 10.2 Confusion matrix
+
+```{r}
+test_preds <- collect_predictions(test_model_fit)
+
+test_preds %>%
+  conf_mat(truth = class, estimate = .pred_class)
+```
+
+What can we learn from this confusion matrix?
+
+------------------------------------------------------------------------
+
+## 11. Fit final model on all data (for deployment)
+
+Once you’re satisfied, we refit on **all labeled data** (train + test
+combined) before we deploy for mapping. Think about this: what is the
+difference between tuning, performance reporting and inference?
+
+```{r}
+final_model_fit <- fit(rf_final_workflow, data = bind_rows(kasai_train2, kasai_test2))
+
+final_model_fit
+```
+
+------------------------------------------------------------------------
+
+## 12. Variable importance (interpretation)
+
+Variable importance is one of the simplest ways to connect “black-box”
+models back to domain reasoning. This variable importance assessment is
+a key interpretation step in machine learning.
+
+```{r}
+# Extract the fitted parsnip model
+rf_engine_fit <- final_model_fit  %>% extract_fit_parsnip()
+
+# Plot variable importance
+vip::vip(rf_engine_fit, num_features = 20)
+```
+
+> -   Which predictors make sense for separating your classes?
+>
+> -   Are any “top predictors” suspicious ? 😇
+>
+> -   Do the top predictors match your conceptual understanding of the
+>     landscape?
+
+------------------------------------------------------------------------
+
+## 13. Reduced RF model
+
+This is all fine, but the final model uses 10 bands, so when we go to
+Inference, I need spatial data for all predictors it is good to check if
+you do need ALL these predictors. This can be done by advanced
+procedures that evaluate the performance of models with reduced number
+of predictors (eg `Recursive Feature Elimination`), here we just
+manually select the 5 best predictors from the variable importance
+analyses above. [Here](https://stevenpawley.github.io/recipeselectors/)
+is a link to a feature selection method
+
+```{r}
+  ## ---- Reduced RF model evaluated like Section 10 (using last_fit) ----
+
+# 0) Manually choose predictors from VIP plot
+top_vars <- c("B12", "B11", "BSI", "B5", "B4")
+kasai_train2_reduced <- kasai_train2 %>%
+  dplyr::select(class, all_of(top_vars))
+
+# 1) Reduced recipe
+rf_recipe_reduced <- recipe(class ~ ., data = kasai_train2_reduced) %>%
+  step_zv(all_predictors()) %>%
+  step_nzv(all_predictors()) %>%
+  step_impute_median(all_numeric_predictors())
+
+# 2) Reduced workflow (reuse tuned hyperparameters)
+rf_workflow_reduced <- workflow() %>%
+  add_recipe(rf_recipe_reduced) %>%
+  add_model(rf_model) 
+
+rf_final_workflow_reduced <- finalize_workflow(rf_workflow_reduced, best_params)
+
+# 3) Evaluate on test set with last_fit (same approach as Section 10)
+test_model_reduced_fit <- last_fit(rf_final_workflow_reduced, split = kasai_split, metrics = rf_metrics)
+
+# 4) Confusion matrix + metrics (same as Section 10)
+test_preds_reduced <- collect_predictions(test_model_reduced_fit)
+
+test_preds_reduced %>%
+  conf_mat(truth = class, estimate = .pred_class)
+
+collect_metrics(test_model_reduced_fit)
+
+final_reduced_model_fit <- fit(
+  rf_final_workflow_reduced,
+  data = bind_rows(
+    kasai_train2 %>% dplyr::select(class, all_of(top_vars)),
+    kasai_test2  %>% dplyr::select(class, all_of(top_vars))
+  )
+)
+
+metrics_full    <- collect_metrics(test_model_fit) %>% mutate(model = "Full RF")
+metrics_reduced <- collect_metrics(test_model_reduced_fit) %>% mutate(model = "Reduced RF")
+
+model_comparison <- bind_rows(metrics_full, metrics_reduced) %>%
+  select(model, .metric, .estimate) %>%
+  tidyr::pivot_wider(names_from = model, values_from = .estimate)
+
+model_comparison
+
+
+```
+
+## 14. Inference: mapping predictions with terra
+
+Nice — inference is the fun part 😄. Since our final reduced RF is a
+tidymodels workflow fit (rf_final_fit_reduced), the simplest, robust
+approach with terra is:
+
+-   load the raster stack
+-   make sure layer names match your top_vars predictor names
+-   convert raster values → data.frame
+-   predict() with the workflow (class + probs)
+-   write results back to rasters and export GeoTIFFs
+
+Here’s an inference block:
+
+```{r}
+# 1) Load predictor raster stack (must contain layers named like top_vars)
+r <- rast("GEE_Exports_S2_Ilebo/ilebo_s2_2025_int.tif")
+# Keep only the predictors used by the reduced model
+r_red <- r[[top_vars]]
+
+# 2) Predict land-cover classes with the tidymodels fitted workflow
+
+r_class <- terra::predict(
+r_red,
+model = final_reduced_model_fit,
+type = "class",
+na.rm = TRUE,
+filename = "GEE_Exports_S2_Ilebo/ilebo_s2_LC.tif",
+overwrite = TRUE
+)
+
+cat_tab <- levels(r_class)[[1]]
+lab_col <- names(cat_tab)[2]
+labs <- as.character(cat_tab[[lab_col]])
+
+lc_cols <- c(
+  built_up = "#e31a1c",
+  cropland = "#FFD92F",
+  forest   = "#1b9e77",
+  savannah = "#66a61e",
+  water    = "#1f78b4"
+)
+
+cols <- unname(lc_cols[labs])
+cols[is.na(cols)] <- "grey70"
+
+plot(r_class, col = cols, main = "Predicted land cover (Reduced RF, 2025)")
+
+
+
+```
+
+::: callout-note
+Recipes prepare data, workflows train models, tuning chooses parameters,
+last_fit() evaluates once, and final fit() is what we deploy.
+
+| **Stage**              | **Object name**             | **Package** | **What it represents**                        | **Used for**              |
+|---------------|---------------|---------------|---------------|---------------|
+| **Data split**         | `kasai_split`               | `rsample`   | Definition of training vs test data           | Reproducible splitting    |
+|                        | `kasai_train`               | `rsample`   | Training data table                           | Model learning            |
+|                        | `kasai_test`                | `rsample`   | Test data table                               | Final evaluation          |
+|                        | `kasai_folds`               | `rsample`   | Cross-validation folds                        | Hyperparameter tuning     |
+| **Preprocessing**      | `rf_recipe`                 | `recipes`   | Full preprocessing pipeline                   | Feature preparation       |
+|                        | `rf_recipe_reduced`         | `recipes`   | Reduced-predictor pipeline                    | Feature selection         |
+| **Model spec**         | `rf_model`                  | `parsnip`   | Random Forest definition + tunable parameters | Model type only (no data) |
+| **Workflow**           | `rf_workflow`               | `workflows` | Recipe + model (full)                         | Tuning, fitting           |
+|                        | `rf_workflow_reduced`       | `workflows` | Recipe + model (reduced)                      | Reduced modelling         |
+| **Tuning**             | `rf_tune`                   | `tune`      | CV performance for many parameter sets        | Model selection           |
+|                        | `best_params`               | `tune`      | Best hyperparameter combination               | Freezing complexity       |
+| **Finalized workflow** | `rf_final_workflow`         | `workflows` | Tuned & locked full workflow                  | Ready for fitting         |
+|                        | `rf_final_workflow_reduced` | `workflows` | Tuned & locked reduced workflow               | Ready for fitting         |
+| **Test evaluation**    | `test_model_fit`            | `yardstick` | Test-set performance (full)                   | Reporting only            |
+|                        | `test_model_reduced_fit`    | `yardstick` | Test-set performance (reduced)                | Model comparison          |
+| **Deployment**         | `final_model_fit`           | `parsnip`   | Full model trained on all data                | Inference / mapping       |
+|                        | `final_reduced_model_fit`   | `parsnip`   | Reduced model trained on all data             | Inference / mapping       |
+| **Prediction output**  | `r_class`                   | `terra`     | Raster of predicted classes                   | Mapping / analysis        |
+:::
+
+------------------------------------------------------------------------
+
+## 15. Neural networks
+
+This session also introduces land-cover classification with neural
+networks as an alternative to Random Forest.
+
+```{r}
+library(tidymodels)
+library(nnet)
+
+nn_recipe <- recipe(class ~ ., data = kasai_train2) %>%
+  step_zv(all_predictors()) %>%
+  step_normalize(all_numeric_predictors())
+
+nn_model <- mlp(
+  mode = "classification",
+  hidden_units = 10,
+  penalty = 0.001,
+  epochs = 200
+) %>%
+  set_engine("nnet", trace = FALSE)
+
+nn_workflow <- workflow() %>%
+  add_recipe(nn_recipe) %>%
+  add_model(nn_model)
+
+nn_final_workflow <- nn_workflow
+
+nn_test_model_fit <- last_fit(nn_final_workflow, split = kasai_split, metrics = rf_metrics)
+nn_test_model_fit
+
+nn_test_preds <- collect_predictions(nn_test_model_fit)
+
+conf_mat(nn_test_preds, truth = class, estimate = .pred_class)
+collect_metrics(nn_test_model_fit)
+
+nn_final_model_fit <- fit(nn_final_workflow, data = bind_rows(kasai_train2, kasai_test2))
+nn_final_model_fit
+
+```
+
+# Now we mirror the RF implemenation: use MLP, tune, and evaluate the performance library(tidymodels) library(nnet)
+
+```{r}
+library(tidymodels)
+library(nnet)
+
+nn_recipe <- recipe(class ~ ., data = kasai_train2) %>%
+  step_zv(all_predictors()) %>%
+  step_normalize(all_numeric_predictors())
+
+nn_model <- mlp(
+  mode         = "classification",
+  hidden_units = tune(),
+  penalty      = tune(),
+  epochs       = tune()
+) %>%
+  set_engine("nnet", trace = FALSE)
+
+nn_workflow <- workflow() %>%
+  add_recipe(nn_recipe) %>%
+  add_model(nn_model)
+
+nn_grid <- grid_regular(
+  hidden_units(range = c(5, 20)),
+  penalty(range = c(-4, -2)),
+  epochs(range = c(200, 500)),
+  levels = 3
+)
+
+set.seed(42)
+nn_tune <- tune_grid(
+  nn_workflow,
+  resamples = kasai_folds,
+  grid      = nn_grid,
+  metrics   = rf_metrics,
+  control   = control_grid(save_pred = TRUE)
+)
+
+collect_metrics(nn_tune)
+show_best(nn_tune, metric = "f_meas", n = 10)
+
+best_nn_params <- select_best(nn_tune, metric = "f_meas")
+best_nn_params
+
+nn_final_workflow <- finalize_workflow(nn_workflow, best_nn_params)
+
+test_model_nn_fit <- last_fit(
+  nn_final_workflow,
+  split   = kasai_split,
+  metrics = rf_metrics
+)
+
+test_model_nn_fit
+
+nn_test_preds <- collect_predictions(test_model_nn_fit)
+
+nn_test_preds %>%
+  conf_mat(truth = class, estimate = .pred_class)
+
+collect_metrics(test_model_nn_fit)
+
+metrics_rf <- collect_metrics(test_model_fit) %>%
+  mutate(model = "Random Forest")
+
+metrics_nn <- collect_metrics(test_model_nn_fit) %>%
+  mutate(model = "Neural Network")
+
+model_comparison_rf_nn <- bind_rows(metrics_rf, metrics_nn) %>%
+  dplyr::select(model, .metric, .estimate) %>%
+  tidyr::pivot_wider(
+    names_from  = model,
+    values_from = .estimate
+  )
+
+model_comparison_rf_nn
+
+final_nn_model_fit <- fit(
+  nn_final_workflow,
+  data = bind_rows(kasai_train2, kasai_test2)
+)
+
+final_nn_model_fit
+
+```
+
+------------------------------------------------------------------------
+
+## References (key resources)
+
+-   Rebecca Barter — “Tidymodels: tidy machine learning in R.”
+    citeturn1view0\
+-   tidymodels.org — Random forest workflow notes (case study).
+    citeturn0search2\
+-   Heather Kropp — *Environmental Data Science*, Ch. 7 (Land-cover
+    classification; RF + Neural Network). citeturn2view0

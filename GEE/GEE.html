@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.8.27">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>GEE</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="GEE_files/libs/clipboard/clipboard.min.js"></script>
+<script src="GEE_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="GEE_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="GEE_files/libs/quarto-html/axe/axe-check.js" type="module"></script>
+<script src="GEE_files/libs/quarto-html/popper.min.js"></script>
+<script src="GEE_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="GEE_files/libs/quarto-html/anchor.min.js"></script>
+<link href="GEE_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="GEE_files/libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="GEE_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="GEE_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="GEE_files/libs/bootstrap/bootstrap-d6a003b94517c951b2d65075d42fb01b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body class="fullcontent quarto-light">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">GEE</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="gee-code-editor-demo" class="level1">
+<h1>0. GEE Code Editor demo</h1>
+<p>In this demo, we explore the <strong>Google Earth Engine (GEE) Code Editor</strong>, the main online environment for working with Earth observation data in Google Earth Engine.</p>
+<p>The GEE Code Editor is a browser-based platform that allows users to access, process, visualize, and export very large geospatial datasets without downloading them locally first. Instead of working with files stored on your own computer, you work directly with data hosted in the cloud. This is one of the main differences compared with more traditional GIS workflows. Here is an example of a GEE application (<em>Zhao &amp; Carlier et al., in review</em>):</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="images/GEE_APP.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="500"></p>
+</figure>
+</div>
+<section id="general-approach-of-google-earth-engine" class="level3">
+<h3 class="anchored" data-anchor-id="general-approach-of-google-earth-engine">General approach of Google Earth Engine</h3>
+<p>The philosophy of GEE is to bring the <strong>computation to the data</strong>, rather than bringing the data to your computer. Large satellite archives such as Landsat, Sentinel, MODIS, climate products, land-cover datasets, and many others are already available on Google’s servers. Users write relatively compact scripts to filter, combine, analyse, create new and visualize these datasets.</p>
+<p>This makes GEE especially powerful for:</p>
+<ul>
+<li>large regions</li>
+<li>long time series</li>
+<li>repetitive workflows</li>
+<li>remote sensing analyses requiring many images</li>
+</ul>
+<p>In practice you query image collections, apply filters in space and time, calculate indices or statistics, and visualize or export the result.</p>
+</section>
+<section id="main-concepts" class="level3">
+<h3 class="anchored" data-anchor-id="main-concepts">Main concepts</h3>
+<p>A few key concepts are central in Earth Engine.</p>
+<p><strong>Geometry / region of interest (ROI)</strong><br>
+Most analyses begin by defining a study area, for example a point, polygon, watershed, or administrative boundary.</p>
+<p><strong>Image</strong><br>
+An <code>image</code> is a raster dataset for one date or one layer, for example a Sentinel-2 scene or a DEM.</p>
+<p><strong>ImageCollection</strong><br>
+An <code>ImageCollection</code> is a set of images, often through time, such as all MODIS NDVI images between 2019 and 2020.</p>
+<p><strong>Feature and FeatureCollection</strong><br>
+These are vector objects, such as points, polygons, shapefiles, or training data.</p>
+<p><strong>Filtering and mapping</strong><br>
+You often filter a collection by date, location, or metadata, and then apply a function to each image in the collection.</p>
+<p><strong>Visualization versus computation</strong><br>
+Displaying a layer on the map is not the same as exporting or analysing it. Visualization is mainly for inspection; computation produces the actual outputs.</p>
+</section>
+<section id="structure-of-the-gee-code-editor" class="level3">
+<h3 class="anchored" data-anchor-id="structure-of-the-gee-code-editor">Structure of the GEE Code Editor</h3>
+<p>The Code Editor is organized around a few key panels:</p>
+<ul>
+<li>the <strong>script panel</strong>, where you write JavaScript code</li>
+<li>the <strong>map window</strong>, where you display layers</li>
+<li>the <strong>Inspector</strong>, to click and explore values</li>
+<li>the <strong>Console</strong>, where you print objects and messages</li>
+<li>the <strong>Tasks</strong> tab, where exports are launched</li>
+</ul>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="images/GEE_IDE.png" class="img-fluid quarto-figure quarto-figure-center figure-img"></p>
+</figure>
+</div>
+<p>This makes the environment very suitable for interactive experimentation: you can write a few lines of code, run them, inspect the result, and progressively build a workflow.</p>
+</section>
+<section id="advantages-of-the-gee-code-editor" class="level3">
+<h3 class="anchored" data-anchor-id="advantages-of-the-gee-code-editor">Advantages of the GEE Code Editor</h3>
+<p>The main advantages of Earth Engine are:</p>
+<ul>
+<li>free access for non-commerical (eg academic) use</li>
+<li>direct access to a very large catalog of remote sensing and environmental datasets</li>
+<li>cloud computing, so there is no need to store or process everything locally</li>
+<li>fast prototyping of workflows</li>
+<li>easy repetition of the same analysis over large areas or long periods</li>
+<li>strong support for time series analysis and large-scale remote sensing</li>
+<li>easy sharing of scripts with collaborators or students</li>
+</ul>
+<p>For teaching, GEE is especially useful because students can quickly move from theory to practice without complex software installation or data management.</p>
+</section>
+<section id="typical-use-cases" class="level3">
+<h3 class="anchored" data-anchor-id="typical-use-cases">Typical use cases</h3>
+<p>Typical applications of GEE include:</p>
+<ul>
+<li>calculating vegetation indices such as NDVI</li>
+<li>mapping land cover and land-use change</li>
+<li>analysing drought, floods, fire, or deforestation</li>
+<li>extracting time series for a study area</li>
+<li>comparing satellite images between dates</li>
+<li>building training datasets for classification</li>
+<li>exporting maps or derived products for further analysis in a geoprocessing-workflow</li>
+</ul>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Further resources
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>If you would like to continue exploring Google Earth Engine beyond this demo, the following resources are highly recommended:</p>
+<ul>
+<li><a href="https://spatialthoughts.com/courses/google-earth-engine/">Spatial Thoughts – Google Earth Engine course</a></li>
+<li><a href="https://earthengine.google.com/">Google Earth Engine main website</a></li>
+<li><a href="https://developers.google.com/earth-engine/">Google Earth Engine developer documentation</a></li>
+<li><a href="https://earthengine.google.com/case_studies/">Google Earth Engine case studies</a></li>
+</ul>
+<p>Together, these resources offer tutorials, documentation, practical examples, and inspiring real-world applications of GEE in environmental and geospatial research.</p>
+</div>
+</div>
+</section>
+</section>
+<section id="demo-basic-gee" class="level1">
+<h1>1. Demo basic GEE</h1>
+<p>In this demo, we will use the following script (in-class activity):</p>
+<p><a href="https://code.earthengine.google.com/e59b26de8e8983ef73a0f95d43d4295c" class="uri">https://code.earthengine.google.com/e59b26de8e8983ef73a0f95d43d4295c</a></p>
+<p>The goal is to become familiar with:</p>
+<ul>
+<li>the layout of the Code Editor</li>
+<li>the logic of a simple Earth Engine script</li>
+<li>how to display data on the map</li>
+<li>how to inspect intermediate outputs</li>
+<li>how to structure a basic remote sensing workflow</li>
+</ul>
+</section>
+<section id="case-study-land-cover-classification-based-on-sentinel-2" class="level1">
+<h1>2. Case Study Land cover classification based on Sentinel-2</h1>
+<p>In this case study, we use an existing reference land-use database that was created from ultra-high-resolution imagery for the city of Ilebo (DR Congo). In the section below, we use the GEE Python API to extract Sentinel-2 spectral bands for these reference polygons. The objective is to prepare the predictor data needed to build a Random Forest model, which we will develop in the next session. In other words, this section focuses on preparing the data required for Random Forest classification using the GEE Python API.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>You can run the code below in your preferred Python environment, or alternatively use the link to this Colab script.</p>
+<p><a href="https://colab.research.google.com/drive/10bXTdSLQ9sCo-ZtCs0cUWJhyadHknoHM?usp=sharing" class="uri">https://colab.research.google.com/drive/10bXTdSLQ9sCo-ZtCs0cUWJhyadHknoHM?usp=sharing</a></p>
+<p>To do so, you will need to be logged into your browser with your Google account and have an active Google Cloud project with Earth Engine enabled, as explained in last week’s assignment.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><strong>Caution: the code below is Python code that will not run in RStudio!</strong></p>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(reticulate)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">use_python</span>(<span class="st">"~/quarto-gee312/.venv/bin/python"</span>, <span class="at">required =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">py_config</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>python:         /Users/kvanoost/quarto-gee312/.venv/bin/python
+libpython:      /opt/homebrew/opt/python@3.12/Frameworks/Python.framework/Versions/3.12/lib/python3.12/config-3.12-darwin/libpython3.12.dylib
+pythonhome:     /Users/kvanoost/quarto-gee312/.venv:/Users/kvanoost/quarto-gee312/.venv
+version:        3.12.13 (main, Mar  3 2026, 12:39:30) [Clang 16.0.0 (clang-1600.0.26.6)]
+numpy:          /Users/kvanoost/quarto-gee312/.venv/lib/python3.12/site-packages/numpy
+numpy_version:  2.4.3
+
+NOTE: Python version was forced by use_python() function</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">py_module_available</span>(<span class="st">"ee"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] TRUE</code></pre>
+</div>
+</div>
+<section id="authenicate-your-initialize-gee" class="level2">
+<h2 class="anchored" data-anchor-id="authenicate-your-initialize-gee">2.1 Authenicate your initialize GEE</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> ee</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>PROJECT <span class="op">=</span> <span class="st">"tropsedslu"</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="cf">try</span>:</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    ee.Initialize(project<span class="op">=</span>PROJECT)</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"Earth Engine initialized from saved credentials"</span>)</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="cf">except</span> <span class="pp">Exception</span>:</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    ee.Authenticate()</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    ee.Initialize(project<span class="op">=</span>PROJECT)</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"Earth Engine authenticated and initialized"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Earth Engine initialized from saved credentials</code></pre>
+</div>
+</div>
+</section>
+<section id="load-the-training-polygons" class="level2">
+<h2 class="anchored" data-anchor-id="load-the-training-polygons">2.2 Load the training polygons</h2>
+<p>The training polygons are already stored as an Earth Engine asset. These polygons are the areas for which we want to extract Sentinel-2 information.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>asset_path <span class="op">=</span> <span class="st">"projects/tropsedslu/assets/CB/Basins/Kasai_training_Ilebo"</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>feature_collection <span class="op">=</span> ee.FeatureCollection(asset_path)</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Number of polygons:"</span>, feature_collection.size().getInfo())</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Number of polygons: 1318</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Available properties in first feature:"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Available properties in first feature:</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(feature_collection.first().propertyNames().getInfo())</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>['date', 'yymm', 'site', 'year', 'class', 'system:index']</code></pre>
+</div>
+</div>
+<p>Quickly explore the <code>class</code> properties</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate the histogram of the 'class' property to get counts for each unique class</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>class_counts_ee <span class="op">=</span> feature_collection.aggregate_histogram(<span class="st">'class'</span>)</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Get the results from Earth Engine</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>class_counts_dict <span class="op">=</span> class_counts_ee.getInfo()</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert the dictionary to a pandas DataFrame for a tabular display</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>class_counts_df <span class="op">=</span> pd.DataFrame(<span class="bu">list</span>(class_counts_dict.items()), columns<span class="op">=</span>[<span class="st">'Class'</span>, <span class="st">'Number of Polygons'</span>])</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Summary of unique polygons per class:"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Summary of unique polygons per class:</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(class_counts_df.to_string(index<span class="op">=</span><span class="va">False</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   Class  Number of Polygons
+built_up                 212
+cropland                 361
+  forest                 246
+savannah                 265
+   water                 234</code></pre>
+</div>
+</div>
+<p>Visualize the feature_collection so we know what we are working with</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> folium</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> ee</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Define the color scheme for the 'class' property</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>classColors <span class="op">=</span> ee.Dictionary({</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">'water'</span>:    <span class="st">'#1f78b4'</span>,</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">'built_up'</span>: <span class="st">'#e31a1c'</span>,</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">'cropland'</span>: <span class="st">'#e6ab02'</span>,</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">'forest'</span>:   <span class="st">'#1b9e77'</span>,</span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>    <span class="st">'savannah'</span>: <span class="st">'#66a61e'</span></span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Function to style features based on their 'class' property</span></span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> style_by_class(feature):</span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>    color <span class="op">=</span> classColors.get(feature.get(<span class="st">'class'</span>))</span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> feature.<span class="bu">set</span>({<span class="st">'style'</span>: {<span class="st">'color'</span>: color, <span class="st">'width'</span>: <span class="dv">2</span>}})</span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Apply styling</span></span>
+<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a>styled_feature_collection <span class="op">=</span> feature_collection.<span class="bu">map</span>(style_by_class)</span>
+<span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-21"><a href="#cb17-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Get centroid for centering the map</span></span>
+<span id="cb17-22"><a href="#cb17-22" aria-hidden="true" tabindex="-1"></a>center_point <span class="op">=</span> feature_collection.geometry().centroid().coordinates().getInfo()</span>
+<span id="cb17-23"><a href="#cb17-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-24"><a href="#cb17-24" aria-hidden="true" tabindex="-1"></a><span class="co"># Create map without default tiles</span></span>
+<span id="cb17-25"><a href="#cb17-25" aria-hidden="true" tabindex="-1"></a>m <span class="op">=</span> folium.Map(location<span class="op">=</span>[center_point[<span class="dv">1</span>], center_point[<span class="dv">0</span>]], zoom_start<span class="op">=</span><span class="dv">11</span>, tiles<span class="op">=</span><span class="va">None</span>)</span>
+<span id="cb17-26"><a href="#cb17-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-27"><a href="#cb17-27" aria-hidden="true" tabindex="-1"></a><span class="co"># Add satellite basemap</span></span>
+<span id="cb17-28"><a href="#cb17-28" aria-hidden="true" tabindex="-1"></a>folium.TileLayer(</span>
+<span id="cb17-29"><a href="#cb17-29" aria-hidden="true" tabindex="-1"></a>    tiles<span class="op">=</span><span class="st">'https://mt1.google.com/vt/lyrs=s&amp;x=</span><span class="sc">{x}</span><span class="st">&amp;y=</span><span class="sc">{y}</span><span class="st">&amp;z=</span><span class="sc">{z}</span><span class="st">'</span>,</span>
+<span id="cb17-30"><a href="#cb17-30" aria-hidden="true" tabindex="-1"></a>    attr<span class="op">=</span><span class="st">'Google Satellite'</span>,</span>
+<span id="cb17-31"><a href="#cb17-31" aria-hidden="true" tabindex="-1"></a>    name<span class="op">=</span><span class="st">'Satellite'</span>,</span>
+<span id="cb17-32"><a href="#cb17-32" aria-hidden="true" tabindex="-1"></a>    overlay<span class="op">=</span><span class="va">False</span>,</span>
+<span id="cb17-33"><a href="#cb17-33" aria-hidden="true" tabindex="-1"></a>    control<span class="op">=</span><span class="va">True</span></span>
+<span id="cb17-34"><a href="#cb17-34" aria-hidden="true" tabindex="-1"></a>).add_to(m)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>&lt;folium.raster_layers.TileLayer object at 0x13f7df710&gt;</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Optional: add a normal map too</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>folium.TileLayer(</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>    tiles<span class="op">=</span><span class="st">'OpenStreetMap'</span>,</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>    name<span class="op">=</span><span class="st">'OpenStreetMap'</span>,</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>    overlay<span class="op">=</span><span class="va">False</span>,</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>    control<span class="op">=</span><span class="va">True</span></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>).add_to(m)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>&lt;folium.raster_layers.TileLayer object at 0x13f7df650&gt;</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb21"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Get Earth Engine map tiles</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>map_id_dict <span class="op">=</span> ee.data.getMapId({</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">'image'</span>: styled_feature_collection.style(styleProperty<span class="op">=</span><span class="st">'style'</span>)</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Add Earth Engine layer</span></span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>folium.TileLayer(</span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>    tiles<span class="op">=</span>map_id_dict[<span class="st">'tile_fetcher'</span>].url_format,</span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>    attr<span class="op">=</span><span class="st">'Google Earth Engine'</span>,</span>
+<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a>    overlay<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a>    name<span class="op">=</span><span class="st">'Training polygons'</span></span>
+<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a>).add_to(m)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>&lt;folium.raster_layers.TileLayer object at 0x13c7783b0&gt;</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb23"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Add layer control</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>folium.LayerControl().add_to(m)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>&lt;folium.map.LayerControl object at 0x1580d2ba0&gt;</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb25"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Add legend</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>legend_html <span class="op">=</span> <span class="st">"""</span></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a><span class="st">&lt;div style="</span></span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a><span class="st">    position: fixed; </span></span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a><span class="st">    bottom: 40px; left: 40px; width: 180px;</span></span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a><span class="st">    background-color: white; </span></span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a><span class="st">    border: 2px solid grey; </span></span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a><span class="st">    z-index:9999; </span></span>
+<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a><span class="st">    font-size:14px;</span></span>
+<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a><span class="st">    padding: 10px;</span></span>
+<span id="cb25-11"><a href="#cb25-11" aria-hidden="true" tabindex="-1"></a><span class="st">    border-radius: 6px;</span></span>
+<span id="cb25-12"><a href="#cb25-12" aria-hidden="true" tabindex="-1"></a><span class="st">    box-shadow: 2px 2px 6px rgba(0,0,0,0.2);</span></span>
+<span id="cb25-13"><a href="#cb25-13" aria-hidden="true" tabindex="-1"></a><span class="st">"&gt;</span></span>
+<span id="cb25-14"><a href="#cb25-14" aria-hidden="true" tabindex="-1"></a><span class="st">    &lt;b&gt;Legend&lt;/b&gt;&lt;br&gt;&lt;br&gt;</span></span>
+<span id="cb25-15"><a href="#cb25-15" aria-hidden="true" tabindex="-1"></a><span class="st">    &lt;div&gt;&lt;span style="display:inline-block;width:14px;height:14px;background:#1f78b4;margin-right:8px;border-radius:2px;"&gt;&lt;/span&gt;Water&lt;/div&gt;</span></span>
+<span id="cb25-16"><a href="#cb25-16" aria-hidden="true" tabindex="-1"></a><span class="st">    &lt;div&gt;&lt;span style="display:inline-block;width:14px;height:14px;background:#e31a1c;margin-right:8px;border-radius:2px;"&gt;&lt;/span&gt;Built-up&lt;/div&gt;</span></span>
+<span id="cb25-17"><a href="#cb25-17" aria-hidden="true" tabindex="-1"></a><span class="st">    &lt;div&gt;&lt;span style="display:inline-block;width:14px;height:14px;background:#e6ab02;margin-right:8px;border-radius:2px;"&gt;&lt;/span&gt;Cropland&lt;/div&gt;</span></span>
+<span id="cb25-18"><a href="#cb25-18" aria-hidden="true" tabindex="-1"></a><span class="st">    &lt;div&gt;&lt;span style="display:inline-block;width:14px;height:14px;background:#1b9e77;margin-right:8px;border-radius:2px;"&gt;&lt;/span&gt;Forest&lt;/div&gt;</span></span>
+<span id="cb25-19"><a href="#cb25-19" aria-hidden="true" tabindex="-1"></a><span class="st">    &lt;div&gt;&lt;span style="display:inline-block;width:14px;height:14px;background:#66a61e;margin-right:8px;border-radius:2px;"&gt;&lt;/span&gt;Savannah&lt;/div&gt;</span></span>
+<span id="cb25-20"><a href="#cb25-20" aria-hidden="true" tabindex="-1"></a><span class="st">&lt;/div&gt;</span></span>
+<span id="cb25-21"><a href="#cb25-21" aria-hidden="true" tabindex="-1"></a><span class="st">"""</span></span>
+<span id="cb25-22"><a href="#cb25-22" aria-hidden="true" tabindex="-1"></a>m.get_root().html.add_child(folium.Element(legend_html))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>&lt;branca.element.Element object at 0x13f7dc1d0&gt;</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb27"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Display map</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>m</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div style="width:100%;"><div style="position:relative;width:100%;height:0;padding-bottom:60%;"><span style="color:#565656">Make this Notebook Trusted to load map: File -&gt; Trust Notebook</span><iframe srcdoc="<!DOCTYPE html>
+<html>
+<head>
+    
+    <meta http-equiv=&quot;content-type&quot; content=&quot;text/html; charset=UTF-8&quot; />
+    <script src=&quot;https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js&quot;></script>
+    <script src=&quot;https://code.jquery.com/jquery-3.7.1.min.js&quot;></script>
+    <script src=&quot;https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js&quot;></script>
+    <script src=&quot;https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js&quot;></script>
+    <link rel=&quot;stylesheet&quot; href=&quot;https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css&quot;/>
+    <link rel=&quot;stylesheet&quot; href=&quot;https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css&quot;/>
+    <link rel=&quot;stylesheet&quot; href=&quot;https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css&quot;/>
+    <link rel=&quot;stylesheet&quot; href=&quot;https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css&quot;/>
+    <link rel=&quot;stylesheet&quot; href=&quot;https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css&quot;/>
+    <link rel=&quot;stylesheet&quot; href=&quot;https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css&quot;/>
+    
+            <meta name=&quot;viewport&quot; content=&quot;width=device-width,
+                initial-scale=1.0, maximum-scale=1.0, user-scalable=no&quot; />
+            <style>
+                #map_e5029b2a7de39779e9357e488da155c2 {
+                    position: relative;
+                    width: 100.0%;
+                    height: 100.0%;
+                    left: 0.0%;
+                    top: 0.0%;
+                }
+                .leaflet-container { font-size: 1rem; }
+            </style>
+
+            <style>html, body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            </style>
+
+            <style>#map {
+                position:absolute;
+                top:0;
+                bottom:0;
+                right:0;
+                left:0;
+                }
+            </style>
+
+            <script>
+                L_NO_TOUCH = false;
+                L_DISABLE_3D = false;
+            </script>
+
+        
+</head>
+<body>
+    
+    
+<div style=&quot;
+    position: fixed; 
+    bottom: 40px; left: 40px; width: 180px;
+    background-color: white; 
+    border: 2px solid grey; 
+    z-index:9999; 
+    font-size:14px;
+    padding: 10px;
+    border-radius: 6px;
+    box-shadow: 2px 2px 6px rgba(0,0,0,0.2);
+&quot;>
+    <b>Legend</b><br><br>
+    <div><span style=&quot;display:inline-block;width:14px;height:14px;background:#1f78b4;margin-right:8px;border-radius:2px;&quot;></span>Water</div>
+    <div><span style=&quot;display:inline-block;width:14px;height:14px;background:#e31a1c;margin-right:8px;border-radius:2px;&quot;></span>Built-up</div>
+    <div><span style=&quot;display:inline-block;width:14px;height:14px;background:#e6ab02;margin-right:8px;border-radius:2px;&quot;></span>Cropland</div>
+    <div><span style=&quot;display:inline-block;width:14px;height:14px;background:#1b9e77;margin-right:8px;border-radius:2px;&quot;></span>Forest</div>
+    <div><span style=&quot;display:inline-block;width:14px;height:14px;background:#66a61e;margin-right:8px;border-radius:2px;&quot;></span>Savannah</div>
+</div>
+    
+            <div class=&quot;folium-map&quot; id=&quot;map_e5029b2a7de39779e9357e488da155c2&quot; ></div>
+        
+</body>
+<script>
+    
+    
+            var map_e5029b2a7de39779e9357e488da155c2 = L.map(
+                &quot;map_e5029b2a7de39779e9357e488da155c2&quot;,
+                {
+                    center: [-4.338150057138368, 20.609711546981234],
+                    crs: L.CRS.EPSG3857,
+                    ...{
+  &quot;zoom&quot;: 11,
+  &quot;zoomControl&quot;: true,
+  &quot;preferCanvas&quot;: false,
+}
+
+                }
+            );
+
+            
+
+        
+    
+            var tile_layer_f516436ee884f910d8b0e5754d0d161d = L.tileLayer(
+                &quot;https://mt1.google.com/vt/lyrs=s\u0026x={x}\u0026y={y}\u0026z={z}&quot;,
+                {
+  &quot;minZoom&quot;: 0,
+  &quot;maxZoom&quot;: 18,
+  &quot;maxNativeZoom&quot;: 18,
+  &quot;noWrap&quot;: false,
+  &quot;attribution&quot;: &quot;Google Satellite&quot;,
+  &quot;subdomains&quot;: &quot;abc&quot;,
+  &quot;detectRetina&quot;: false,
+  &quot;tms&quot;: false,
+  &quot;opacity&quot;: 1,
+}
+
+            );
+        
+    
+            tile_layer_f516436ee884f910d8b0e5754d0d161d.addTo(map_e5029b2a7de39779e9357e488da155c2);
+        
+    
+            var tile_layer_ff0c64526dc06195b18343ef8b1ed4d9 = L.tileLayer(
+                &quot;https://tile.openstreetmap.org/{z}/{x}/{y}.png&quot;,
+                {
+  &quot;minZoom&quot;: 0,
+  &quot;maxZoom&quot;: 19,
+  &quot;maxNativeZoom&quot;: 19,
+  &quot;noWrap&quot;: false,
+  &quot;attribution&quot;: &quot;\u0026copy; \u003ca href=\&quot;https://www.openstreetmap.org/copyright\&quot;\u003eOpenStreetMap\u003c/a\u003e contributors&quot;,
+  &quot;subdomains&quot;: &quot;abc&quot;,
+  &quot;detectRetina&quot;: false,
+  &quot;tms&quot;: false,
+  &quot;opacity&quot;: 1,
+}
+
+            );
+        
+    
+            tile_layer_ff0c64526dc06195b18343ef8b1ed4d9.addTo(map_e5029b2a7de39779e9357e488da155c2);
+        
+    
+            var tile_layer_8842074b74cb918f422bf6bb4cdf092d = L.tileLayer(
+                &quot;https://earthengine.googleapis.com/v1/projects/tropsedslu/maps/991f5a7a4fe38040df51a94f140bf611-d84c3628981fa7174b75126d9c28c6b8/tiles/{z}/{x}/{y}&quot;,
+                {
+  &quot;minZoom&quot;: 0,
+  &quot;maxZoom&quot;: 18,
+  &quot;maxNativeZoom&quot;: 18,
+  &quot;noWrap&quot;: false,
+  &quot;attribution&quot;: &quot;Google Earth Engine&quot;,
+  &quot;subdomains&quot;: &quot;abc&quot;,
+  &quot;detectRetina&quot;: false,
+  &quot;tms&quot;: false,
+  &quot;opacity&quot;: 1,
+}
+
+            );
+        
+    
+            tile_layer_8842074b74cb918f422bf6bb4cdf092d.addTo(map_e5029b2a7de39779e9357e488da155c2);
+        
+    
+            var layer_control_b32c6a9f1caed2de2a14574661fc544f_layers = {
+                base_layers : {
+                    &quot;Satellite&quot; : tile_layer_f516436ee884f910d8b0e5754d0d161d,
+                    &quot;OpenStreetMap&quot; : tile_layer_ff0c64526dc06195b18343ef8b1ed4d9,
+                },
+                overlays :  {
+                    &quot;Training polygons&quot; : tile_layer_8842074b74cb918f422bf6bb4cdf092d,
+                },
+            };
+            let layer_control_b32c6a9f1caed2de2a14574661fc544f = L.control.layers(
+                layer_control_b32c6a9f1caed2de2a14574661fc544f_layers.base_layers,
+                layer_control_b32c6a9f1caed2de2a14574661fc544f_layers.overlays,
+                {
+  &quot;position&quot;: &quot;topright&quot;,
+  &quot;collapsed&quot;: true,
+  &quot;autoZIndex&quot;: true,
+}
+            ).addTo(map_e5029b2a7de39779e9357e488da155c2);
+
+        
+</script>
+</html>" style="position:absolute;width:100%;height:100%;left:0;top:0;border:none !important;" allowfullscreen="" webkitallowfullscreen="" mozallowfullscreen=""></iframe></div></div>
+</div>
+</div>
+</section>
+<section id="define-the-region-of-interest-and-years" class="level2">
+<h2 class="anchored" data-anchor-id="define-the-region-of-interest-and-years">2.3 Define the region of interest and years</h2>
+<p>To keep exports small, we only export the area around the polygons. We use the bounding box of the polygon collection as the export region.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb28"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>roi <span class="op">=</span> feature_collection.geometry().bounds()</span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>start_year <span class="op">=</span> <span class="dv">2020</span></span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>end_year <span class="op">=</span> <span class="dv">2025</span></span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>export_scale <span class="op">=</span> <span class="dv">10</span></span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Start year:"</span>, start_year)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Start year: 2020</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb30"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"End year:"</span>, end_year)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>End year: 2025</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb32"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Export scale (m):"</span>, export_scale)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Export scale (m): 10</code></pre>
+</div>
+</div>
+</section>
+<section id="select-sentinel-2-bands" class="level2">
+<h2 class="anchored" data-anchor-id="select-sentinel-2-bands">2.4. Select Sentinel-2 bands</h2>
+<p>We keep a limited set of useful bands instead of exporting everything. This makes the rasters much smaller than exporting the full Sentinel-2 stack.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb34"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>spectral_bands <span class="op">=</span> [<span class="st">"B1"</span>, <span class="st">"B2"</span>, <span class="st">"B3"</span>, <span class="st">"B4"</span>, <span class="st">"B5"</span>, <span class="st">"B6"</span>, <span class="st">"B7"</span>, <span class="st">"B8"</span>, <span class="st">"B8A"</span>, <span class="st">"B9"</span>, <span class="st">"B11"</span>, <span class="st">"B12"</span>]</span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>index_bands <span class="op">=</span> [<span class="st">"NDVI"</span>, <span class="st">"EVI"</span>, <span class="st">"BSI"</span>]</span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>all_export_bands <span class="op">=</span> spectral_bands <span class="op">+</span> index_bands</span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(all_export_bands)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>['B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B8A', 'B9', 'B11', 'B12', 'NDVI', 'EVI', 'BSI']</code></pre>
+</div>
+</div>
+</section>
+<section id="define-functions" class="level2">
+<h2 class="anchored" data-anchor-id="define-functions">2.5. Define functions</h2>
+<p>Why this step? Sentinel-2 contains cloudy pixels. We mask clouds and cloud shadows using the SCL band from the Level-2A surface reflectance product. We use COPERNICUS/S2_SR_HARMONIZED, which is the recommended Earth Engine Sentinel-2 SR collection for a consistent time series.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb36"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> mask_s2_sr(image):</span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Mask clouds and cloud shadows using the SCL band."""</span></span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a>    scl <span class="op">=</span> image.select(<span class="st">"SCL"</span>)</span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a>    mask <span class="op">=</span> (</span>
+<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a>        scl.neq(<span class="dv">3</span>)    <span class="co"># cloud shadow</span></span>
+<span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a>        .And(scl.neq(<span class="dv">8</span>))   <span class="co"># medium probability cloud</span></span>
+<span id="cb36-8"><a href="#cb36-8" aria-hidden="true" tabindex="-1"></a>        .And(scl.neq(<span class="dv">9</span>))   <span class="co"># high probability cloud</span></span>
+<span id="cb36-9"><a href="#cb36-9" aria-hidden="true" tabindex="-1"></a>        .And(scl.neq(<span class="dv">10</span>))  <span class="co"># cirrus</span></span>
+<span id="cb36-10"><a href="#cb36-10" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb36-11"><a href="#cb36-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-12"><a href="#cb36-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> image.updateMask(mask).select(spectral_bands)</span>
+<span id="cb36-13"><a href="#cb36-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-14"><a href="#cb36-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-15"><a href="#cb36-15" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> add_indices(image):</span>
+<span id="cb36-16"><a href="#cb36-16" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Add NDVI, EVI and BSI."""</span></span>
+<span id="cb36-17"><a href="#cb36-17" aria-hidden="true" tabindex="-1"></a>    ndvi <span class="op">=</span> image.normalizedDifference([<span class="st">"B8"</span>, <span class="st">"B4"</span>]).rename(<span class="st">"NDVI"</span>)</span>
+<span id="cb36-18"><a href="#cb36-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-19"><a href="#cb36-19" aria-hidden="true" tabindex="-1"></a>    evi <span class="op">=</span> image.expression(</span>
+<span id="cb36-20"><a href="#cb36-20" aria-hidden="true" tabindex="-1"></a>        <span class="st">"2.5 * ((nir - red) / (nir + 6 * red - 7.5 * blue + 1))"</span>,</span>
+<span id="cb36-21"><a href="#cb36-21" aria-hidden="true" tabindex="-1"></a>        {</span>
+<span id="cb36-22"><a href="#cb36-22" aria-hidden="true" tabindex="-1"></a>            <span class="st">"nir"</span>: image.select(<span class="st">"B8"</span>),</span>
+<span id="cb36-23"><a href="#cb36-23" aria-hidden="true" tabindex="-1"></a>            <span class="st">"red"</span>: image.select(<span class="st">"B4"</span>),</span>
+<span id="cb36-24"><a href="#cb36-24" aria-hidden="true" tabindex="-1"></a>            <span class="st">"blue"</span>: image.select(<span class="st">"B2"</span>),</span>
+<span id="cb36-25"><a href="#cb36-25" aria-hidden="true" tabindex="-1"></a>        },</span>
+<span id="cb36-26"><a href="#cb36-26" aria-hidden="true" tabindex="-1"></a>    ).rename(<span class="st">"EVI"</span>)</span>
+<span id="cb36-27"><a href="#cb36-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-28"><a href="#cb36-28" aria-hidden="true" tabindex="-1"></a>    bsi <span class="op">=</span> image.expression(</span>
+<span id="cb36-29"><a href="#cb36-29" aria-hidden="true" tabindex="-1"></a>        <span class="st">"((swir1 + red) - (nir + blue)) / ((swir1 + red) + (nir + blue))"</span>,</span>
+<span id="cb36-30"><a href="#cb36-30" aria-hidden="true" tabindex="-1"></a>        {</span>
+<span id="cb36-31"><a href="#cb36-31" aria-hidden="true" tabindex="-1"></a>            <span class="st">"swir1"</span>: image.select(<span class="st">"B11"</span>),</span>
+<span id="cb36-32"><a href="#cb36-32" aria-hidden="true" tabindex="-1"></a>            <span class="st">"red"</span>: image.select(<span class="st">"B4"</span>),</span>
+<span id="cb36-33"><a href="#cb36-33" aria-hidden="true" tabindex="-1"></a>            <span class="st">"nir"</span>: image.select(<span class="st">"B8"</span>),</span>
+<span id="cb36-34"><a href="#cb36-34" aria-hidden="true" tabindex="-1"></a>            <span class="st">"blue"</span>: image.select(<span class="st">"B2"</span>),</span>
+<span id="cb36-35"><a href="#cb36-35" aria-hidden="true" tabindex="-1"></a>        },</span>
+<span id="cb36-36"><a href="#cb36-36" aria-hidden="true" tabindex="-1"></a>    ).rename(<span class="st">"BSI"</span>)</span>
+<span id="cb36-37"><a href="#cb36-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-38"><a href="#cb36-38" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> image.addBands([ndvi, evi, bsi])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="create-annual-composites" class="level2">
+<h2 class="anchored" data-anchor-id="create-annual-composites">2.6 Create annual composites</h2>
+<p>For each year:</p>
+<ul>
+<li>filter Sentinel-2 images to that year and ROI</li>
+<li>mask clouds</li>
+<li>calculate the median composite</li>
+<li>add vegetation/soil indices</li>
+<li>keep only the bands we want to export</li>
+</ul>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb37"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> make_annual_composite(year):</span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a>    start_date <span class="op">=</span> ee.Date.fromYMD(year, <span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>    end_date <span class="op">=</span> ee.Date.fromYMD(year, <span class="dv">12</span>, <span class="dv">31</span>)</span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a>    s2 <span class="op">=</span> (</span>
+<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a>        ee.ImageCollection(<span class="st">"COPERNICUS/S2_SR_HARMONIZED"</span>)</span>
+<span id="cb37-7"><a href="#cb37-7" aria-hidden="true" tabindex="-1"></a>        .filterDate(start_date, end_date)</span>
+<span id="cb37-8"><a href="#cb37-8" aria-hidden="true" tabindex="-1"></a>        .filterBounds(roi)</span>
+<span id="cb37-9"><a href="#cb37-9" aria-hidden="true" tabindex="-1"></a>        .<span class="bu">map</span>(mask_s2_sr)</span>
+<span id="cb37-10"><a href="#cb37-10" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb37-11"><a href="#cb37-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-12"><a href="#cb37-12" aria-hidden="true" tabindex="-1"></a>    composite <span class="op">=</span> s2.median().clip(roi)</span>
+<span id="cb37-13"><a href="#cb37-13" aria-hidden="true" tabindex="-1"></a>    composite <span class="op">=</span> add_indices(composite).select(all_export_bands)</span>
+<span id="cb37-14"><a href="#cb37-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-15"><a href="#cb37-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> composite.<span class="bu">set</span>(<span class="st">"year"</span>, year)</span>
+<span id="cb37-16"><a href="#cb37-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-17"><a href="#cb37-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-18"><a href="#cb37-18" aria-hidden="true" tabindex="-1"></a>annual_composites <span class="op">=</span> ee.ImageCollection.fromImages([</span>
+<span id="cb37-19"><a href="#cb37-19" aria-hidden="true" tabindex="-1"></a>    make_annual_composite(year) <span class="cf">for</span> year <span class="kw">in</span> <span class="bu">range</span>(start_year, end_year <span class="op">+</span> <span class="dv">1</span>)</span>
+<span id="cb37-20"><a href="#cb37-20" aria-hidden="true" tabindex="-1"></a>])</span>
+<span id="cb37-21"><a href="#cb37-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-22"><a href="#cb37-22" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Number of annual composites:"</span>, annual_composites.size().getInfo())</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Number of annual composites: 6</code></pre>
+</div>
+</div>
+</section>
+<section id="convert-to-compact-integers" class="level2">
+<h2 class="anchored" data-anchor-id="convert-to-compact-integers">2.7 Convert to compact integers</h2>
+<p>This step just reduces the file size by converting to integers.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb39"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> to_compact_int(image):</span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>    refl <span class="op">=</span> image.select(spectral_bands).<span class="bu">round</span>().toInt16()</span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a>    idx <span class="op">=</span> image.select(index_bands).multiply(<span class="dv">10000</span>).<span class="bu">round</span>().toInt16()</span>
+<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> refl.addBands(idx).copyProperties(image, [<span class="st">"year"</span>])</span>
+<span id="cb39-5"><a href="#cb39-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb39-6"><a href="#cb39-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb39-7"><a href="#cb39-7" aria-hidden="true" tabindex="-1"></a>annual_composites_int <span class="op">=</span> annual_composites.<span class="bu">map</span>(to_compact_int)</span>
+<span id="cb39-8"><a href="#cb39-8" aria-hidden="true" tabindex="-1"></a>first_image <span class="op">=</span> ee.Image(annual_composites_int.first())</span>
+<span id="cb39-9"><a href="#cb39-9" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(first_image.bandNames().getInfo())</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>['B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B8A', 'B9', 'B11', 'B12', 'NDVI', 'EVI', 'BSI']</code></pre>
+</div>
+</div>
+</section>
+<section id="export-the-2025-composite-to-google-drive" class="level2">
+<h2 class="anchored" data-anchor-id="export-the-2025-composite-to-google-drive">2.8 Export the 2025 composite to Google Drive</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb41"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>final_year_image <span class="op">=</span> annual_composites_int.<span class="bu">filter</span>(ee.Filter.eq(<span class="st">"year"</span>, end_year)).first()</span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>image_export_scale <span class="op">=</span> <span class="dv">30</span></span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>task <span class="op">=</span> ee.batch.Export.image.toDrive(</span>
+<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a>    image<span class="op">=</span>final_year_image,</span>
+<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a>    description<span class="op">=</span><span class="ss">f"Ilebo_S2_</span><span class="sc">{</span>end_year<span class="sc">}</span><span class="ss">_int_30m"</span>,</span>
+<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a>    folder<span class="op">=</span><span class="st">"GEE_Exports_S2_Ilebo"</span>,</span>
+<span id="cb41-8"><a href="#cb41-8" aria-hidden="true" tabindex="-1"></a>    fileNamePrefix<span class="op">=</span><span class="ss">f"ilebo_s2_</span><span class="sc">{</span>end_year<span class="sc">}</span><span class="ss">_int_30m"</span>,</span>
+<span id="cb41-9"><a href="#cb41-9" aria-hidden="true" tabindex="-1"></a>    region<span class="op">=</span>roi,</span>
+<span id="cb41-10"><a href="#cb41-10" aria-hidden="true" tabindex="-1"></a>    scale<span class="op">=</span>image_export_scale,</span>
+<span id="cb41-11"><a href="#cb41-11" aria-hidden="true" tabindex="-1"></a>    maxPixels<span class="op">=</span><span class="fl">1e10</span>,</span>
+<span id="cb41-12"><a href="#cb41-12" aria-hidden="true" tabindex="-1"></a>    fileFormat<span class="op">=</span><span class="st">"GeoTIFF"</span>,</span>
+<span id="cb41-13"><a href="#cb41-13" aria-hidden="true" tabindex="-1"></a>    formatOptions<span class="op">=</span>{<span class="st">"cloudOptimized"</span>: <span class="va">True</span>},</span>
+<span id="cb41-14"><a href="#cb41-14" aria-hidden="true" tabindex="-1"></a>    skipEmptyTiles<span class="op">=</span><span class="va">True</span></span>
+<span id="cb41-15"><a href="#cb41-15" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb41-16"><a href="#cb41-16" aria-hidden="true" tabindex="-1"></a>task.start()</span>
+<span id="cb41-17"><a href="#cb41-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb41-18"><a href="#cb41-18" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Export started for final year composite (</span><span class="sc">{</span>end_year<span class="sc">}</span><span class="ss">) at </span><span class="sc">{</span>image_export_scale<span class="sc">}</span><span class="ss"> m."</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="export-polygon-band-values-to-drive-shapefile" class="level2">
+<h2 class="anchored" data-anchor-id="export-polygon-band-values-to-drive-shapefile">2.9 Export Polygon Band Values to Drive (Shapefile)</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb42"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Define the reducer to calculate the mean value within each polygon.</span></span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>reducer <span class="op">=</span> ee.Reducer.mean()</span>
+<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Initialize an empty FeatureCollection to store all extracted polygon data.</span></span>
+<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a>all_extracted_features <span class="op">=</span> ee.FeatureCollection([])</span>
+<span id="cb42-6"><a href="#cb42-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-7"><a href="#cb42-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Get the list of images from the annual composites.</span></span>
+<span id="cb42-8"><a href="#cb42-8" aria-hidden="true" tabindex="-1"></a><span class="co"># We will iterate through these images client-side.</span></span>
+<span id="cb42-9"><a href="#cb42-9" aria-hidden="true" tabindex="-1"></a>images_list <span class="op">=</span> annual_composites_int.toList(annual_composites_int.size())</span>
+<span id="cb42-10"><a href="#cb42-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-11"><a href="#cb42-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Loop through each annual composite image.</span></span>
+<span id="cb42-12"><a href="#cb42-12" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(annual_composites_int.size().getInfo()):</span>
+<span id="cb42-13"><a href="#cb42-13" aria-hidden="true" tabindex="-1"></a>    composite_image <span class="op">=</span> ee.Image(images_list.get(i))</span>
+<span id="cb42-14"><a href="#cb42-14" aria-hidden="true" tabindex="-1"></a>    composite_year <span class="op">=</span> composite_image.get(<span class="st">'year'</span>).getInfo()</span>
+<span id="cb42-15"><a href="#cb42-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-16"><a href="#cb42-16" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Filter the original feature_collection to get polygons that match the current composite's year.</span></span>
+<span id="cb42-17"><a href="#cb42-17" aria-hidden="true" tabindex="-1"></a>    polygons_for_this_year <span class="op">=</span> feature_collection.<span class="bu">filter</span>(ee.Filter.eq(<span class="st">'year'</span>, composite_year))</span>
+<span id="cb42-18"><a href="#cb42-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-19"><a href="#cb42-19" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Only proceed if there are polygons for the current year.</span></span>
+<span id="cb42-20"><a href="#cb42-20" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> polygons_for_this_year.size().getInfo() <span class="op">&gt;</span> <span class="dv">0</span>:</span>
+<span id="cb42-21"><a href="#cb42-21" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Extract mean band values for the filtered polygons from the current annual composite.</span></span>
+<span id="cb42-22"><a href="#cb42-22" aria-hidden="true" tabindex="-1"></a>        <span class="co"># reduceRegions adds properties for each band (e.g., 'B1_mean', 'NDVI_mean').</span></span>
+<span id="cb42-23"><a href="#cb42-23" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Original feature properties (like 'class', 'site') are preserved.</span></span>
+<span id="cb42-24"><a href="#cb42-24" aria-hidden="true" tabindex="-1"></a>        extracted_values_for_year <span class="op">=</span> composite_image.reduceRegions(</span>
+<span id="cb42-25"><a href="#cb42-25" aria-hidden="true" tabindex="-1"></a>            collection<span class="op">=</span>polygons_for_this_year,</span>
+<span id="cb42-26"><a href="#cb42-26" aria-hidden="true" tabindex="-1"></a>            reducer<span class="op">=</span>reducer,</span>
+<span id="cb42-27"><a href="#cb42-27" aria-hidden="true" tabindex="-1"></a>            scale<span class="op">=</span>export_scale</span>
+<span id="cb42-28"><a href="#cb42-28" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb42-29"><a href="#cb42-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-30"><a href="#cb42-30" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Merge the results for this year into the overall collection.</span></span>
+<span id="cb42-31"><a href="#cb42-31" aria-hidden="true" tabindex="-1"></a>        all_extracted_features <span class="op">=</span> all_extracted_features.merge(extracted_values_for_year)</span>
+<span id="cb42-32"><a href="#cb42-32" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f'Extracted values for </span><span class="sc">{</span>composite_year<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>extracted_values_for_year<span class="sc">.</span>size()<span class="sc">.</span>getInfo()<span class="sc">}</span><span class="ss"> features.'</span>)</span>
+<span id="cb42-33"><a href="#cb42-33" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span>:</span>
+<span id="cb42-34"><a href="#cb42-34" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f'No polygons found with year property matching </span><span class="sc">{</span>composite_year<span class="sc">}</span><span class="ss">.'</span>)</span>
+<span id="cb42-35"><a href="#cb42-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-36"><a href="#cb42-36" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'Total features with extracted values: </span><span class="sc">{</span>all_extracted_features<span class="sc">.</span>size()<span class="sc">.</span>getInfo()<span class="sc">}</span><span class="ss">'</span>)</span>
+<span id="cb42-37"><a href="#cb42-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-38"><a href="#cb42-38" aria-hidden="true" tabindex="-1"></a><span class="co"># Export the final FeatureCollection as a Shapefile to Google Drive.</span></span>
+<span id="cb42-39"><a href="#cb42-39" aria-hidden="true" tabindex="-1"></a>export_task <span class="op">=</span> ee.batch.Export.table.toDrive(</span>
+<span id="cb42-40"><a href="#cb42-40" aria-hidden="true" tabindex="-1"></a>    collection<span class="op">=</span>all_extracted_features,</span>
+<span id="cb42-41"><a href="#cb42-41" aria-hidden="true" tabindex="-1"></a>    description<span class="op">=</span><span class="st">'Ilebo_Polygon_Band_Values_SHP'</span>,</span>
+<span id="cb42-42"><a href="#cb42-42" aria-hidden="true" tabindex="-1"></a>    folder<span class="op">=</span><span class="st">'GEE_Exports_S2_Ilebo'</span>, <span class="co"># Use the same folder as the image exports</span></span>
+<span id="cb42-43"><a href="#cb42-43" aria-hidden="true" tabindex="-1"></a>    fileNamePrefix<span class="op">=</span><span class="st">'ilebo_polygon_band_values'</span>,</span>
+<span id="cb42-44"><a href="#cb42-44" aria-hidden="true" tabindex="-1"></a>    fileFormat<span class="op">=</span><span class="st">'SHP'</span> <span class="co"># Export as a Shapefile</span></span>
+<span id="cb42-45"><a href="#cb42-45" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb42-46"><a href="#cb42-46" aria-hidden="true" tabindex="-1"></a>export_task.start()</span>
+<span id="cb42-47"><a href="#cb42-47" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">'Export task started for polygon band values to Google Drive (Shapefile).'</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
