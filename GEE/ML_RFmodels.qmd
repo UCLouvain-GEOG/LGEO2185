@@ -63,6 +63,11 @@ tree2 <- rpart(
   )
 )
 
+tree2
+```
+
+```{r}
+#| echo: false
 # --- 1) Render tree to a PNG (base plot) ---
 tree_png <- tempfile(fileext = ".png")
 png(tree_png, width = 900, height = 600, res = 130)
@@ -144,7 +149,8 @@ The figure below illustrates these ideas in four panels:
 3.  Tree decision regions (rectangular partitions)\
 4.  A tiny tree with only two criteria (two splits)
 
-```{r, ECHO=FALSE}
+```{r}
+#| echo: false
 #| message: false
 #| warning: false
 
@@ -254,17 +260,13 @@ set.seed(1)
 splits <- replicate(30, initial_split(lsl, prop = 0.75), simplify = FALSE)
 
 aucs <- map_dfr(splits, function(spl) {
-
   train_dat <- training(spl)
   test_dat  <- testing(spl)
-
   m <- rpart(lslpts ~ slope + cplan + cprof + elev + log10_carea,
              data = train_dat,
              method = "class")
-
   prob_train <- predict(m, train_dat, type = "prob")[,2]
   prob_test  <- predict(m, test_dat, type = "prob")[,2]
-
   tibble(
     auc_train = as.numeric(auc(roc(train_dat$lslpts, prob_train, quiet = TRUE))),
     auc_test  = as.numeric(auc(roc(test_dat$lslpts, prob_test, quiet = TRUE)))
@@ -275,8 +277,6 @@ ggplot(aucs) +
   geom_density(aes(x = auc_train, color = "Train")) +
   geom_density(aes(x = auc_test, color = "Test")) +
   theme_minimal()
-
-
 ```
 
 ::: callout-note
@@ -286,41 +286,31 @@ Decision trees, whether used for regression or classification, offer
 several important advantages compared to more classical modelling
 approaches such as linear regression or logistic regression.
 
-**Advantages**
+**Advantages** - **Interpretability**\
+Trees are extremely easy to explain. In many cases, they are even more
+intuitive than linear models because they rely on simple *if–then*
+rules. - **Human-like reasoning**\
+The hierarchical structure of trees often resembles human
+decision-making processes: we tend to evaluate one criterion, then
+refine based on another. - **Graphical representation**\
+Trees can be visualised directly as diagrams, making them accessible
+even to non-experts, especially when the tree is small and shallow. -
+**Handling of qualitative predictors**\
+Trees naturally incorporate categorical variables without requiring the
+creation of dummy variables or contrast coding.
 
--   **Interpretability**\
-    Trees are extremely easy to explain. In many cases, they are even
-    more intuitive than linear models because they rely on simple
-    *if–then* rules.
-
--   **Human-like reasoning**\
-    The hierarchical structure of trees often resembles human
-    decision-making processes: we tend to evaluate one criterion, then
-    refine based on another.
-
--   **Graphical representation**\
-    Trees can be visualised directly as diagrams, making them accessible
-    even to non-experts — especially when the tree is small and shallow.
-
--   **Handling of qualitative predictors**\
-    Trees naturally incorporate categorical variables without requiring
-    the creation of dummy variables or contrast coding.
-
-**Limitations**
-
--   **Predictive performance**\
-    A single decision tree often does not achieve the same predictive
-    accuracy as more flexible or regularised statistical learning
-    methods.
-
--   **Instability (non-robustness)**\
-    Trees can be sensitive to small changes in the data. A slight
-    modification in the training dataset may result in a substantially
-    different tree structure.
+**Limitations** - **Predictive performance**\
+A single decision tree often does not achieve the same predictive
+accuracy as more flexible or regularised statistical learning methods. -
+**Instability (non-robustness)**\
+Trees can be sensitive to small changes in the data. A slight
+modification in the training dataset may result in a substantially
+different tree structure.
 :::
 
-From Single Trees to Tree Ensembles: Many of these limitations can be
-addressed by combining multiple trees into an ensemble. Methods such as:
+**From Single Trees to Tree Ensembles:** Many of these limitations can
+be addressed by combining multiple trees into an ensemble. Methods such
+as:
 
 -   **Bagging**
 -   **Random Forests**
@@ -336,9 +326,9 @@ approach has been demonstrated to substantially improve accuracy by
 combining hundreds or even thousands or trees into a single prediction
 model.
 
-::: call-out note Bagging can improve the accuracy, but this comes at a
-cost as the decision trees are no longer simple and interpretable. So
-the improved accuracy comes at the expense of interpretability. :::
+Bagging can improve the accuracy, but this comes at a cost as the
+decision trees are no longer simple and interpretable. So the improved
+accuracy comes at the expense of interpretability.
 
 **Random Forests** provide a further improvement over bagged trees: In
 each split, only a random sample of the predictors are allowed to be
@@ -346,7 +336,9 @@ used. This is counter-intuitive but this process decorrelates the trees
 and results in more robust predictions.
 
 Here we create both a logistic regression as well as an RF model for our
-landslide problem using the tidymodel approach:
+landslide problem using the tidymodel approach ([cfr Session
+4](https://uclouvain-geog.github.io/LGEO2185/ML/Machine_Learning_in_Geosciences.html))
+:
 
 ```{r}
 #| message: false
@@ -404,7 +396,6 @@ rf_wf <- workflow() %>%
   add_recipe(lsl_recipe) %>%
   add_model(rf_spec)
 
-
 ```
 
 Now let's have a look at the hold-out test performance using the same
@@ -438,14 +429,15 @@ interactions automatically.
 In many geoscience susceptibility problems, RF typically achieves higher
 AUROC, especially when relationships are nonlinear.
 
-::: call-out note Note that we did not fine-tune the (hyper)parameters
-of the RF model yet. For example the nubmer of predictors sampled at
-each sple `mtry`, the number of trees in the forest `trees`, and the
-minimum observations per tree (`min_n`are typical parameters that can
-also be tuned. We will develop this forther in a machine learning
-workflow below. :::
+::: callout-note
+Note that we did not fine-tune the (hyper)parameters of the RF model
+yet. For example the nubmer of predictors sampled at each sple `mtry`,
+the number of trees in the forest `trees`, and the minimum observations
+per tree (`min_n`are typical parameters that can also be tuned. We will
+develop this forther in a machine learning workflow below.
+:::
 
-## RF tuturial: land cover mapping
+## RF tutorial: land cover mapping
 
 As we discussed in session 4, Tidymodels is a **coherent “grammar”** for
 machine learning in R: rather than every model/package having its own
@@ -458,8 +450,6 @@ tour](https://bookdown.org/paul/ai_ml_for_social_scientists/06_01_ml_with_tidymo
 (@bauer2023tidymodels) and adapts it to **spatial training data**. We
 will re-use the training data and predictors we created in Google Earth
 Engine (Session Demo GEE).
-
-
 
 ```{r}
 #| message: false
@@ -604,16 +594,14 @@ evaluation.
 
 A helpful overview is:
 
--   \*\* 3 `rsample`\*\*: how you create training/test sets and
-    resamples (folds)
--   \*\* 4 `recipes`\*\*: how you define preprocessing steps
--   \*\* 5`parsnip`\*\*: a consistent interface to many model engines
-    (e.g., `ranger`)
--   \*\* 6 `workflows`\*\*: bundle recipe + model into a single object
-    you can fit
--   \*\* 7-9 `tune`\*\*: systematic tuning across resamples
--   \*\* 10-11 `yardstick`\*\*: model performance metrics
-    (classification + regression)
+-   3 `rsample`: how you create training/test sets and resamples (folds)
+-   4 `recipes`: how you define preprocessing steps
+-   5`parsnip`: a consistent interface to many model engines (e.g.,
+    `ranger`)
+-   6 `workflows`: bundle recipe + model into a single object you can
+    fit
+-   7-9 `tune`: systematic tuning across resamples
+-   10-11 `yardstick`: model performance metrics
 :::
 
 ## 3. Split into training and testing
@@ -635,18 +623,7 @@ nrow(kasai_train); nrow(kasai_test)
 ## 4. Recipe (preprocessing)
 
 A recipe is **trained only on the training set** and then applied to
-test/validation data. This reduces accidental leakage.
-
-> *Data leakage* occurs when information from the test or validation
-> data influences model training, leading to overly optimistic
-> performance estimates. In land-cover classification, leakage often
-> happens when preprocessing steps (e.g. normalization, imputation,
-> variable selection) are computed using the full dataset. This is
-> especially problematic for spatial data, where nearby samples can be
-> highly correlated. A recipe avoids leakage by learning all
-> pre-processing parameters only from the training data. The same
-> learned transformations are then applied unchanged to validation and
-> test data, ensuring a fair assessment of model performance.
+test/validation data.
 
 ### 4.1 Choose predictors
 
@@ -709,7 +686,7 @@ rf_model <- rand_forest(
   mode  = "classification",
   mtry  = tune(),
   min_n = tune(),
-  trees = tune()
+  trees = 550
 ) %>%
   set_engine("ranger", importance = "impurity")  # enables variable importance citeturn0search8
 
@@ -765,13 +742,19 @@ predictive performance is evaluated for each parameter combination. The
 goal is to identify the settings that give the best balance between
 accuracy and generalization. After tuning, the best parameter
 combination is selected and used to fit the final Random Forest model.We
-start with a modest grid to speed up the calculations.
+start with a modest grid to speed up the calculations. Note that the
+combination of 4 levels and 2 parameters gives 16 combinations.
+
+::: callout-note
+This is a limited analysis to speed up the calculations, under normal
+circumstances you would test much more combinations (eg include the
+number of trees in the fitting and increase the levels).
+:::
 
 ```{r}
 rf_grid <- grid_regular(
   mtry(range = c(2, 14)),   # adjust based on number of predictors
   min_n(range = c(2, 20)),
-  trees(range = c(200, 500)),
   levels = 4
 )
 
@@ -1069,7 +1052,8 @@ nn_final_model_fit
 
 ```
 
-# Now we mirror the RF implemenation: use MLP, tune, and evaluate the performance library(tidymodels) library(nnet)
+Now we mirror the RF implemenation: use MLP, tune, and evaluate the
+performance library(tidymodels) library(nnet)
 
 ```{r}
 library(tidymodels)
