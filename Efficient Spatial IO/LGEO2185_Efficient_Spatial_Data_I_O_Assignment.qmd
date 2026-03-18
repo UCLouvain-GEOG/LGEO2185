@@ -11,7 +11,7 @@ Date: 2026-03-11
 
 -   Create a monthly time-series for a given region.
 
--   Apply an unsupervised kmean algorithm to the image to classify 
+-   Apply an unsupervised k-means algorithm to the image to classify 
 
 -   Visualize the output and interpret
 
