@@ -1,0 +1,582 @@
+---
+title: "LGEO2185: Efficient Spatial Data I/O"
+author: "Kristof Van Oost, Antoine Stevens & Valentin Charlier"
+Date: 2026-03-11
+---
+
+# Learning Objectives
+
+-   **Understand the limitations** of traditional spatial data formats (e.g., shapefiles).
+
+-   **Discuss modern spatial data formats**, specifically:
+
+    -   **GeoParquet**: A columnar, efficient format for vector data.
+
+    -   **Cloud Optimized GeoTIFFs (COGs)**: Optimized for cloud-based storage and partial reads of large raster datasets.
+
+-   **Access and query cloud-based data stores** :
+
+    - **STAC (SpatioTemporal Asset Catalog)**: A standard for indexing and accessing spatiotemporal datasets
+
+# 1. Introduction
+
+Spatial data is growing rapidly in both volume and complexity. Traditional file formats—such as the ESRI shapefile for vectors and the GeoTIFF for rasters—have served geospatial professionals well for decades, but they present limitations in terms of **efficiency**, **scalability**, and **interoperability**. Modern file formats have emerged that address these issues by being more compact, faster to query, and better suited for big data and cloud-based environments.
+
+:::callout-note
+For our examples, we will use a sample dataset from [Open Buildings for Africa](https://sites.research.google/gr/open-buildings/) and [Microsoft Planetary Computer](https://planetarycomputer.microsoft.com/catalog).
+:::
+
+# 2. Vector
+
+## 2.1 Geopackage
+
+The Geopackage (`.gpkg`) format is a modern, open standard for storing geospatial data that leverages the power of an SQLite database. Unlike traditional shapefiles—which rely on multiple files to store geometry, spatial reference information, and attribute data—a geopackage consolidates all of this information into a single, portable file.
+
+This capability, combined with its compact design, ensures high interoperability across various software platforms like R, QGIS, and ArcGIS, while offering improved performance and storage efficiency.
+
+Below is an example of writing a shapefile and a geopackage using the sf package in R. We also compare file sizes and performance:
+
+```{r esri}
+pacman::p_load("readr", "sf", "tictoc", "tidyverse", "geodata", "terra")
+
+# Load sample data from a CSV and convert to an sf object
+# Data from Open Buildings for Africa
+# https://sites.research.google/gr/open-buildings/
+# Use the n_max argument if you want not this to take too long, e.g.
+x <- readr::read_csv("https://storage.googleapis.com/open-buildings-data/v3/polygons_s2_level_4_gzip/183_buildings.csv.gz", n_max = 10e6)
+x <- sf::st_as_sf(x, wkt = "geometry", crs = 4326)
+glimpse(x)
+
+# Write to ESRI Shapefile (multiple files created)
+tic("Writing Shapefile")
+# Let's write only a portion to disk
+sf::st_write(x[1:10000, ], dsn = file.path("data", "raw", "buildings_kenya.shp"), append = FALSE)
+# Note that column names will be abbreviated if longer than 10(!) characters
+toc()
+
+# Write to Geopackage (single file)
+tic("Writing Geopackage")
+sf::st_write(x[1:10000, ], dsn = file.path("data", "raw", "buildings_kenya.gpkg"), layer = "buildings_poly", append = FALSE)
+toc()
+
+# Compare file sizes
+cat("Shapefile size:", file.size(file.path("data", "raw", "buildings_kenya.shp")) / 1024^2, "Mb\n")
+cat("Geopackage size:", file.size(file.path("data", "raw", "buildings_kenya.gpkg")) / 1024^2, "Mb\n")
+```
+
+Often, a geopackage will be smaller than a shapefile due to its efficient, single-file design and optimized storage of attribute data. However, as discussed in [this Reddit thread](https://www.reddit.com/r/gis/comments/17gtchz/geopackages_larger_than_shapefiles/), the outcome can vary depending on the dataset's characteristics.
+
+In practice, if your dataset contains many individual features with complex geometries (i.e., a high vertex count) and relatively little attribute data, the overhead of storing binary geometries (in **Well-Known Binary** format) within the geopackage can result in a larger file compared to the shapefile version. Conversely, if your features have simpler geometries and a richer set of attribute data, geopackages tend to be more compact.
+
+Furthermore, in contrast to shapefiles, which are limited to one feature type per file, geopackage can store multiple layers within the same file. This means you can organize different datasets (such as points, lines, and polygons) as separate layers in one geopackage, simplifying data management and distribution. Here is how it works:
+
+```{r}
+# Cast to point geometry
+xp <- sf::st_as_sf(x[1:10000, c("longitude", "latitude")], coords = c("longitude", "latitude"), crs = 4326)
+
+# Now write the centroids, note the argument 'append = TRUE' to add a new layer
+sf::st_write(xp, dsn = file.path("data", "raw", "buildings_kenya.gpkg"), layer = "buildings_centroids", append = TRUE)
+```
+
+### Partial reads
+
+When your data is stored in a geopackage, you can leverage SQL queries and `wkt_filter` with the `st_read()` function to retrieve only a subset of features or columns without loading everything in memory.
+
+```{r partial}
+# Partial read from a geopackage using an SQL query
+buildings_partial <- sf::st_read(
+    dsn = file.path("data", "raw", "buildings_kenya.gpkg"),
+    query = "SELECT * FROM buildings_poly WHERE area_in_meters <= 50 AND longitude >= 37"
+)
+
+# Same using wkt_filter argument
+bbox <- st_bbox(c(xmin = 36.0, ymin = -2.5, xmax = 37.0, ymax = -1.5), crs = st_crs(4326)) |>
+    st_as_sfc() |> # Cast to sf
+    st_as_text() # Convert to wkt
+
+buildings_bbox <- st_read(
+    dsn = file.path("data", "raw", "buildings_kenya.gpkg"),
+    layer = "buildings_poly",
+    wkt_filter = bbox
+)
+```
+
+## 2.2 Geoparquet
+
+GeoParquet leverages the Apache Parquet format for storing tabular data in a columnar, binary form. Key benefits of Parquet include:
+
+-   **Compactness**: Parquet files are typically smaller than other data formats, thanks to efficient encoding and built-in compression.
+-   **Rich schema information**: Parquet files store data types (e.g., date, numeric, categorical) alongside the data.
+-   **Column-oriented Storage**: This arrangement enables efficient reading of only the necessary columns, which is especially beneficial for large datasets.
+-   **Chunked storage**: Data can be partitioned into chunks (or partitions), making it easier to work with subsets of data without reading the entire dataset into memory.
+
+To work with geoparquet you will need the `arrow` and `sfarrow` libraries. We can write a parquet file to disk with the following - let's measure performance and disk space in doing so.
+
+```{r}
+pacman::p_load("arrow", "sfarrow")
+# Write to geoparquet (single file)
+tic("Writing geoparquet")
+sfarrow::write_sf_dataset(x, file.path("data", "raw", "buildings_kenya"), format = "parquet")
+toc()
+cat("Geoparquet size:", file.size(file.path("data", "raw", "buildings_kenya", "part-0.parquet")) / 1024^2, "Mb\n")
+```
+
+That was faster!
+
+### Partitioning
+
+Parquet files can be partitioned by one or more columns, which means the data is split into subdirectories based on the values of those columns. This partitioning scheme is extremely beneficial when querying large datasets because it allows processing engines (like Apache Arrow, Spark, or even `dplyr` in R) to quickly "prune" or skip entire subsets of data that are irrelevant to a specific query.
+
+There are no strict rules for partitioning datasets—the optimal approach depends on your data structure, access patterns, and the systems processing the data. Experimentation is often necessary to determine the best partitioning strategy. As a general guideline, Apache Arrow recommends:
+
+-   Avoiding files smaller than 20MB or larger than 2GB
+-   Keeping the total number of files under 10,000
+-   Partitioning by variables that are frequently used in filtering, as this allows Arrow to efficiently read only the necessary files
+
+To create partitions, we can use `dplyr` interface. We could partition our building dataset by 1° geographic cells (using the floor of longitude and latitude) and a condition on building size (e.g., buildings larger than a given threshold).
+
+```{r partitioning}
+# Divide the data into coordinates buckets and save to disk using Parquet
+# Create partitions using group_by
+x |>
+    group_by(
+        longitude = floor(longitude),
+        latitude = floor(latitude),
+        small_buildings = area_in_meters <= 50
+    ) |>
+    write_sf_dataset(file.path("data", "raw", "buildings_kenya_partitioned"),
+        format = "parquet"
+    )
+```
+
+Let's take a look at what we just produced:
+
+```{r}
+p <- file.path("data", "raw", "buildings_kenya_partitioned")
+tibble(
+    files = list.files(p, recursive = TRUE),
+    size_MB = file.size(file.path(p, files)) / 1024^2
+)
+```
+
+This creates a nested set of files. The file names use a “self-describing” convention used by the Apache Hive project. Hive-style partitions name folders with a `key=value` convention, hence, as you might guess, the `longitude=34/latitude=-1/small_buildings=false/` contains all the data with these conditions being met.
+
+Now, let's see how to read this back. The first step is to open the dataset using arrow:
+
+```{r}
+tic()
+ds <- arrow::open_dataset(file.path("data", "raw", "buildings_kenya_partitioned"),
+    partitioning = c("longitude", "latitude", "small_buildings")
+) # must be specified when reading partitioned data
+toc()
+```
+
+Notice how fast it is. Let's look at what we got
+
+```{r}
+ds
+# What is the median building size in Kenya
+median(ds$area_in_meters)
+```
+
+But wait... Where is my data ? How to access it ? When you run `open_dataset()`, here's what happens under the hood:
+
+-   **Metadata scanning**: Arrow scans the directory structure (including the partition folders) and reads metadata from each Parquet file. This metadata includes the schema, column types, and partitioning information.
+
+-   **Lazy dataset creation**: Rather than loading all data into memory immediately, Arrow creates a lazy dataset object. This object holds references to all the underlying files and their structure. It doesn’t actually read the full contents of the files until you explicitly request it.
+
+-   **Accessing columns**: When you type `ds$area_in_meters`, you’re not immediately pulling all the latitude data into R. Instead, you’re getting a lazy reference to that column. The actual data is only read from disk when you perform an operation that forces evaluation (such as using `collect()` to load data into a data frame).
+
+In essence, `open_dataset()` sets up a blueprint of your data on disk. It allows you to perform efficient, on-demand queries by reading only the necessary parts of the dataset when needed. This design is particularly beneficial when working with very large datasets, as it minimizes memory usage and speeds up processing by avoiding unnecessary I/O operations.
+
+For example, if you want to actually get the median of building area, you would do:
+
+```{r}
+median_area_in_meters <- ds |>
+    summarize(area_in_meters = median(area_in_meters)) |> # nothing is happening yet
+    collect() # now do the calculation!
+median_area_in_meters
+```
+
+Here, `collect()` forces Arrow to execute the query and retrieve the actual data from disk.
+
+Similarly, when you split a large dataset into partitions, Arrow inspects the metadata and reads only the partitions relevant to your query. This selective access minimizes I/O operations and speeds up processing. Here is an example of the approach. Suppose you want to extract the footprint of all the largest buildings in Nairobi.
+
+First, to know which 1° cells falls within Nairobi, get its bbox.
+
+```{r nairobi}
+options(geodata_default_path = file.path("data", "raw"))
+nairobi_bb <- gadm(country = "KEN", level = 1) |>
+    sf::st_as_sf() |>
+    filter(NAME_1 == "Nairobi") |>
+    st_bbox()
+```
+
+```{r, echo = FALSE, eval = FALSE}
+# FOR TESTING, TAKE A SMALLER CHUNK
+nairobi_bb <- gadm(country = "KEN", level = 1) |>
+    sf::st_as_sf() |>
+    filter(NAME_1 == "Nairobi") |>
+    st_make_grid(zz, n = 5)[1] |>
+    st_bbox()
+``` 
+
+Now we can extract...
+
+```{r}
+# take first the floor to align with 1° cells
+nairobi_bb_f <- floor(nairobi_bb)
+# Process
+tic()
+buildings_filtered <- ds |>
+    filter(
+        longitude %in% nairobi_bb_f[1]:nairobi_bb_f[3],
+        latitude %in% nairobi_bb_f[2]:nairobi_bb_f[4],
+        small_buildings == FALSE,
+    ) |>
+    read_sf_dataset()
+toc()
+glimpse(buildings_filtered)
+```
+
+Blazing fast!
+
+Let's check if that worked now by plotting average size of buildings by small quadrants
+
+```{r building size}
+# Create a tmap of buildings
+pacman::p_load(tmap)
+
+# First, create a grid of 25 by 25 cells
+grid <- sf::st_make_grid(buildings_filtered, n = c(25, 25), square = FALSE) |>
+    sf::st_sf() |>
+    mutate(quadrant = row_number())
+
+# Compute mean per grid
+buildings_filtered <- buildings_filtered |>
+    st_join(grid) |>
+    st_drop_geometry() |>
+    group_by(quadrant) |>
+    summarize(area_in_meters = mean(area_in_meters))
+
+# Join means to grid
+grid <- grid |>
+    left_join(st_drop_geometry(buildings_filtered))
+# grid$area_in_meters
+tmap_mode("view")
+tm_basemap("OpenStreetMap") +
+    tm_shape(grid) +
+    tm_polygons(
+        fill = "area_in_meters",
+        fill_alpha = 0.5,
+        fill.scale = tm_scale_continuous(values = "viridis"),
+        legend.show = FALSE
+    )
+```
+
+# 3. Raster
+
+In this section, we demonstrate how to work with each of these modern data formats using Python. The following examples illustrate how to read GeoParquet files, access COGs, and query STAC catalogs (e.g., on the Microsoft Planetary Computer).
+
+## 3.1 Cloud Optimized GeoTIFFs (COGs)
+
+Cloud Optimized GeoTIFFs (COGs) are a specialized form of the standard GeoTIFF format, designed specifically for efficient storage and retrieval of large raster datasets in cloud environments. Here’s what makes COGs stand out:
+
+-   **Internal tiling:**\
+    COGs are organized into a grid of smaller tiles. This tiling allows clients to retrieve only the specific portions of the raster that are needed, rather than downloading the entire file.
+
+-   **Embedded overviews:**\
+    They include lower-resolution copies (overviews) of the data within the same file. These overviews speed up visualization and analysis at various scales, enabling rapid zooming and panning.
+
+-   **HTTP Byte-Range support:**\
+    COGs are optimized for cloud access because they support HTTP byte-range requests. This means that when a client requests a specific area, only the relevant parts of the file are transmitted, reducing bandwidth usage and latency.
+
+-   **Compatibility:**\
+    Although built on the GeoTIFF standard, COGs follow specific conventions that make them particularly well-suited for modern cloud-based workflows. They are supported by a variety of GIS software and libraries, making them a popular choice for distributing large-scale geospatial data (e.g., satellite imagery, elevation models).
+
+By leveraging these features, COGs provide a scalable and efficient solution for managing and accessing massive raster datasets, especially in web mapping applications and cloud-based processing pipelines.
+
+## 3.2 STAC (SpatioTemporal Asset Catalog)
+
+The SpatioTemporal Asset Catalog (STAC) is a catalog system designed to simplify the discovery, indexing, and access of geospatial assets, particularly in cloud-based environments. STAC provides a standardized way to organize metadata about spatial and temporal datasets, making it easier for users and applications to search for and retrieve data efficiently, including COGS. Here are some key features of STACs
+
+-   **Standardized metadata:**\
+    STAC uses a JSON-based format to describe geospatial assets. This standardized metadata includes information such as the geographic bounding box, timestamp, and details about the data source. This uniformity enables interoperability between different datasets and platforms.
+
+-   **Hierarchical organization:**\
+    STAC catalogs are organized hierarchically into catalogs, collections, and items:
+
+    -   **Catalog:** A top-level grouping that organizes multiple collections.
+
+    -   **Collection:** A grouping of related items (e.g., a series of satellite images from the same mission).
+
+    -   **Item:** An individual asset (such as a single satellite image or raster file) with its metadata.
+
+-   **RESTful API:**\
+    Many STAC implementations provide a RESTful API, which allows users to perform powerful searches and filters based on spatial extent, time range, and other asset properties before downloading the data. This approach minimizes the amount of data that needs to be transferred.
+
+-   **Cloud-Optimized Workflows:**\
+    STAC is particularly useful in cloud-based geospatial workflows. By enabling precise querying of datasets, STAC reduces bandwidth and processing overhead, as only the relevant assets are retrieved and processed.
+
+### Example: Querying a STAC catalog on the Microsoft Planetary Computer
+
+Concretely, the process of getting data through COGs and STAC specifications work as follows:
+
+1.  A user or application queries a STAC catalog for datasets that meet specific criteria (e.g., location, date, sensor type).
+2.  The catalog returns items with detailed metadata and asset links.
+3.  If an asset is a COG, the user can then directly retrieve the data efficiently, benefiting from the COG's optimized structure.
+
+If we wanted to obtain sentinel data from these area using the traditional workflow, we would have to download many GB to our computer, even if interested in a single site. R have a dedicated STAC client called [`rstac`](https://github.com/brazil-data-cube/rstac). 
+
+Let's see how this can work using [Microsoft Planetary Computer](https://planetarycomputer.microsoft.com/), a cloud-based platform that aggregates, curates, and provides access to vast amounts of environmental and geospatial data. It is designed to support research and decision-making related to global challenges such as climate change, land use, and biodiversity. THere are other repository using the STAC specification, such as:
+
+* [Terrabyte from DLR](https://stac.terrabyte.lrz.de/browser/)
+* [OpenLandMap](https://openlandmap.github.io/book/)
+* [STAC Browser](https://radiantearth.github.io/stac-browser/#/?.language=fr), which aggregates multiple STAC catalogs from different providers
+
+```{r rtac}
+pacman::p_load("rstac")
+
+# Define the STAC search endpoint for the Microsoft Planetary Computer
+stac_endpoint <- "https://planetarycomputer.microsoft.com/api/stac/v1"
+
+# Connect to the catalog
+s <- stac(stac_endpoint)
+s
+
+# Get fields, eg collection names
+s |>
+    collections() |>
+    get_request()
+```
+
+::: callout-note
+The actual data assets are in private Azure Blob Storage containers. As detailed in [Using tokens for data access](https://planetarycomputer.microsoft.com/docs/concepts/sas/), accessing data from the Planetary Computer typically requires signing the item. `rstac` has built-in support for signing.
+:::
+
+```{r}
+# Search collection
+aoi <- nairobi_bb # define area of interest
+
+t0 <- "2023-01-01" # start date
+t1 <- "2024-12-31" # end date
+toi <- paste(t0, t1, sep = "/") # time of interest
+items <- s |>
+    stac_search(
+        collections = "sentinel-2-l2a",
+        bbox = c(aoi["xmin"], aoi["ymin"], aoi["xmax"], aoi["ymax"]),
+        datetime = toi
+    ) |>
+    post_request() |>
+    items_sign(sign_fn = sign_planetary_computer())
+
+# number of matches
+paste("Number of matches: ", items_length(items))
+```
+
+...and we can add some extra filters too. Suppose we want to get all tiles with no more than 10% cloud cover. We would do:
+
+```{r search}
+items <- s |>
+    stac_search(
+        collections = "sentinel-2-l2a",
+        bbox = c(aoi["xmin"], aoi["ymin"], aoi["xmax"], aoi["ymax"]),
+        datetime = toi
+    ) |>
+    ext_filter(`eo:cloud_cover` < 10) |>
+    post_request() |>
+    items_sign(sign_fn = sign_planetary_computer())
+
+# number of matches
+paste("Number of matches: ", items_length(items))
+# Check a specific asset
+items$features[[10]]$assets$B05
+```
+
+```{r, echo = FALSE, eval = FALSE}
+# FOR TESTING
+# items <- stac("https://earth-search.aws.element84.com/v0") |>
+#     stac_search(
+#         collections = "sentinel-s2-l2a-cogs",
+#         bbox = c(aoi["xmin"], aoi["ymin"], aoi["xmax"], aoi["ymax"]),
+#         datetime = toi
+#     ) |>
+#     post_request()
+# paste("Number of matches: ", items_length(items))
+```
+
+We can get a sense of where they are and how they look like quite easily, without the need to download them!
+
+```{r}
+# Where are they ?
+sf_items <- items_as_sf(items)
+plot_map <- function(x) {
+    tmap_mode("view")
+    tm_basemap("OpenStreetMap") +
+        tm_shape(x) +
+        tm_borders()
+}
+
+plot_map(sf_items)
+```
+
+```{r}
+# How they look like ?
+urls <- items |>
+    assets_url(asset_names = "rendered_preview")
+preview_plot(urls[1])
+```
+
+Now that we have collected the metadata for our STAC Items—including the links to geospatial data, known as `assets` — it's time to retrieve the actual data. To download all the `assets` from a STAC Item Collection, we can use the `assets_download()` function. Let's download RGB bands only:
+
+```{r download, output = FALSE}
+download_items <- items |>
+    assets_select(asset_names = "B01") |> # Only 1 band
+    assets_download(output_dir = file.path("data","raw"), overwrite = TRUE)
+```
+```{r}
+download_items
+```
+
+Let's try to read this back to R. These files are each saved into their own folder inside of the `output_dir`. We can use `list.files()` to get the paths to each of them, and then `terra::sprc()` and `terra::mosaic()` to combine them into a single raster
+
+```{r}
+s2 <- list.files(file.path("data","raw","sentinel2-l2"),
+    pattern = ".tif",
+    recursive = TRUE,
+    full.names = TRUE
+) |>
+    lapply(terra::rast) |>
+    terra::sprc()
+# Let's see what's inside, e.g.
+lapply(s2[36:37], function(x) x)
+```
+
+They can represent different bands and have different extents. Ideally, you would like to combine all the files smartly. Also, we can’t download this way only specific parts of an asset, which means we can end up downloading much more data than we actually need.
+
+[`gdalcubes`](https://gdalcubes.github.io/) simplifies a lot of these operations. It offers a set of functions for creating and processing four-dimensional regular raster data cubes from irregular image collections. This approach abstracts away complexities such as varying map projections, overlapping spatial extents, and differences in the spatial resolution of spectral bands.
+
+Using `gdalcubes`, we can transform a STAC response into a `gdalcubes` image collection using the `stac_image_collection()` function. This function accepts a STAC feature list as input and can optionally filter the data based on metadata attributes and specific spectral bands.
+
+```{r gdalcubes}
+pacman::p_load("gdalcubes")
+
+s2_collection <- stac_image_collection(items$features)
+s2_collection
+```
+
+We can now use this object as if it was a normal raster file. 
+For exemple, let's  create a 100m x 100m resolution average-composite RGB image from our data cube, zooming on the city of Nairobi only.
+
+```{r}
+gdalcubes_options(parallel = 8)
+
+# Let's retrieve only the city of Nairobi (not the region)
+aoi_utm <- st_as_sfc(st_bbox(c(xmin = 36.65, ymin = -1.48, xmax = 37.05, ymax = -1.10), crs = 4326)) |>
+    st_transform("EPSG:32737") |>
+    st_bbox()
+
+v <- cube_view(
+    srs = "EPSG:32737",
+    dx = 100, dy = 100,
+    dt = "P1Y", # Time aggregation, here 1y (ISO 8601 duration format)
+    aggregation = "median", # defining how to deal with pixels containing data from multiple images
+    resampling = "average",
+    extent = list(
+        t0 = t0,
+        t1 = t1,
+        left = aoi_utm["xmin"],
+        right = aoi_utm["xmax"],
+        bottom = aoi_utm["ymin"],
+        top = aoi_utm["ymax"]
+    )
+)
+
+r <- raster_cube(s2_collection, v) |>
+    select_bands(c("B02", "B03", "B04")) |>
+    reduce_time(c("mean(B02)", "mean(B03)", "mean(B04)")) |> # take the mean over selected years
+    write_ncdf(file.path("data", "processed", "s2.nc"), overwrite = T)
+
+# Read back and plot
+r <- rast(file.path("data", "processed", "s2.nc"))
+plotRGB(r, r = 3, g = 2, b = 1, stretch = "lin", zlim = c(0, 4000))
+```
+
+:::callout-note
+
+- The first three steps (`raster_cube()`, `select_bands()`, `reduce_time()`) mostly build a “processing graph” (lazy evaluation). They don’t necessarily compute all pixels immediately.
+- The real compute kicks in when you materialize the result. `write_ncdf()` forces evaluation: it reads source imagery, reprojects, resamples, aggregates over time, and writes NetCDF.
+:::
+
+There are a few reasons why this code is very efficient:
+
+1.	**Lazy evaluation + streaming**: `gdalcubes` pulls just the data needed chunk-by-chunk, computes, and writes out.
+2.	**Spatial and temporal subsetting**: `cube_view()` restricts work to the Nairobi bounding box in the target projection, and to `t0..t1`, which prevents unnecessary IO and processing outside the AOI/time window
+3.	**Chunked parallelism**: the cube is split into independent blocks that are processed in parallel (`gdalcubes_options(parallel = 8)`)
+4. **Processing is done in compiled code**: Reprojection/resampling/aggregation are executed in optimized C++/GDAL routines rather than R-level iteration
+
+# 4. Further Readings
+
+-   **Using GeoParquet in R**\
+    [Using GeoParquet in R](https://d-rug.github.io/using-geoparquet-R/)\
+    *An introduction to using GeoParquet format within R workflows.*
+
+-   **Mapping in R Workshop: Import/Export Geopackage**\
+    [Mapping in R Workshop – GPKG](https://mapping-in-r-workshop.ryanpeek.org/02_import_export_gpkg)\
+    *A workshop module on reading and writing Geopackages.*
+
+-   **R for Data Science – Arrow Integration**\
+    [R4DS: Arrow](https://r4ds.hadley.nz/arrow)\
+    *A chapter on integrating Apache Arrow with R for efficient data storage and processing.*
+
+-   **Arrow User 2022 – Data Storage**\
+    [Arrow User 2022 – Data Storage](https://arrow-user2022.netlify.app/data-storage)\
+    *Insights and best practices for using Apache Arrow in data storage scenarios, including geospatial data.*
+
+-   **Download data from a STAC API using R**\
+    [STAC API with R](https://stacspec.org/en/tutorials/1-download-data-using-r/)
+    *A tutorial walking through querying a STAC API using the rstac R package, and downloading data from the API.*
+
+-   **Download data from a Planetary Computer**\
+    [Reading from the STAC API with R](https://planetarycomputer.microsoft.com/docs/quickstarts/reading-stac-r/)
+    *Quickstart introduction of STAC for R users using the planetary computer*
+
+-   **Data cubes from Sentinel-2 data in the cloud**\
+    [Using gdalcubes to process COGs](https://gdalcubes.github.io/source/tutorials/vignettes/gc02_AWS_Sentinel2.html)
+    *A tutorial walking through querying a STAC API using the rstac R package, and downloading data from the API.*
+
+-   **gdalcubes and STAC**\
+    [OpenGeoHub Summer School 2021](https://appelmar.github.io/ogh2021/tutorial.htm#Introduction)
+    *Analyzing massive amounts of EO data in the cloud with R, gdalcubes, and STAC*
+
+-   **Cloud Native Geo Guide**\
+    [Cloud Native Geospatial format Guide](https://guide.cloudnativegeo.org/)\
+    *A guide to building and operating geospatial systems using cloud-native technologies.*
+
+-   **GeoParquet Specification**\
+    [GeoParquet Specification](https://github.com/geoparquet/geoparquet)
+
+-   **COG (Cloud Optimized GeoTIFF) Specification**\
+    [COG Specification](https://www.cogeo.org/)
+
+-   **STAC (SpatioTemporal Asset Catalog) Specification**\
+    [STAC Specification](https://stacspec.org/) and [STAC Tutorials](https://github.com/stac-utils/stac-browser)
+
+::: assignment
+## Assignment
+
+-   Query a Microsoft Planetary Computer STAC catalog for a satellite dataset of your choice.
+
+-   Create a monthly time-series for a given region.
+
+-   Apply an unsupervised kmean algorithm to the image to classify 
+
+-   Visualize the output and interpret
+
+:::
+
+# Session info
+
+```{r}
+sessionInfo()
+```
