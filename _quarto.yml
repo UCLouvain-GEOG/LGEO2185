@@ -10,6 +10,7 @@ project:
     - GeoProjects/**.qmd
     - ML/**.qmd
     - Efficient Spatial IO/**.qmd
+    - GEE/**.qmd
 
 website:
   title: "LGEO2185: Advanced Geoprocessing"
@@ -55,6 +56,10 @@ website:
             file: Efficient Spatial IO/LGEO2185_Efficient_Spatial_Data_I_O.qmd
           - text: "Assignment"
             file: Efficient Spatial IO/LGEO2185_Efficient_Spatial_Data_I_O_Assignment.qmd
+      - section: "GEE"
+        contents:
+          - text: "Demo GEE"
+            file: GEE/GEE.qmd
 
 bibliography: biblio.bib
 

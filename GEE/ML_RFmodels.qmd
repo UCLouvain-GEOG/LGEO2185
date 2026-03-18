@@ -145,6 +145,7 @@ The figure below illustrates these ideas in four panels:
 
 library(ggplot2)
 library(patchwork)
+library(tibble)
 
 # --- 1) Make a predictor grid (toy 2D feature space) ---
 grid <- expand.grid(
@@ -495,7 +496,6 @@ Congo. Put the data (shapefile- and geotif-files into a subfolder
 
 ```{r}
 # path to the shapefile
-shp_path <- "GEE_Exports_Annual/sampled_kasai_polygons.shp"
 shp_path <- "GEE_Exports_S2_Ilebo/ilebo_polygon_band_values.shp"
 # load shapefile (SpatVector)
 kasai_observations <- terra::vect(shp_path)
@@ -951,7 +951,7 @@ Here’s an inference block:
 
 ```{r}
 # 1) Load predictor raster stack (must contain layers named like top_vars)
-r <- rast("GEE_Exports_S2_Ilebo/ilebo_s2_2025_int.tif")
+r <- rast("GEE_Exports_S2_Ilebo/ilebo_s2_2025_int_30m.tif")
 # Keep only the predictors used by the reduced model
 r_red <- r[[top_vars]]
 
