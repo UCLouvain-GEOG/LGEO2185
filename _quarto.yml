@@ -60,6 +60,8 @@ website:
         contents:
           - text: "Demo GEE"
             file: GEE/GEE.qmd
+          - text: "RF Classification"
+            file: GEE/ML_RFmodels.qmd
 
 bibliography: biblio.bib
 

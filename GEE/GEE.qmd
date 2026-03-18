@@ -13,6 +13,8 @@ The GEE Code Editor is a browser-based platform that allows users to access, pro
 
 ![](images/GEE_APP.png){fig-align="center" width="500"}
 
+<https://vanoostlab.users.earthengine.app/view/kasaimapstat>
+
 ### General approach of Google Earth Engine
 
 The philosophy of GEE is to bring the **computation to the data**, rather than bringing the data to your computer. Large satellite archives such as Landsat, Sentinel, MODIS, climate products, land-cover datasets, and many others are already available on Google’s servers. Users write relatively compact scripts to filter, combine, analyse, create new and visualize these datasets.

@@ -1,7 +1,10 @@
 ---
-title: "LGEO2185: Session ? -- RF classification with tidymodels"
+title: "LGEO2185: RF classification with tidymodels using GEE-derived predictors"
 authors: "Kristof Van Oost & Antoine Stevens"
 Date: 03/14/2025
+editor: 
+  markdown: 
+    wrap: 72
 ---
 
 ## Session learning objectives
@@ -21,6 +24,8 @@ By the end of this session, students should be able to:
 5.  Interpret the fitted model using **variable importance** and connect
     it to geography/remote sensing reasoning (what drivers make sense,
     and why).
+6.  Understand potential and limitations of decision trees and Random
+    Forest ML approaches
 
 ## Introduction Decision trees and Random Forest
 
@@ -331,11 +336,9 @@ approach has been demonstrated to substantially improve accuracy by
 combining hundreds or even thousands or trees into a single prediction
 model.
 
-::: call-out note 
-Bagging can improve the accuracy, but this comes at a
+::: call-out note Bagging can improve the accuracy, but this comes at a
 cost as the decision trees are no longer simple and interpretable. So
-the improved accuracy comes at the expense of interpretability.
-:::
+the improved accuracy comes at the expense of interpretability. :::
 
 **Random Forests** provide a further improvement over bagged trees: In
 each split, only a random sample of the predictors are allowed to be
@@ -435,14 +438,12 @@ interactions automatically.
 In many geoscience susceptibility problems, RF typically achieves higher
 AUROC, especially when relationships are nonlinear.
 
-::: call-out note
-Note that we did not fine-tune the (hyper)parameters
+::: call-out note Note that we did not fine-tune the (hyper)parameters
 of the RF model yet. For example the nubmer of predictors sampled at
 each sple `mtry`, the number of trees in the forest `trees`, and the
 minimum observations per tree (`min_n`are typical parameters that can
 also be tuned. We will develop this forther in a machine learning
-workflow below.
-:::
+workflow below. :::
 
 ## RF tuturial: land cover mapping
 
@@ -451,13 +452,13 @@ machine learning in R: rather than every model/package having its own
 interface, tidymodels standardizes the steps you do again and again,
 i.e. splitting, pre-processing, training, tuning, and evaluation.
 
-This module follows the workflow described in Rebecca Barter’s
-tidymodels tour (@barter2020tidymodels) and adapts it to **spatial
-training data**. We will re-use the training data and predictors we
-created in Google Earth Engine (link to session).
+This module follows the workflow described in [Rebecca Barter’s
+tidymodels
+tour](https://bookdown.org/paul/ai_ml_for_social_scientists/06_01_ml_with_tidymodels.html)
+(@bauer2023tidymodels) and adapts it to **spatial training data**. We
+will re-use the training data and predictors we created in Google Earth
+Engine (Session Demo GEE).
 
-![Source:
-https://bookdown.org/paul/ai_ml_for_social_scientists/06_01_ml_with_tidymodels.html](https://bookdown.org/paul/ai_ml_for_social_scientists/06_tidy_models.png)
 
 
 ```{r}
@@ -491,8 +492,10 @@ set.seed(42)
 We will use a shapefile exported from GEE with training polygons/points
 and predictors for a small study site near the town of Ilebo in the DR
 Congo. Put the data (shapefile- and geotif-files into a subfolder
-`/GEE_Exports_Annual`). The shapefile contains small polygons that were digitized in Google Earth on high resolution satellite imagery and where an opererator labelled the polygons according to five possible land use classes: 
-
+`/GEE_Exports_Annual`). The shapefile contains small polygons that were
+digitized in Google Earth on high resolution satellite imagery and where
+an opererator labelled the polygons according to five possible land use
+classes:
 
 ```{r}
 # path to the shapefile
@@ -525,7 +528,8 @@ addPolygons(color = "yellow", weight = 2, fillOpacity = 0)
 m
 ```
 
-We convert to a data.frame for tidymodels as Tidymodels works on tabular data. We typically:
+We convert to a data.frame for tidymodels as Tidymodels works on tabular
+data. We typically:
 
 -   keep geometry in a separate object
 -   model on attribute table
@@ -537,7 +541,8 @@ kasai_df$class <- as.factor(kasai_df$class) #for modelling later outcome should 
 #glimpse(kasai_df)
 ```
 
-**Note:** if you later want spatial CV, you will need coordinates/geometry *somewhere* (even if you don’t model on them). We
+**Note:** if you later want spatial CV, you will need
+coordinates/geometry *somewhere* (even if you don’t model on them). We
 keep `kasai_observations` for that purpose.
 
 ------------------------------------------------------------------------
@@ -629,7 +634,8 @@ nrow(kasai_train); nrow(kasai_test)
 
 ## 4. Recipe (preprocessing)
 
-A recipe is **trained only on the training set** and then applied to test/validation data. This reduces accidental leakage.
+A recipe is **trained only on the training set** and then applied to
+test/validation data. This reduces accidental leakage.
 
 > *Data leakage* occurs when information from the test or validation
 > data influences model training, leading to overly optimistic
@@ -743,15 +749,23 @@ kasai_folds
 
 ## 8. Tuning grid
 
-At this step, we do not fit just one Random Forest model. Instead, we test several versions of the model with different settings. This is called **hyperparameter tuning**.
+At this step, we do not fit just one Random Forest model. Instead, we
+test several versions of the model with different settings. This is
+called **hyperparameter tuning**.
 
 With the `ranger` engine, the most important parameters are usually:
 
-- `mtry`: the number of predictor variables randomly considered at each split
-- `min_n`: the minimum number of samples allowed in a terminal node
-- `trees`: the number of trees grown in the forest
+-   `mtry`: the number of predictor variables randomly considered at
+    each split
+-   `min_n`: the minimum number of samples allowed in a terminal node
+-   `trees`: the number of trees grown in the forest
 
-The model is trained repeatedly on resampled training data, and its predictive performance is evaluated for each parameter combination. The goal is to identify the settings that give the best balance between accuracy and generalization. After tuning, the best parameter combination is selected and used to fit the final Random Forest model.We start with a modest grid to speed up the calculations.
+The model is trained repeatedly on resampled training data, and its
+predictive performance is evaluated for each parameter combination. The
+goal is to identify the settings that give the best balance between
+accuracy and generalization. After tuning, the best parameter
+combination is selected and used to fit the final Random Forest model.We
+start with a modest grid to speed up the calculations.
 
 ```{r}
 rf_grid <- grid_regular(
@@ -865,7 +879,7 @@ vip::vip(rf_engine_fit, num_features = 20)
 
 > -   Which predictors make sense for separating your classes?
 >
-> -   Are any “top predictors” suspicious ? 😇
+> -   Are any “top predictors” suspicious ?
 >
 > -   Do the top predictors match your conceptual understanding of the
 >     landscape?
