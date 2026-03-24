@@ -1,0 +1,286 @@
+---
+title: "LGEO2185: R Bindings to Geospatial Libraries --"
+format: html
+---
+
+# Assignment solution
+
+This document shows one possible solution to the assignment. The objective is to reproduce the **logic** of the Session 4 landslide-susceptibility example from `spDataLarge`, but this time by:
+
+1. using a **STAC catalog** to discover and access the DEM,
+2. using **GDAL** to assemble a working elevation raster,
+3. using **QGIS/GRASS** and **WhiteboxTools** to derive the key geomorphic predictors,
+4. fitting the same GLM as in the other session.
+
+# 1. Setup
+
+```{r}
+pacman::p_load(
+  sf, terra, dplyr, qgisprocess, gdalUtilities,
+  whitebox, pROC, ggplot2, tidyr, rstac, tibble
+)
+
+install.packages("spDataLarge", repos = "https://geocompx.r-universe.dev")
+```
+
+```{r}
+data("lsl", "study_mask", package = "spDataLarge")
+ta_ref <- terra::rast(system.file("raster/ta.tif", package = "spDataLarge"))
+
+study_mask
+names(ta_ref)
+```
+
+# 2. Check the local GIS environment
+
+```{r, include = FALSE}
+# setup
+Sys.setenv(
+  R_QGISPROCESS_PATH = "/Applications/QGIS.app/Contents/MacOS/qgis_process",
+  GRASS_PREFIX = "/Applications/GRASS-8.4.app/Contents/Resources",
+  GISBASE = "/Applications/GRASS-8.4.app/Contents/Resources"
+)
+```
+
+```{r}
+
+qgisprocess::qgis_configure()
+qgisprocess::qgis_providers()
+whitebox::wbt_init()
+```
+
+# 3. Query a STAC catalog for a DEM
+
+We derive the area of interest from the study mask and use it to search the Microsoft Planetary Computer STAC API for **Copernicus DEM GLO-30** tiles.
+
+```{r}
+aoi <- sf::st_bbox(study_mask)
+aoi <- sf::st_transform(aoi, 4326)
+aoi_vec <- c(aoi$xmin, aoi$ymin, aoi$xmax, aoi$ymax)
+aoi_vec
+```
+
+```{r}
+stac_items <- rstac::stac("https://planetarycomputer.microsoft.com/api/stac/v1") |>
+  rstac::stac_search(
+    collections = "cop-dem-glo-30",
+    bbox = aoi_vec,
+    limit = 50
+  ) |>
+  rstac::get_request()
+
+stac_items
+length(stac_items$features)
+```
+
+Planetary Computer assets usually need to be signed before access.
+
+```{r}
+stac_items_signed <- rstac::items_sign_planetary_computer(stac_items)
+
+dem_urls <- rstac::assets_url(
+  stac_items_signed,
+  asset_names = "data",
+  append_gdalvsi = TRUE
+)
+
+dem_urls
+length(dem_urls)
+```
+
+At this stage we have a vector of remote DEM assets that GDAL can read directly.
+
+# 4. Build a DEM mosaic with GDAL
+
+First inspect the first source and create a VRT mosaic.
+
+```{r}
+work_dir <- file.path(tempdir(), "lgeo2185_assignment_stac")
+dir.create(work_dir, recursive = TRUE, showWarnings = FALSE)
+
+source_info <- gdalUtilities::gdalinfo(dem_urls[[1]])
+source_info
+
+vrt_file <- file.path(work_dir, "cop_dem.vrt")
+dem_work <- file.path(work_dir, "cop_dem_study_area.tif")
+
+gdalUtilities::gdalbuildvrt(
+  gdalfile = dem_urls,
+  output.vrt = vrt_file
+)
+```
+
+Now materialize a compressed GeoTIFF from the VRT. We first print the equivalent GDAL command line.
+
+```{r}
+gdalUtilities::gdal_translate(
+  src_dataset = vrt_file,
+  dst_dataset = dem_work,
+  projwin = c(aoi$xmin, aoi$ymax, aoi$xmax, aoi$ymin),
+  of = "GTiff",
+  co = c("COMPRESS=LZW"),
+  dryrun = TRUE
+)
+
+gdalUtilities::gdal_translate(
+  src_dataset = vrt_file,
+  dst_dataset = dem_work,
+  projwin = c(aoi$xmin, aoi$ymax, aoi$xmax, aoi$ymin),
+  of = "GTiff",
+  co = c("COMPRESS=LZW")
+)
+```
+
+```{r}
+dem <- terra::rast(dem_work)
+plot(dem, main = "DEM assembled from Copernicus STAC assets")
+plot(sf::st_geometry(study_mask), add = TRUE)
+```
+
+# 5. Derive slope and curvatures with GRASS through QGIS
+
+```{r}
+alg_id <- if (qgisprocess::qgis_has_algorithm("grass:r.slope.aspect")) {
+  "grass:r.slope.aspect"
+} else {
+  "grass7:r.slope.aspect"
+}
+
+grass_info <- qgisprocess::qgis_run_algorithm(
+  alg_id,
+  elevation = dem_work,
+  slope = file.path(work_dir, "slope.tif"),
+  pcurvature = file.path(work_dir, "cprof.tif"),
+  tcurvature = file.path(work_dir, "cplan.tif")
+)
+
+slope <- qgisprocess::qgis_as_terra(grass_info$slope)
+cprof <- qgisprocess::qgis_as_terra(grass_info$pcurvature)
+cplan <- qgisprocess::qgis_as_terra(grass_info$tcurvature)
+elev  <- terra::rast(dem_work)
+
+plot(slope, main = "Slope derived with GRASS")
+```
+
+`r.slope.aspect` returns several products. Here we retain the ones closest to the Session 4 predictors:
+
+- `slope`
+- profile curvature (`pcurvature` -> `cprof`)
+- tangential curvature (`tcurvature` -> `cplan`)
+- the DEM itself as `elev`
+
+# 6. Derive contributing area with WhiteboxTools
+
+We use WhiteboxTools to create a simple hydrological predictor related to contributing area.
+
+```{r}
+whitebox::wbt_init()
+whitebox::wbt_wd(work_dir)
+
+breached_file <- file.path(work_dir, "dem_breached.tif")
+flowacc_file  <- file.path(work_dir, "flow_acc_cells.tif")
+
+whitebox::wbt_breach_depressions(
+  dem = dem_work,
+  output = breached_file
+)
+
+whitebox::wbt_d8_flow_accumulation(
+  input = breached_file,
+  output = flowacc_file,
+  out_type = "cells"
+)
+
+flowacc_cells <- terra::rast(flowacc_file)
+cell_area <- prod(terra::res(flowacc_cells))
+log10_carea <- log10(flowacc_cells * cell_area + 1)
+names(log10_carea) <- "log10_carea"
+
+plot(log10_carea, main = "log10 contributing area from WhiteboxTools")
+```
+
+This is not guaranteed to be numerically identical to the original `spDataLarge` variable, but it captures the same geomorphic idea.
+
+# 7. Build a predictor stack and compare with the reference stack
+
+```{r}
+derived <- c(slope, cplan, cprof, elev, log10_carea)
+names(derived) <- c("slope", "cplan", "cprof", "elev", "log10_carea")
+derived
+```
+
+A quick visual comparison:
+
+```{r}
+par(mfrow = c(2, 2))
+plot(derived[["slope"]], main = "Derived slope")
+plot(ta_ref[["slope"]], main = "Reference slope")
+plot(derived[["log10_carea"]], main = "Derived log10_carea")
+plot(ta_ref[["log10_carea"]], main = "Reference log10_carea")
+par(mfrow = c(1, 1))
+```
+
+A quick statistical comparison:
+
+```{r}
+compare_stats <- bind_rows(
+  as.data.frame(terra::global(derived, c("mean", "sd"), na.rm = TRUE)) |> mutate(stack = "derived"),
+  as.data.frame(terra::global(ta_ref[[names(derived)]], c("mean", "sd"), na.rm = TRUE)) |> mutate(stack = "reference")
+) |>
+  tibble::rownames_to_column("variable")
+
+compare_stats
+```
+
+The values will usually differ somewhat because:
+
+1. the STAC-sourced Copernicus DEM is not the same raster as the packaged `spDataLarge` DEM;
+2. terrain derivatives vary slightly across software engines and versions;
+3. hydrological preprocessing choices influence contributing-area style predictors.
+
+# 8. Extract the predictors at the landslide sample locations
+
+```{r}
+lsl_sf <- sf::st_as_sf(lsl, coords = c("x", "y"), crs = sf::st_crs(study_mask))
+
+extr <- terra::extract(derived, terra::vect(lsl_sf))
+model_df <- bind_cols(
+  lsl |> dplyr::select(lslpts),
+  extr |> dplyr::select(-ID)
+) |>
+  tidyr::drop_na()
+
+str(model_df)
+summary(model_df)
+```
+
+# 9. Fit the Session 4 GLM
+
+```{r}
+form <- lslpts ~ slope + cplan + cprof + elev + log10_carea
+fit <- glm(form, family = binomial(), data = model_df)
+summary(fit)
+```
+
+Compute predicted probabilities and a simple ROC AUC:
+
+```{r}
+model_df$pred <- predict(fit, type = "response")
+roc_obj <- pROC::roc(model_df$lslpts, model_df$pred, quiet = TRUE)
+pROC::auc(roc_obj)
+```
+
+# 10. Optional map of susceptibility
+
+```{r}
+susc <- terra::predict(derived, fit, type = "response")
+plot(susc, main = "Predicted landslide susceptibility")
+plot(sf::st_geometry(study_mask), add = TRUE)
+plot(sf::st_geometry(lsl_sf), add = TRUE, pch = 20, cex = 0.3)
+```
+
+# Session info
+
+```{r}
+sessionInfo()
+```

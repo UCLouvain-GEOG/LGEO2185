@@ -1,0 +1,449 @@
+---
+title: "LGEO2185: R Bindings to Geospatial Libraries"
+author: "Kristof Van Oost, Antoine Stevens & Valentin Charlier"
+Date: 2026-03-25
+---
+
+# Learning Objectives
+
+-   **Understand how R can delegate spatial work** to external geospatial engines 
+
+-   **Discuss three major integration patterns for geocomputation in R**, specifically:
+
+    -   **QGIS Processing from R** with [`qgisprocess`](https://github.com/r-spatial/qgisprocess)
+
+    -   **Direct GDAL access** with [`gdalUtilities`](https://github.com/JoshOBrien/gdalUtilities) and `gdalraster`
+
+    -   **WhiteboxTools from R** with the [`whitebox`](https://github.com/opengeos/whiteboxR) package
+
+-   **Access third-party providers through QGIS**, including:
+
+    -   [**GRASS GIS**](https://grass.osgeo.org/) for terrain and raster analysis.
+
+    -   [**SAGA**](https://saga-gis.sourceforge.io/) for geomorphometry and hydrology-style workflows.
+
+-   **Inspect algorithms, parameters, and outputs**, and bring results back into familiar R classes such as `sf` and `terra`.
+
+# 1. Introduction
+
+R has a rich spatial ecosystem, but many of the most mature geospatial algorithms were not originally written in R. Instead, they were developed in highly optimized desktop GIS and geospatial libraries such as **QGIS**, **GDAL**, **GRASS GIS**, **SAGA**, or **WhiteboxTools**. In practice, to develop geospatial workflows leveraging these tools, R could be treated as an **orchestrator**: R prepares the data, launches an external geoprocessing engine, and then reads the results back for visualization, modelling, or statistical analysis.
+
+This approach has several **advantages**: 
+- First, it gives you access to a much larger algorithm catalog than base R packages alone. 
+- Second, many of these tools are implemented in compiled languages and are highly optimized for large raster or vector files. 
+- Third, the workflow remains reproducible because the full processing chain can still be scripted in R script or a Quarto document.
+
+The actively maintained bridge for QGIS is [`qgisprocess`](https://r-spatial.github.io/qgisprocess/), which wraps the `qgis_process` command-line tool shipped with **QGIS**, a new standalone executable available from QGIS 3.14 onwards. This provides access to all QGIS capabilities, including **SAGA** and **GRASS** shipped within, but it is not the only way to connect R to external GIS software. Some notable libraries are shown in the table below:
+
+| Package | Description |
+|---|---|
+| `RQGIS` / `RQGIS3` | Historical QGIS bridges; useful to know, but not the preferred current workflow |
+| `RSAGA` | Direct interface to the SAGA command line |
+| `Rsagacmd` | Dynamic, R-like interface that generates wrappers for the installed SAGA version |
+| `rgrass` | Direct interface between GRASS GIS and R |
+| `link2GI` | Helper package for locating and configuring QGIS, GRASS, SAGA, GDAL, and OTB |
+
+:::callout-note
+
+Installing the above **R wrapper/libraries** is not enough: running the below code require the external software itself, such as **QGIS**, **SAGA**, **GRASS GIS**, or **WhiteboxTools**
+
+On **Windows**, a practical way to obtain most of setup is to install QGIS through **OSGeo4W** in **Advanced Install** mode, selecting at least **QGIS**, **GDAL**, **GRASS GIS**, and **Python**, and **SAGA GIS** 
+
+A simple workflow would look like:
+
+1.  install QGIS with **OSGeo4W**, and within QGIS, install GRASS and SAGA plugins;
+2.  in the **OSGeo4W Shell**, check that `qgis_process --version` and `gdalinfo --version` work;
+3.  install WhiteboxTools from R with `whitebox::install_whitebox()` or point `whitebox::wbt_init(exe_path = ...)` to an existing `whitebox_tools.exe`;
+4.  in R, run `qgisprocess::qgis_configure()`, and if needed enable the GRASS and SAGA providers with `qgisprocess::qgis_enable_plugins(c("grassprovider", "processing_saga_nextgen"))`.
+brew install https://raw.githubusercontent.com/OSGeo/homebrew-osgeo4mac/master/Formula/osgeo-saga.rb
+
+On macOS, you could use [**OSGeo4mac**](https://github.com/OSGeo/homebrew-osgeo4mac/tree/master)
+
+See also installation instructions [here](https://sagagis.com/installing-saga-gis-step-by-step-guide-for-all-os/) for **SAGA**, [here](https://grasswiki.osgeo.org/wiki/Installation_Guide) for **GRASS-GIS**, and [here](https://www.whiteboxgeo.com/manual/wbt_book/install.html) for **WhiteboxTools**
+:::
+
+# 2. QGIS Processing from R
+
+QGIS is more than a desktop GUI. Its Processing framework acts as a hub that can expose algorithms from multiple providers through one common interface. From R, the `qgisprocess` package uses the standalone `qgis_process` command-line tool, which means you can call QGIS algorithms without opening the QGIS desktop application itself.
+
+A major advantage of this design is that the same interface can reach:
+
+-   **native QGIS algorithms**,
+-   **GDAL provider algorithms**,
+-   **GRASS GIS algorithms**,
+-   **SAGA algorithms** (when the provider plugin and SAGA binaries are available).
+
+## 2.1 qgisprocess
+
+The `qgisprocess` package is designed around four core tasks:
+
+1.  **discovering** what algorithms and providers are available;
+2.  **inspecting** the arguments and outputs of a specific algorithm;
+3.  **running** the algorithm;
+4.  **converting** the result back into familiar R objects.
+
+See [here](https://r-spatial.github.io/qgisprocess/articles/qgisprocess.html) for a good instroduction to the package. A convenient feature is that `qgisprocess` can accept many R spatial objects directly. For example, `sf` objects can be passed as vector inputs, and `terra` rasters can be passed as raster inputs. Under the hood, the package serializes them to temporary files in formats that QGIS understands. Let's start by installing/loading the required libraries and check that we have everything set up
+
+```bash
+qgis_process --version
+gdalinfo --version
+```
+
+```{r setup, include = FALSE}
+# setup
+Sys.setenv(
+  R_QGISPROCESS_PATH = "/Applications/QGIS.app/Contents/MacOS/qgis_process",
+  GRASS_PREFIX = "/Applications/GRASS-8.4.app/Contents/Resources",
+  GISBASE = "/Applications/GRASS-8.4.app/Contents/Resources"
+)
+```
+
+```{r qgis-setup, message = TRUE}
+pacman::p_load("sf", "terra", "dplyr", "qgisprocess", "whitebox")
+
+# QGIS Version
+qgisprocess::qgis_version()
+```
+```{r qgis-setup2, message = TRUE}
+qgisprocess::qgis_providers()
+```
+
+Once QGIS is available, you can inspect any algorithm before running it.
+
+```{r qgis-setup3, message = TRUE}
+qgisprocess::qgis_search_algorithms("buffer|slope|wetness")
+```
+
+```{r qgis-help}
+qgisprocess::qgis_get_argument_specs("native:buffer")
+qgisprocess::qgis_get_output_specs("native:buffer")
+```
+
+Now let us run a simple **native QGIS** algorithm. We can for instance buffer the county boundaries of North Carolina and build fixed-distance buffers around them.
+
+```{r qgis-buffer}
+# Small local datasets bundled with popular R spatial packages
+nc <- sf::st_read(system.file("shape/nc.shp", package = "sf"), quiet = TRUE) |>
+    sf::st_transform(32119)
+
+buffer_info <- qgisprocess::qgis_run_algorithm(
+    "native:buffer",
+    INPUT = nc,
+    DISTANCE = 15000,
+    SEGMENTS = 20,
+    DISSOLVE = FALSE
+)
+
+# Convert the QGIS result object back to sf
+buffers <- sf::st_as_sf(buffer_info)
+
+plot(sf::st_geometry(nc), border = "grey80")
+plot(sf::st_geometry(buffers), add = TRUE, border = "dodgerblue")
+```
+
+A `qgis_result` object is essentially a structured record of output file paths plus some metadata on the call that was executed. The important idea is that **QGIS does the processing on files**, while R remains in charge of orchestration. After the call, you can bring the outputs back with helpers such as:
+
+-   `sf::st_as_sf()` for vector outputs,
+-   `qgis_as_terra()` for raster outputs,
+-   `qgis_extract_output()` when you want the raw file path.
+
+If you prefer a more “R-like” calling style, `qgisprocess::qgis_function()` can generate a wrapper function for one algorithm. The broader `qgis` ecosystem builds on this idea by exposing one R function per QGIS algorithm.
+
+## 2.2 Accessing SAGA and GRASS through QGIS
+
+QGIS can be also used as a **gateway** to other geospatial engines. Instead of learning separate R interfaces for each system, you can often access them through the same `qgisprocess` functions.
+
+In practice, provider availability depends on your local QGIS installation.
+
+-   **GRASS** is usually available through the built-in GRASS provider.
+-   **SAGA** typically requires the **Processing Saga NextGen** plugin (so if not done yet, go and install the plugin in QGIS) and a working SAGA installation.
+-   Provider names can vary slightly by QGIS version. For example, older QGIS versions often used `grass7:` where newer releases use `grass:`.
+
+Let us first inspect and enable provider plugins when they are present.
+
+```{r qgis-plugins}
+qgisprocess::qgis_plugins() # list available plugins
+qgisprocess::qgis_enable_plugins(c("processing", "grassprovider", "processing_saga_nextgen"))
+qgisprocess::qgis_configure(use_cached_data = FALSE)
+```
+
+### GRASS example: terrain attributes from a DEM
+
+**GRASS** is particularly strong for raster processing, terrain analysis, and neighborhood-based operations. A classic example is `r.slope.aspect`, which derives slope, aspect, and curvature products from a DEM.
+
+```{r grass}
+# Get DEM
+dem_file <- system.file("ex/elev.tif", package = "terra")
+dem <- terra::rast(dem_file)
+
+# Inspect arguments
+# Could be alternatively "grass7:r.slope.aspect" depending on version
+qgisprocess::qgis_get_output_specs("grass:r.slope.aspect") 
+
+# Run algorithm
+grass_info <- qgisprocess::qgis_run_algorithm(
+    "grass:r.slope.aspect",
+    elevation = dem
+)
+
+# Get back to R and plot
+slope <- qgisprocess::qgis_as_terra(qgisprocess::qgis_extract_output(grass_info, "slope"))
+aspect <- qgisprocess::qgis_as_terra(qgisprocess::qgis_extract_output(grass_info, "aspect"))
+
+plot(c(slope, aspect))
+```
+
+This illustrates one of the biggest strengths of `qgisprocess`: from the R side, the workflow looks almost identical to a native QGIS call even though **GRASS** is doing the computational work in the background.
+
+### SAGA example: topographic wetness index
+
+SAGA has a long tradition in geomorphometry, terrain modelling, and hydrology-style DEM workflows. 
+The following example uses two SAGA algorithms through the `sagang:` provider. Notice that we keep the work in a pipeline and then read only the final raster back into R.
+
+```{r saga}
+# SAGA often works more smoothly when temporary rasters use its native format
+oldopt <- options(qgisprocess.tmp_raster_ext = ".sdat")
+
+twi_info <- qgisprocess::qgis_run_algorithm(
+    "sagang:sinkremoval",
+    DEM = dem,
+    METHOD = 1
+) |>
+    qgisprocess::qgis_run_algorithm_p(  # this is a pipeline-friendly alternative
+        "sagang:sagawetnessindex",
+        .select = "DEM_PREPROC"
+    )
+
+twi <- qgisprocess::qgis_as_terra(qgisprocess::qgis_extract_output(twi_info, "TWI"))
+plot(twi, main = "SAGA topographic wetness index")
+
+options(oldopt)
+```
+
+# 3. Direct bindings to compiled geospatial libraries
+
+Using QGIS as a hub is convenient, but it is not the only option. In some cases, you may want to talk to a geospatial engine **more directly**:
+
+-   when you want very close parity with a command-line tool,
+-   when you need low-level I/O control,
+-   when you want direct access to virtual rasters or driver metadata,
+-   when a specialized tool such as WhiteboxTools fits the problem particularly well.
+
+## 3.1 GDAL
+
+GDAL (Geospatial Data Abstraction Library) is one of the foundational libraries of modern geocomputation. Many R packages already rely on GDAL internally, including `sf`, `terra`, and `stars`. However, there are situations where it is helpful to call GDAL **explicitly** from R, for instance through **`gdalUtilities`**. The `gdalUtilities` package maps many familiar GDAL utilities almost one-to-one into R functions. This is particularly useful if you already know the command-line flags and want to keep that same mental model in R.
+
+```{r gdal-install}
+pacman::p_load("gdalUtilities")
+```
+
+We can begin by inspecting the DEM with `gdalinfo()`.
+
+```{r gdalinfo}
+gdalUtilities::gdalinfo(dem_file)
+```
+
+Now let us translate a classic `gdal_translate` call into R. The following example creates a half-resolution copy of the DEM.
+
+```{r gdal-translate}
+# First, print the equivalent command-line call without executing it
+# This is very helpful when learning the interface
+# gdal_translate dem_file halfres_file -outsize 50% 50%
+processed_dir <- file.path("data", "processed")
+halfres_file <- file.path(processed_dir, "elev_halfres.tif")
+gdalUtilities::gdal_translate(
+    dem_file,
+    halfres_file,
+    outsize = c("50%", "50%"),
+    dryrun = TRUE
+)
+
+# Then execute the operation
+gdalUtilities::gdal_translate(
+    dem_file,
+    halfres_file,
+    outsize = c("50%", "50%")
+)
+
+halfres <- terra::rast()
+terra::res(dem)
+terra::res(halfres)
+```
+
+A very useful GDAL concept is the **VRT** (Virtual Raster). A VRT is usually a small XML file that *describes* a raster view without necessarily materializing a new full raster on disk. This is extremely efficient when you want a virtual crop, resampling step, or mosaic.
+
+```{r vrt}
+# 1. Create a 2x2 grid (4 tiles) 
+ext_dem <- ext(dem)
+
+# Compute midpoints
+xmid <- (xmin(ext_dem) + xmax(ext_dem)) / 2
+ymid <- (ymin(ext_dem) + ymax(ext_dem)) / 2
+
+# Define 4 extents
+ext_list <- list(
+  ext(xmin(ext_dem), xmid, ymin(ext_dem), ymid), # bottom-left
+  ext(xmid, xmax(ext_dem), ymin(ext_dem), ymid), # bottom-right
+  ext(xmin(ext_dem), xmid, ymid, ymax(ext_dem)), # top-left
+  ext(xmid, xmax(ext_dem), ymid, ymax(ext_dem))  # top-right
+)
+
+#  2. Crop and write tiles 
+tile_files <- file.path(processed_dir, paste0("tile_", 1:4, ".tif"))
+
+for (i in 1:4) {
+  tile <- crop(dem, ext_list[[i]])
+  writeRaster(tile, tile_files[i], overwrite = TRUE)
+}
+
+# Inspect tiles
+tile_files
+
+# 3. Build VRT
+vrt_file <- file.path(processed_dir, "dem.vrt")
+
+gdalbuildvrt(
+  gdalfile = tile_files,
+  output.vrt = vrt_file
+)
+
+# Read and check
+vrt <- terra::rast(vrt_file)
+cat("VRT size (bytes):", file.size(vrt_file), "\n")
+plot(vrt, main = "Virtual crop described by a .vrt file")
+```
+
+This creates a virtual raster (VRT) that references the input files without copying data.
+This is a good example of why direct GDAL bindings matter. Rather than generating many intermediate rasters, you can often describe the transformation virtually and postpone heavy writes until you really need them.
+
+## 3.2 Whitebox
+
+WhiteboxTools is a specialized geospatial analysis platform with a strong reputation in **terrain analysis**, **hydrological preprocessing**, **geomorphometry**, and raster-based environmental modelling. The R package `whitebox` acts as a frontend to the WhiteboxTools executable.
+
+A key design difference compared with many pure-R workflows is that Whitebox is very much **file-path oriented**. You pass filenames to the tool, the tool writes results to disk, and then you usually read the outputs back into R with `terra`, `stars`, or another raster package. 
+
+Let's first load and install the package if not already done and check the installation:
+
+```{r whitebox-setup}
+pacman::p_load("whitebox")
+
+# Check installation and setup
+whitebox::wbt_init()
+whitebox::wbt_wd(processed_dir)
+whitebox::wbt_version()
+```
+
+### Simple example: slope from a DEM
+
+```{r whitebox-slope}
+whitebox::wbt_slope(
+    dem_file,
+    file.path(processed_dir,"slope.tif"),
+    units = "degrees", verbose_mode = TRUE
+)
+
+wb_slope <- terra::rast(file.path(processed_dir,"slope.tif"))
+plot(wb_slope, main = "Slope from WhiteboxTools")
+```
+
+### A multi-step hydrology workflow
+
+Whitebox becomes especially attractive when chaining terrain and hydrology tools. A common sequence using Whitebox could be:
+
+1.  **breach or fill depressions** in the DEM,
+2.  **compute flow accumulation**,
+3.  derive further stream or watershed products.
+
+```{r whitebox-hydro}
+breached_file <- file.path(processed_dir, "dem_breached.tif")
+flowacc_file <- file.path(processed_dir, "flow_accum.tif")
+
+whitebox::wbt_breach_depressions(
+    dem = dem_file,
+    output = breached_file
+)
+
+whitebox::wbt_d8_flow_accumulation(
+    input = breached_file,
+    output = flowacc_file,
+    out_type = "cells"
+)
+
+flow_acc <- terra::rast(flowacc_file)
+plot(log1p(flow_acc), main = "Log(flow accumulation + 1)")
+```
+
+For large DEM workflows, this file-oriented design is often a strength rather than a weakness. It keeps memory pressure low, produces clear intermediate files when needed, and makes it easy to hand results to other systems.
+
+# 4. Further Readings
+
+-   **qgisprocess home page**\
+    [qgisprocess](https://r-spatial.github.io/qgisprocess/)\
+    *Official package site for using QGIS Processing algorithms from R.*
+
+-   **Getting started with qgisprocess**\
+    [qgisprocess vignette](https://r-spatial.github.io/qgisprocess/articles/qgisprocess.html)\
+    *A practical introduction to discovery, configuration, and execution of QGIS algorithms from R.*
+
+-   **QGIS Processing framework**\
+    [QGIS User Guide: Processing](https://docs.qgis.org/latest/en/docs/user_manual/processing/index.html)\
+    *Official documentation for QGIS providers, algorithms, models, and command-line execution.*
+
+-   **Configuring external applications in QGIS**\
+    [QGIS external applications](https://docs.qgis.org/latest/en/docs/user_manual/processing/3rdParty.html)\
+    *How QGIS integrates with external providers such as GRASS and other third-party tools.*
+
+-   **Processing Saga NextGen provider**\
+    [QGIS plugin page](https://plugins.qgis.org/plugins/processing_saga_nextgen/)\
+    *Official plugin repository page for exposing modern SAGA tools inside QGIS Processing.*
+
+-   **GDAL documentation**\
+    [GDAL](https://gdal.org/)\
+    *Primary documentation for raster/vector drivers, utilities, and APIs.*
+
+-   **gdalraster package site**\
+    [gdalraster](https://firelab.github.io/gdalraster/)\
+    *Documentation for direct GDAL API access from R, including VRTs and low-level raster I/O.*
+
+-   **gdalUtilities**\
+    [gdalUtilities](https://cran.r-project.org/web/packages/gdalUtilities/readme/README.html)\
+    *A concise guide to translating familiar GDAL command-line calls into R function calls.*
+
+-   **whitebox package site**\
+    [whitebox](https://whiteboxr.gishub.org/)\
+    *Official R frontend documentation for WhiteboxTools.*
+
+-   **WhiteboxTools User Manual**\
+    [WhiteboxTools manual](https://www.whiteboxgeo.com/manual/wbt_book/)\
+    *Manual covering WhiteboxTools concepts, tools, and the R interface.*
+
+-   **Geocomputation with R – bridges to GIS software**\
+    [Chapter 10](https://r.geocompx.org/gis.html)\
+    *A broader conceptual treatment of how R interfaces with GIS engines such as QGIS and GDAL.*
+
+::: assignment
+## Assignment
+
+In Session 4, you used the `spDataLarge` landslide example with a table of pre-computed terrain attributes (`lsl`) and a raster stack of covariates (`ta`). In this assignment, your task is to **rebuild the main geomorphic predictors yourself from the DEM** (`slope`,`cplan`,`cprof`,`elev`,`log10_carea`), using the R-to-GIS bridges presented in this lecture
+Bonus 1:  Verify that you can recover a landslide-susceptibility model similar to the one used in the other session. 
+Bonus 2: Instead of reading `system.file("raster/elev.tif", package = "spDataLarge")`, query a **STAC catalog** and download a DEM covering the same study area. A good option is the **Copernicus DEM GLO-30** collection available through the Microsoft Planetary Computer STAC API.
+
+### Data to use
+
+Use the `spDataLarge` landslide case study to define the AOI:
+
+```{r}
+install.packages("spDataLarge", repos = "https://geocompx.r-universe.dev")
+library("spDataLarge")
+data("lsl", "study_mask", package = "spDataLarge")
+ta_ref <- terra::rast(system.file("raster/ta.tif", package = "spDataLarge"))
+ta_ref
+```
+
+:::
+
+# Session info
+
+```{r}
+sessionInfo()
+```

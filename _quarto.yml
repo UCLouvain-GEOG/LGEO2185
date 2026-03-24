@@ -11,6 +11,7 @@ project:
     - ML/**.qmd
     - Efficient Spatial IO/**.qmd
     - GEE/**.qmd
+    - R Bindings/**.qmd
 
 website:
   title: "LGEO2185: Advanced Geoprocessing"
@@ -56,6 +57,12 @@ website:
             file: Efficient Spatial IO/LGEO2185_Efficient_Spatial_Data_I_O.qmd
           - text: "Assignment"
             file: Efficient Spatial IO/LGEO2185_Efficient_Spatial_Data_I_O_Assignment.qmd
+      - section: "R Bindings"
+        contents:
+          - text: "Lecture"
+            file: R Bindings/LGEO2185_R_Bindings_to_Geospatial_Libraries.qmd
+          - text: "Assignment"
+            file: R Bindings/LGEO2185_R_Bindings_to_Geospatial_Libraries_Assignment.qmd
       - section: "GEE"
         contents:
           - text: "Demo GEE"
